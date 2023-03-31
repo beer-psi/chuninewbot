@@ -15,11 +15,39 @@ class Difficulty(Enum):
         else:
             return self.name
 
+    def color(self):
+        match self.value:
+            case 0:
+                return 0x009F7B
+            case 1:
+                return 0xF47900
+            case 2:
+                return 0xE92829
+            case 3:
+                return 0x8C1BE1
+            case 4:
+                return 0x0B6FF3
+
     def short_form(self):
         if self.value == 4:
             return "WE"
         else:
             return self.name[:3]
+
+    @classmethod
+    def from_embed_color(cls, color: int) -> Self:
+        if color == 0x009F7B:
+            return cls.BASIC
+        elif color == 0xF47900:
+            return cls.ADVANCED
+        elif color == 0xE92829:
+            return cls.EXPERT
+        elif color == 0x8C1BE1:
+            return cls.MASTER
+        elif color == 0x0B6FF3:
+            return cls.WORLDS_END
+        else:
+            raise ValueError(f"Unknown difficulty color: {color}")
 
 
 class ClearType(Enum):
@@ -50,7 +78,7 @@ class Rank(Enum):
 
     def __str__(self) -> str:
         return self.name.replace("p", "+")
-    
+
     @classmethod
     def from_score(cls, score: int) -> Self:
         if score >= 1009000:
@@ -81,5 +109,3 @@ class Rank(Enum):
             return cls.C
         else:
             return cls.D
-
-            

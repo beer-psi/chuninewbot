@@ -3,9 +3,11 @@ from math import floor
 import discord.ui
 
 from api import ChuniNet
+from api.record import DetailedRecentRecord, RecentRecord
 from bot import ChuniBot
-from api.record import RecentRecord, DetailedRecentRecord
 from cogs.botutils import UtilsCog
+
+from .pagination import PaginationView
 
 
 def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRecord]]:
@@ -19,30 +21,27 @@ def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRec
     return credits
 
 
-class RecentRecordsView(discord.ui.View):
+class RecentRecordsView(PaginationView):
     message: discord.Message
 
-    def __init__(self, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet):
-        super().__init__(timeout=120)
+    def __init__(
+        self, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet
+    ):
+        super().__init__(items=split_scores_into_credits(scores), per_page=1)
         self.chuni_client = chuni_client
-        self.scores = split_scores_into_credits(scores)
         self.page = 0
-        self.max_index = len(self.scores) - 1
+        self.max_index = len(self.items) - 1
 
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
         self.dropdown.options = [
-            discord.SelectOption(label=f"{idx + 1}. {score.title} - {score.difficulty}", value=f"{score.detailed.idx}")
+            discord.SelectOption(
+                label=f"{idx + 1}. {score.title} - {score.difficulty}",
+                value=f"{score.detailed.idx}",
+            )
             for (idx, score) in enumerate(scores)
         ][:25]
 
-    async def on_timeout(self) -> None:
-        await self.chuni_client.session.close()
-        for item in self.children:
-            if isinstance(item, discord.ui.Button) or isinstance(item, discord.ui.Select):
-                item.disabled = True
-        await self.message.edit(view=self)
-        
     def format_score_page(self, scores: list[RecentRecord]) -> list[discord.Embed]:
         embeds = []
         for score in scores:
@@ -50,12 +49,13 @@ class RecentRecordsView(discord.ui.View):
                 discord.Embed(
                     description=f"**{score.title} [{score.difficulty} {score.internal_level if not score.unknown_const else score.level}]**\n\n▸ {score.rank} ▸ {score.clear} ▸ {score.score}",
                     timestamp=score.date,
+                    color=score.difficulty.color(),
                 )
-                    .set_author(name=f"TRACK {score.track}")
-                    .set_thumbnail(url=score.jacket)
+                .set_author(name=f"TRACK {score.track}")
+                .set_thumbnail(url=score.jacket)
             )
             if score.play_rating is not None:
-                embed.set_footer(text=f"Rating {score.play_rating:.2f}")
+                embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
             embeds.append(embed)
 
         embeds.append(
@@ -72,62 +72,31 @@ class RecentRecordsView(discord.ui.View):
                     f"▸ CRITICAL {score.judgements.jcrit}/JUSTICE {score.judgements.justice}/ATTACK {score.judgements.attack}/MISS {score.judgements.miss}\n"
                     f"▸ TAP {score.note_type.tap * 100:.2f}%/HOLD {score.note_type.hold * 100:.2f}%/SLIDE {score.note_type.slide * 100:.2f}%/AIR {score.note_type.air * 100:.2f}%/FLICK {score.note_type.flick * 100:.2f}%"
                 ),
+                color=score.difficulty.color(),
                 timestamp=score.date,
             )
-                .set_author(name=f"TRACK {score.track}")
-                .set_thumbnail(url=score.jacket)
+            .set_author(name=f"TRACK {score.track}")
+            .set_thumbnail(url=score.jacket)
         )
         if score.play_rating is not None:
-            embed.set_footer(text=f"Rating {score.play_rating:.2f}")
+            embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
         return embed
 
-    def toggle_buttons(self):
-        self.to_first_page.disabled = self.to_previous_page.disabled = self.page == 0
-        self.to_next_page.disabled = self.to_last_page.disabled = (
-            self.page == self.max_index
-        )
-
-    async def update(self, interaction: discord.Interaction):
-        self.toggle_buttons()
+    async def callback(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
-            embeds=self.format_score_page(self.scores[self.page]), view=self
+            embeds=self.format_score_page(self.items[self.page]), view=self
         )
 
-    @discord.ui.button(label="<<", style=discord.ButtonStyle.grey, disabled=True)
-    async def to_first_page(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        self.page = 0
-        await self.update(interaction)
-
-    @discord.ui.button(label="<", style=discord.ButtonStyle.grey, disabled=True)
-    async def to_previous_page(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        self.page -= 1
-        await self.update(interaction)
-
-    @discord.ui.button(label=">", style=discord.ButtonStyle.grey)
-    async def to_next_page(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        self.page += 1
-        await self.update(interaction)
-
-    @discord.ui.button(label=">>", style=discord.ButtonStyle.grey)
-    async def to_last_page(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        self.page = self.max_index
-        await self.update(interaction)
-    
     @discord.ui.select(placeholder="Select a score", row=1)
-    async def dropdown(self, interaction: discord.Interaction, select: discord.ui.Select):
+    async def dropdown(
+        self, interaction: discord.Interaction, select: discord.ui.Select
+    ):
         await interaction.response.defer()
 
         idx = int(select.values[0])
         score = await self.chuni_client.detailed_recent_record(idx)
         await self.utils.annotate_song(score)
-        await interaction.channel.send(embed=self.format_detailed_score_page(score))
-        
-
+        await interaction.channel.send(
+            content=f"Score of {interaction.user.mention}",
+            embed=self.format_detailed_score_page(score),
+        )

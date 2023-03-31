@@ -7,10 +7,10 @@ Discord bot for CHUNITHM International version.
 - [x] Player data
 - [x] Recent scores (including detailed judgements)
 - [ ] Best scores (b30, song)
-- [ ] Comparing scores
+- [x] Comparing scores
 - [ ] Song information
-- [ ] Search tracks by internal level
-- [ ] Calculate play rating
+- [x] Search tracks by internal level
+- [x] Calculate play rating
 - [ ] Slash command support
 - [ ] Minigames (song quiz)
 

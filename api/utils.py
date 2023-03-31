@@ -3,7 +3,11 @@ from datetime import datetime, timedelta, timezone
 from bs4.element import ResultSet, Tag
 
 from .enums import ClearType, Difficulty, Rank
-from .record import RecentRecord, DetailedParams
+from .record import DetailedParams, RecentRecord
+
+
+def chuni_int(s: str) -> int:
+    return int(s.replace(",", ""))
 
 
 def parse_player_rating(soup: ResultSet[Tag]) -> float:
@@ -17,8 +21,10 @@ def parse_player_rating(soup: ResultSet[Tag]) -> float:
     return float(rating)
 
 
-def parse_time(time: str) -> datetime:
-    return (datetime.strptime(time, "%Y/%m/%d %H:%M") - timedelta(hours=9)).replace(tzinfo=timezone.utc)  # JP time
+def parse_time(time: str, format: str = "%Y/%m/%d %H:%M") -> datetime:
+    return (datetime.strptime(time, format) - timedelta(hours=9)).replace(
+        tzinfo=timezone.utc
+    )  # JP time
 
 
 def difficulty_from_imgurl(url: str) -> Difficulty:
@@ -38,23 +44,22 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
             raise ValueError(f"Unknown difficulty: {url}")
 
 
-def get_rank_and_cleartype(soup: ResultSet[Tag]) -> tuple[Rank, ClearType]:
-    if len(soup) == 1:
-        rank_img_url = soup[0]["src"]
-        return (Rank(int(rank_img_url.split("_")[-1].split(".")[0])), ClearType.FAILED)
-
-    rank_img_url = soup[1]["src"]
+def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
+    rank_img_url = soup.select_one("img[src*=_rank_]")["src"]
     rank = Rank(int(rank_img_url.split("_")[-1].split(".")[0]))
-    match soup[0]["src"].split("_")[-1].split(".")[0]:
-        case "clear":
-            return (rank, ClearType.CLEAR)
-        case "fullcombo":
-            return (rank, ClearType.FULL_COMBO)
-        case "alljustice":
-            return (rank, ClearType.ALL_JUSTICE)
 
-        case _:
-            raise ValueError(f"Unknown clear type: {soup[0]['src']}")
+    clear_type = (
+        ClearType.CLEAR
+        if soup.select_one("img[src*=clear]") is not None
+        else ClearType.FAILED
+    )
+    if clear_type == ClearType.CLEAR:
+        if soup.select_one("img[src*=fullcombo]") is not None:
+            clear_type = ClearType.FULL_COMBO
+        elif soup.select_one("img[src*=alljustice]") is not None:
+            clear_type = ClearType.ALL_JUSTICE
+
+    return rank, clear_type
 
 
 def parse_basic_recent_record(record: Tag) -> RecentRecord:
@@ -79,7 +84,7 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
         record.select_one(".play_musicdata_score_text").get_text().replace(",", "")
     )
     new_record = record.select_one(".play_musicdata_score_img") is not None
-    rank, clear = get_rank_and_cleartype(record.select(".play_musicdata_icon img"))
+    rank, clear = get_rank_and_cleartype(record.select_one(".play_musicdata_icon"))
 
     return RecentRecord(
         detailed=detailed,

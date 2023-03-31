@@ -43,11 +43,14 @@ async def startup():
     logger.addHandler(handler)
 
     (intents := discord.Intents.default()).message_content = True
-    bot = ChuniBot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
+    bot = ChuniBot(command_prefix=commands.when_mentioned_or("c>"), intents=intents)
 
     await bot.load_extension("cogs.botutils")
+    if cfg["DEV"] == "1":
+        await bot.load_extension("cogs.hotreload")
+
     for file in (BOT_DIR / "cogs").glob("*.py"):
-        if file.stem == "botutils":
+        if file.stem == "botutils" or file.stem == "hotreload":
             continue
         try:
             await bot.load_extension(f"cogs.{file.stem}")

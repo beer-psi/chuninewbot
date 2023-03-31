@@ -5,12 +5,22 @@ import aiohttp
 from bs4 import BeautifulSoup
 from yarl import URL
 
-from .player_data import PlayerData, Overpower, Nameplate, Rating, Currency
-from .record import RecentRecord, DetailedRecentRecord, Judgements, NoteType, Skill
+from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
+from .record import (
+    DetailedRecentRecord,
+    Judgements,
+    MusicRecord,
+    NoteType,
+    RecentRecord,
+    Skill,
+)
 from .utils import (
+    chuni_int,
+    difficulty_from_imgurl,
+    get_rank_and_cleartype,
     parse_basic_recent_record,
-    parse_time,
     parse_player_rating,
+    parse_time,
 )
 
 
@@ -18,7 +28,7 @@ class ChuniNet:
     AUTH_URL = "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
 
     def __init__(
-        self, 
+        self,
         clal: str,
         user_id: Optional[int] = None,
         token: Optional[str] = None,
@@ -33,24 +43,20 @@ class ChuniNet:
         )
 
         if user_id is not None:
-            self.session.cookie_jar.update_cookies(
-                {"userId": str(user_id)}, self.base
-            )
+            self.session.cookie_jar.update_cookies({"userId": str(user_id)}, self.base)
         if token is not None:
-            self.session.cookie_jar.update_cookies(
-                {"_t": token}, self.base
-            )
+            self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, type, value, traceback):
         await self.session.close()
-    
+
     @property
     def user_id(self):
         return self.session.cookie_jar.filter_cookies(self.base).get("userId").value
-    
+
     @property
     def token(self):
         return self.session.cookie_jar.filter_cookies(self.base).get("_t").value
@@ -63,7 +69,7 @@ class ChuniNet:
                 )
             return req.headers["Location"]
 
-    async def _authenticate(self):
+    async def authenticate(self):
         uid_redemption_url = await self.validate_cookie()
         async with self.session.get(uid_redemption_url) as req:
             if req.status == HTTPStatus.SERVICE_UNAVAILABLE:
@@ -73,7 +79,7 @@ class ChuniNet:
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-            await self._authenticate()
+            await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
         if response.cookies.get("_t") is None:
@@ -91,7 +97,7 @@ class ChuniNet:
         avatar = soup.select_one(".player_chara_info img")["src"]
 
         name = soup.select_one(".player_name_in").get_text()
-        lv = int(soup.select_one(".player_lv").get_text())
+        lv = chuni_int(soup.select_one(".player_lv").get_text())
 
         nameplate_content = soup.select_one(".player_honor_text").get_text()
         nameplate_rarity = (
@@ -110,17 +116,13 @@ class ChuniNet:
         last_play_date_str = soup.select_one(".player_lastplaydate_text").get_text()
         last_play_date = parse_time(last_play_date_str)
 
-        owned_currency = int(
-            soup.select_one(".user_data_point .user_data_text")
-            .get_text()
-            .replace(",", "")
+        owned_currency = chuni_int(
+            soup.select_one(".user_data_point .user_data_text").get_text()
         )
-        total_currency = int(
-            soup.select_one(".user_data_total_point .user_data_text")
-            .get_text()
-            .replace(",", "")
+        total_currency = chuni_int(
+            soup.select_one(".user_data_total_point .user_data_text").get_text()
         )
-        playcount = int(
+        playcount = chuni_int(
             soup.select_one(".user_data_play_count .user_data_text").get_text()
         )
 
@@ -143,16 +145,55 @@ class ChuniNet:
         web_records = soup.select(".frame02.w400")
         return [parse_basic_recent_record(record) for record in web_records]
 
-    async def detailed_recent_record(self, idx: int, token: Optional[str] = None):
-        def get_judgement_count(class_name):
-            return int(
-                soup.select_one(class_name).get_text().replace(",", "")
+    async def music_record(self, idx: int) -> list[MusicRecord]:
+        resp = await self._request(
+            "mobile/record/musicGenre/sendMusicDetail/",
+            method="POST",
+            data={
+                "idx": idx,
+                "token": self.token,
+            },
+        )
+        soup = BeautifulSoup(await resp.text(), "html.parser")
+
+        jacket = soup.select_one(".play_jacket_img img")["src"]
+        title = soup.select_one(".play_musicdata_title").get_text()
+        records = []
+        for block in soup.select(".music_box"):
+            rank, clear = get_rank_and_cleartype(
+                block.select_one(".play_musicdata_icon")
             )
-        
+            records.append(
+                MusicRecord(
+                    title=title,
+                    jacket=jacket,
+                    difficulty=difficulty_from_imgurl(
+                        " ".join(
+                            block.select_one(".musicdata_detail_difficulty")["class"]
+                        )
+                    ),
+                    score=chuni_int(
+                        block.select_one(".musicdata_score_num .text_b").get_text()
+                    ),
+                    rank=rank,
+                    clear=clear,
+                    play_count=int(
+                        block.select_one(
+                            ".musicdata_score_num .text_b:-soup-contains(times)"
+                        )
+                        .get_text()
+                        .replace("times", "")
+                    ),
+                )
+            )
+        return records
+
+    async def detailed_recent_record(self, idx: int):
+        def get_judgement_count(class_name):
+            return chuni_int(soup.select_one(class_name).get_text().replace(",", ""))
+
         def get_note_percentage(class_name):
-            return float(
-                soup.select_one(class_name).get_text().replace("%", "")
-            ) / 100
+            return float(soup.select_one(class_name).get_text().replace("%", "")) / 100
 
         resp = await self._request(
             "mobile/record/playlog/sendPlaylogDetail/",
@@ -168,7 +209,7 @@ class ChuniNet:
         )
         record.idx = idx
 
-        record.max_combo = int(
+        record.max_combo = chuni_int(
             soup.select_one(".play_data_detail_maxcombo_block").get_text()
         )
 
@@ -188,13 +229,12 @@ class ChuniNet:
         record.character = soup.select_one(".play_data_chara_name").get_text()
 
         skill_name = soup.select_one(".play_data_skill_name").get_text()
-        skill_grade = int(soup.select_one(".play_data_skill_grade").get_text())
+        skill_grade = chuni_int(soup.select_one(".play_data_skill_grade").get_text())
         record.skill = Skill(skill_name, skill_grade)
 
-        record.skill_result = int(
+        record.skill_result = chuni_int(
             soup.select_one(".play_musicdata_skilleffect_text")
             .get_text()
             .replace("+", "")
-            .replace(",", "")
         )
         return record

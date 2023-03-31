@@ -35,12 +35,7 @@ class DetailedParams:
 
 
 @dataclass(kw_only=True)
-class RecentRecord:
-    detailed: Optional[DetailedParams]
-
-    track: int
-    date: datetime
-
+class MusicRecord:
     title: str
     jacket: str
     difficulty: Difficulty
@@ -48,13 +43,23 @@ class RecentRecord:
     score: int
     rank: Rank
     clear: ClearType
-    new_record: bool
+
+    play_count: Optional[int] = None
 
     # These are not returned by the website, the bot fills it in
     level: Optional[str] = None
     internal_level: Optional[float] = None
     unknown_const: bool = False
     play_rating: Optional[float] = None
+
+
+@dataclass(kw_only=True)
+class RecentRecord(MusicRecord):
+    detailed: Optional[DetailedParams]
+
+    track: int
+    date: datetime
+    new_record: bool
 
 
 @dataclass(kw_only=True)
