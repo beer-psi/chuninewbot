@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from api.enums import Difficulty
 from bot import ChuniBot
+from views.b30 import B30View
 from views.recent import RecentRecordsView
 
 from .botutils import UtilsCog
@@ -28,7 +29,7 @@ class RecordsCog(commands.Cog, name="Records"):
             recent_scores = await client.recent_record()
 
             tasks = [self.utils.annotate_song(score) for score in recent_scores]
-            await asyncio.gather(*tasks)
+            recent_scores = await asyncio.gather(*tasks)
 
             view = RecentRecordsView(self.bot, recent_scores, client)
             view.message = await ctx.reply(
@@ -43,7 +44,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx)
-            
+
             bot_messages = [
                 message
                 async for message in ctx.channel.history(limit=50)
@@ -90,7 +91,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
                 return
             score = records[0]
-            await self.utils.annotate_song(score)
+            score = await self.utils.annotate_song(score)
 
             embed = (
                 discord.Embed(
@@ -112,6 +113,49 @@ class RecordsCog(commands.Cog, name="Records"):
 
             await ctx.reply(
                 embed=embed,
+                mention_author=False,
+            )
+
+    @commands.command("best30", aliases=["b30"])
+    async def best30(self, ctx: Context):
+        """View top plays"""
+
+        async with ctx.typing():
+            clal = await self.utils.login_check(ctx)
+
+            async with ChuniNet(clal) as client:
+                best30 = await client.best30()
+            
+            tasks = [self.utils.annotate_song(score) for score in best30]
+            best30 = await asyncio.gather(*tasks)
+
+
+            view = B30View(best30)
+            view.message = await ctx.reply(
+                content=view.format_content(),
+                embed=view.format_page(view.items[:view.per_page]),
+                view=view,
+                mention_author=False,
+            )
+    
+    @commands.command("recent10", aliases=["r10"])
+    async def recent10(self, ctx: Context):
+        """View top recent plays"""
+
+        async with ctx.typing():
+            clal = await self.utils.login_check(ctx)
+
+            async with ChuniNet(clal) as client:
+                recent10 = await client.recent10()
+            
+            tasks = [self.utils.annotate_song(score) for score in recent10]
+            recent10 = await asyncio.gather(*tasks)
+
+
+            view = B30View(recent10)
+            view.message = await ctx.reply(
+                content=view.format_content(),
+                embed=view.format_page(view.items[:view.per_page]),
                 mention_author=False,
             )
 

@@ -7,8 +7,6 @@ from .pagination import PaginationView
 
 
 class SonglistView(PaginationView):
-    message: discord.Message
-
     # tuple is (title, difficulty)
     def __init__(self, songs: list[tuple[str, str]]):
         super().__init__(items=songs, per_page=15)

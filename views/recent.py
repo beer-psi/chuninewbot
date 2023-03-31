@@ -22,8 +22,6 @@ def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRec
 
 
 class RecentRecordsView(PaginationView):
-    message: discord.Message
-
     def __init__(
         self, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet
     ):
@@ -54,7 +52,7 @@ class RecentRecordsView(PaginationView):
                 .set_author(name=f"TRACK {score.track}")
                 .set_thumbnail(url=score.jacket)
             )
-            if score.play_rating is not None:
+            if not score.unknown_const:
                 embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
             embeds.append(embed)
 
@@ -78,7 +76,7 @@ class RecentRecordsView(PaginationView):
             .set_author(name=f"TRACK {score.track}")
             .set_thumbnail(url=score.jacket)
         )
-        if score.play_rating is not None:
+        if not score.unknown_const:
             embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
         return embed
 
@@ -95,7 +93,7 @@ class RecentRecordsView(PaginationView):
 
         idx = int(select.values[0])
         score = await self.chuni_client.detailed_recent_record(idx)
-        await self.utils.annotate_song(score)
+        score = await self.utils.annotate_song(score)
         await interaction.channel.send(
             content=f"Score of {interaction.user.mention}",
             embed=self.format_detailed_score_page(score),

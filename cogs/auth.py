@@ -63,7 +63,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 await client.validate_cookie()
                 await self.bot.db.execute(
                     "INSERT INTO cookies VALUES (?, ?) ON CONFLICT(discord_id) DO UPDATE SET cookie=excluded.cookie",
-                    (ctx.author.id, clal)
+                    (ctx.author.id, clal),
                 )
                 await self.bot.db.commit()
                 await ctx.send("Successfully logged in.")

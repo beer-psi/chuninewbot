@@ -6,7 +6,9 @@ Discord bot for CHUNITHM International version.
 ### Features
 - [x] Player data
 - [x] Recent scores (including detailed judgements)
-- [ ] Best scores (b30, song)
+- [ ] Best scores
+  - [x] b30 and recent 10
+  - [ ] by song
 - [x] Comparing scores
 - [ ] Song information
 - [x] Search tracks by internal level

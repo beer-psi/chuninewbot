@@ -5,9 +5,12 @@ import aiohttp
 from bs4 import BeautifulSoup
 from yarl import URL
 
+from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
 from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
 from .record import (
     DetailedRecentRecord,
+    DetailedParams,
+    Record,
     Judgements,
     MusicRecord,
     NoteType,
@@ -64,7 +67,7 @@ class ChuniNet:
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
             if req.status != HTTPStatus.FOUND:
-                raise Exception(
+                raise InvalidTokenException(
                     f"Invalid cookie. Received status code was {req.status}"
                 )
             return req.headers["Location"]
@@ -73,9 +76,9 @@ class ChuniNet:
         uid_redemption_url = await self.validate_cookie()
         async with self.session.get(uid_redemption_url) as req:
             if req.status == HTTPStatus.SERVICE_UNAVAILABLE:
-                raise Exception("Service under maintenance")
+                raise MaintenanceException("Service under maintenance")
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-                raise Exception("Invalid cookie")
+                raise InvalidTokenException("Invalid cookie")
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
@@ -85,7 +88,7 @@ class ChuniNet:
         if response.cookies.get("_t") is None:
             soup = BeautifulSoup(await response.text(), "html.parser")
             err = soup.select(".block.text_l .font_small")
-            raise Exception(
+            raise ChuniNetException(
                 f"The server returned an error: {err[1].get_text() if err else ''}"
             )
         return response
@@ -187,6 +190,34 @@ class ChuniNet:
                 )
             )
         return records
+
+    def _parse_music_for_rating(self, soup: BeautifulSoup) -> list[Record]:
+        return [
+            Record(
+                detailed=DetailedParams(
+                    idx=int(x.select_one("input[name=idx]")["value"]),
+                    token=x.select_one("input[name=token]")["value"],
+                ),
+                title=x.select_one(".music_title").get_text(),
+                difficulty=difficulty_from_imgurl(" ".join(x["class"])),
+                score=chuni_int(
+                    x.select_one(".play_musicdata_highscore .text_b").get_text()
+                ),
+            )
+            for x in soup.select(".w388.musiclist_box")
+        ]
+
+    async def best30(self) -> list[Record]:
+        resp = await self._request("mobile/home/playerData/ratingDetailBest/")
+        soup = BeautifulSoup(await resp.text(), "html.parser")
+
+        return self._parse_music_for_rating(soup)
+
+    async def recent10(self) -> list[Record]:
+        resp = await self._request("mobile/home/playerData/ratingDetailRecent/")
+        soup = BeautifulSoup(await resp.text(), "html.parser")
+
+        return self._parse_music_for_rating(soup)
 
     async def detailed_recent_record(self, idx: int):
         def get_judgement_count(class_name):

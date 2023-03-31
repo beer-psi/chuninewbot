@@ -35,12 +35,18 @@ class DetailedParams:
 
 
 @dataclass(kw_only=True)
-class MusicRecord:
-    title: str
-    jacket: str
-    difficulty: Difficulty
+class Record:
+    detailed: Optional[DetailedParams] = None
 
+    title: str
+    difficulty: Difficulty
     score: int
+
+
+@dataclass(kw_only=True)
+class MusicRecord(Record):
+    jacket: str
+
     rank: Rank
     clear: ClearType
 
@@ -50,13 +56,27 @@ class MusicRecord:
     level: Optional[str] = None
     internal_level: Optional[float] = None
     unknown_const: bool = False
-    play_rating: Optional[float] = None
+    play_rating: float = 0.0
+
+    @classmethod
+    def from_record(cls, record: Record):
+        return cls(
+            detailed=record.detailed,
+            title=record.title,
+            difficulty=record.difficulty,
+            score=record.score,
+            jacket="",
+            rank=Rank.D,
+            clear=ClearType.FAILED,
+            level="",
+            internal_level=0.0,
+            unknown_const=False,
+            play_rating=0.0,
+        )
 
 
 @dataclass(kw_only=True)
 class RecentRecord(MusicRecord):
-    detailed: Optional[DetailedParams]
-
     track: int
     date: datetime
     new_record: bool
