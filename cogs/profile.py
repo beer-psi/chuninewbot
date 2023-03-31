@@ -19,8 +19,6 @@ class ProfileCog(commands.Cog, name="Profile"):
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx)
-            if clal is None:
-                return
 
             async with ChuniNet(clal) as client:
                 player_data = await client.player_data()

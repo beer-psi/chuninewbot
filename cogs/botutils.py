@@ -15,13 +15,12 @@ class UtilsCog(commands.Cog, name="Utils"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
 
-    async def login_check(self, ctx: Context) -> str | None:
+    async def login_check(self, ctx: Context) -> str:
         clal = await self.fetch_cookie(ctx.author.id)
         if clal is None:
-            await ctx.send(
+            raise commands.BadArgument(
                 "You are not logged in. Please use `!login <cookie>` in DMs to log in."
             )
-            return
         return clal
 
     @alru_cache()

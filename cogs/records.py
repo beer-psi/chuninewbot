@@ -23,8 +23,6 @@ class RecordsCog(commands.Cog, name="Records"):
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx)
-            if clal is None:
-                return
 
             client = ChuniNet(clal)
             recent_scores = await client.recent_record()
@@ -45,9 +43,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx)
-            if clal is None:
-                return
-
+            
             bot_messages = [
                 message
                 async for message in ctx.channel.history(limit=50)
