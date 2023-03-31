@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "chuninewbot"
+version = "0.1.0"
+description = ""
+authors = ["beerpiss <lacvtg.a1.2023@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+"discord.py" = "^2.1.0"
+aiohttp = "^3.8.3"
+yarl = "^1.8.2"
+beautifulsoup4 = "^4.11.2"
+aiosqlite = "^0.18.0"
+python-dotenv = "^1.0.0"
+async-lru = "^2.0.2"
+dataclasses-json = "^0.5.7"
+
+[tool.isort]
+profile = "black"
+
+[tool.poetry.dev-dependencies]
+black = "^23.1.0"
+isort = "^5.12.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+isort = "^5.12.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
