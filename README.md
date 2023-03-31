@@ -19,7 +19,7 @@ Discord bot for CHUNITHM International version.
 - `TOKEN` with the bot's token
 - `CHUNIREC_TOKEN` with a token obtained from [Chunirec Developer Portal](https://developer.chunirec.net/)
 2. `poetry install`
-3. Run `update_chunirec.py` to populate the song database
+3. Run `update_db.py` to populate the song database
 4. `python bot.py`
 
 
