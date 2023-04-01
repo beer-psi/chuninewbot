@@ -5,7 +5,7 @@ from bot import ChuniBot
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
 
-from .botutils import UtilsCog
+from cogs.botutils import UtilsCog
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):

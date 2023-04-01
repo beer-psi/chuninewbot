@@ -35,7 +35,7 @@ class UtilsCog(commands.Cog, name="Utils"):
             return None
 
         return clal[0]
-    
+
     @overload
     async def annotate_song(self, song: DetailedRecentRecord) -> DetailedRecentRecord:
         ...
@@ -44,8 +44,12 @@ class UtilsCog(commands.Cog, name="Utils"):
     async def annotate_song(self, song: Record | MusicRecord) -> MusicRecord:
         ...
 
-    async def annotate_song(self, song: Record | MusicRecord | DetailedRecentRecord) -> MusicRecord | DetailedRecentRecord:
-        if isinstance(song, Record) and not (isinstance(song, MusicRecord) or isinstance(song, DetailedRecentRecord)):
+    async def annotate_song(
+        self, song: Record | MusicRecord | DetailedRecentRecord
+    ) -> MusicRecord | DetailedRecentRecord:
+        if isinstance(song, Record) and not (
+            isinstance(song, MusicRecord) or isinstance(song, DetailedRecentRecord)
+        ):
             if song.detailed is None:
                 raise Exception("Cannot fetch song details without song.detailed.idx")
             cursor = await self.bot.db.execute(
@@ -56,9 +60,9 @@ class UtilsCog(commands.Cog, name="Utils"):
             if song_data is None:
                 return MusicRecord.from_record(song)
             id = song_data[0]
-            song = MusicRecord.from_record(song)
+            _song: MusicRecord = MusicRecord.from_record(song)
 
-            song.rank = Rank.from_score(song.score)
+            _song.rank = Rank.from_score(song.score)
         else:
             cursor = await self.bot.db.execute(
                 "SELECT id FROM chunirec_songs WHERE title = ? AND jacket = ?",
@@ -68,7 +72,7 @@ class UtilsCog(commands.Cog, name="Utils"):
             if song_data is None:
                 return song
             id = song_data[0]
-            
+            _song = song
 
         cursor = await self.bot.db.execute(
             "SELECT level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE song_id = ? AND difficulty = ?",
@@ -76,18 +80,20 @@ class UtilsCog(commands.Cog, name="Utils"):
         )
         chart_data = await cursor.fetchone()
         if chart_data is None:
-            return song
-        song.internal_level = chart_data[1]
+            return _song
+        _song.internal_level = chart_data[1]
 
         level = chart_data[0]
-        song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
-        song.unknown_const = bool(chart_data[3])
+        _song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
+        _song.unknown_const = bool(chart_data[3])
 
-        song.play_rating = calculate_rating(song.score, song.internal_level if song.internal_level != 0 else level)
+        _song.play_rating = calculate_rating(
+            song.score, _song.internal_level if _song.internal_level != 0 else level
+        )
 
-        if isinstance(song, DetailedRecentRecord) and chart_data[2] != 0:
-            song.full_combo = chart_data[2]
-        return song
+        if isinstance(_song, DetailedRecentRecord) and chart_data[2] != 0:
+            _song.full_combo = chart_data[2]
+        return _song
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
     @tasks.loop(time=time(hour=17, tzinfo=timezone.utc))

@@ -1,4 +1,4 @@
-from abc import abstractclassmethod
+from abc import abstractmethod
 from math import ceil
 
 import discord.ui
@@ -30,7 +30,7 @@ class PaginationView(discord.ui.View):
         self.toggle_buttons()
         await self.callback(interaction)
 
-    @abstractclassmethod
+    @abstractmethod
     async def callback(self, interaction: discord.Interaction):
         ...
 

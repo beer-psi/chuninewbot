@@ -5,7 +5,7 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from bot import ChuniBot
 
-from .botutils import UtilsCog
+from cogs.botutils import UtilsCog
 
 
 class ProfileCog(commands.Cog, name="Profile"):
@@ -25,21 +25,25 @@ class ProfileCog(commands.Cog, name="Profile"):
 
                 description = (
                     f"▸ **Level**: {player_data.lv}\n"
-                    f"▸ **Rating**: {player_data.rating.current} (MAX {player_data.rating.max}\n"
+                    f"▸ **Rating**: {player_data.rating.current} (MAX {player_data.rating.max})\n"
                     f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"
                     f"▸ **Playcount**: {player_data.playcount}\n"
                 )
 
                 embed = (
                     discord.Embed(description=description)
-                    .set_author(name=f"CHUNITHM profile for {player_data.name}")
+                    .set_author(name=player_data.nameplate.content)
                     .set_thumbnail(url=player_data.avatar)
                     .set_footer(
                         text=f"Last played on {player_data.last_play_date.strftime('%Y-%m-%d')}"
                     )
                 )
 
-                await ctx.reply(embed=embed, mention_author=False)
+                await ctx.reply(
+                    content=f"CHUNITHM profile for {player_data.name}",
+                    embed=embed,
+                    mention_author=False,
+                )
 
 
 async def setup(bot: ChuniBot):

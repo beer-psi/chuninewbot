@@ -35,7 +35,7 @@ class Difficulty(Enum):
             return self.name[:3]
 
     @classmethod
-    def from_embed_color(cls, color: int) -> Self:
+    def from_embed_color(cls, color: int):
         if color == 0x009F7B:
             return cls.BASIC
         elif color == 0xF47900:
@@ -80,7 +80,7 @@ class Rank(Enum):
         return self.name.replace("p", "+")
 
     @classmethod
-    def from_score(cls, score: int) -> Self:
+    def from_score(cls, score: int):
         if score >= 1009000:
             return cls.SSSp
         elif score >= 1007500:

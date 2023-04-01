@@ -1,0 +1,6 @@
+{
+    "python.linting.mypyEnabled": true,
+    "python.linting.enabled": true,
+
+    "python.analysis.typeCheckingMode": "off"
+}

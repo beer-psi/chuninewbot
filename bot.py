@@ -50,7 +50,7 @@ async def startup():
         await bot.load_extension("cogs.hotreload")
 
     for file in (BOT_DIR / "cogs").glob("*.py"):
-        if file.stem == "botutils" or file.stem == "hotreload":
+        if file.stem in ["hotreload", "botutils", "__init__"]:
             continue
         try:
             await bot.load_extension(f"cogs.{file.stem}")

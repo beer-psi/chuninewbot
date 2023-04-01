@@ -33,7 +33,9 @@ class EventsCog(commands.Cog, name="Events"):
                 mention_author=False,
                 delete_after=5,
             )
-            logging.getLogger("discord").error("Exception in command %s", ctx.command, exc_info=error)
+            logging.getLogger("discord").error(
+                "Exception in command %s", ctx.command, exc_info=error
+            )
 
 
 async def setup(bot: ChuniBot):

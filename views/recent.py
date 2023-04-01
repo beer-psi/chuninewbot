@@ -32,12 +32,13 @@ class RecentRecordsView(PaginationView):
 
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
-        self.dropdown.options = [
+        self.dropdown.options = [  # type: ignore[attr-defined]
             discord.SelectOption(
                 label=f"{idx + 1}. {score.title} - {score.difficulty}",
                 value=f"{score.detailed.idx}",
             )
             for (idx, score) in enumerate(scores)
+            if score.detailed is not None
         ][:25]
 
     def format_score_page(self, scores: list[RecentRecord]) -> list[discord.Embed]:
@@ -89,6 +90,8 @@ class RecentRecordsView(PaginationView):
     async def dropdown(
         self, interaction: discord.Interaction, select: discord.ui.Select
     ):
+        if not isinstance(interaction.channel, discord.TextChannel):
+            return
         await interaction.response.defer()
 
         idx = int(select.values[0])

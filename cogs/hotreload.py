@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 
 # put your extension names in this list
 # if you don't want them to be reloaded
-IGNORE_EXTENSIONS = []
+IGNORE_EXTENSIONS: list[str] = []
 
 
 def path_from_extension(extension: str) -> pathlib.Path:

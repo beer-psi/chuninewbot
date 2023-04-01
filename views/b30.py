@@ -12,12 +12,15 @@ class B30View(PaginationView):
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
 
     def format_content(self) -> str:
-        return (
-            f"Average: **{self.average:.2f}**" +
-            ("\nPlay ratings marked with asterisks are estimated (due to lack of chart constants)." if self.has_estimated_play_rating else "")
+        return f"Average: **{self.average:.2f}**" + (
+            "\nPlay ratings marked with asterisks are estimated (due to lack of chart constants)."
+            if self.has_estimated_play_rating
+            else ""
         )
-    
-    def format_page(self, items: list[MusicRecord], start_index: int = 0) -> discord.Embed:
+
+    def format_page(
+        self, items: list[MusicRecord], start_index: int = 0
+    ) -> discord.Embed:
         description = ""
         for idx, item in enumerate(items):
             description += (
@@ -26,11 +29,9 @@ class B30View(PaginationView):
             )
 
         embed = (
-            discord.Embed(
-                description=description
-            )
-                .set_author(name="Top CHUNITHM plays")
-                .set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")
+            discord.Embed(description=description)
+            .set_author(name="Top CHUNITHM plays")
+            .set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")
         )
         return embed
 
@@ -39,5 +40,6 @@ class B30View(PaginationView):
         end = (self.page + 1) * self.per_page
         await interaction.response.edit_message(
             content=self.format_content(),
-            embed=self.format_page(self.items[begin:end], begin), view=self
+            embed=self.format_page(self.items[begin:end], begin),
+            view=self,
         )

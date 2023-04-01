@@ -1,9 +1,10 @@
 from http import HTTPStatus
-from typing import Optional
+from typing import cast, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup
 from yarl import URL
+from bs4.element import Tag
 
 from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
 from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
@@ -159,13 +160,12 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "html.parser")
 
-        jacket = soup.select_one(".play_jacket_img img")["src"]
+        jacket = str(soup.select_one(".play_jacket_img img")["src"])
         title = soup.select_one(".play_musicdata_title").get_text()
         records = []
         for block in soup.select(".music_box"):
-            rank, clear = get_rank_and_cleartype(
-                block.select_one(".play_musicdata_icon")
-            )
+            if (musicdata := block.select_one(".play_musicdata_icon")) is not None:
+                rank, clear = get_rank_and_cleartype(musicdata)
             records.append(
                 MusicRecord(
                     title=title,
@@ -195,8 +195,12 @@ class ChuniNet:
         return [
             Record(
                 detailed=DetailedParams(
-                    idx=int(x.select_one("input[name=idx]")["value"]),
-                    token=x.select_one("input[name=token]")["value"],
+                    idx=int(
+                        str(x.select_one("input[name=idx]")["value"])
+                    ),
+                    token=str(
+                        x.select_one("input[name=token]")["value"]
+                    ),
                 ),
                 title=x.select_one(".music_title").get_text(),
                 difficulty=difficulty_from_imgurl(" ".join(x["class"])),
@@ -236,7 +240,7 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "html.parser")
         record = DetailedRecentRecord.from_basic(
-            parse_basic_recent_record(soup.select_one(".frame01_inside"))
+            parse_basic_recent_record(cast(Tag, soup.select_one(".frame01_inside")))
         )
         record.idx = idx
 

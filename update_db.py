@@ -58,19 +58,19 @@ CHUNITHM_CATCODES = {
     "ORIGINAL": 5,
 }
 
-MANUAL_MAPPINGS = {
+MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
     "1bc5d471609c4d10": {
-        "id": 8166,
+        "id": "8166",
         "catname": "ORIGINAL",
         "image": "0511952ab823d845.jpg",
     },
     "7a561ab609a0629d": {
-        "id": 8227,
+        "id": "8227",
         "catname": "ORIGINAL",
         "image": "168de844aeef254b.jpg",
     },
     "e6605126a95c4c8d": {
-        "id": 8228,
+        "id": "8228",
         "catname": "ORIGINAL",
         "image": "1195656064a159f0.jpg",
     },
@@ -86,7 +86,7 @@ for idx, random in enumerate(
     ]
 ):
     MANUAL_MAPPINGS[random] = {
-        "id": 8244 + idx,
+        "id": str(8244 + idx),
         "catname": "VARIETY",
         "image": "ca580486c86bd49b.jpg",
     }
@@ -126,8 +126,8 @@ async def update_db(db: aiosqlite.Connection):
         chuni_resp = await client.get(
             "https://chunithm.sega.jp/storage/json/music.json"
         )
-        songs = ChunirecSong.schema().loads(await resp.text(), many=True)
-        chuni_songs = await chuni_resp.json()
+        songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore[attr-defined]
+        chuni_songs: list[dict[str, str]] = await chuni_resp.json()
 
     with (BOT_DIR / "database" / "schema.sql").open() as f:
         await db.executescript(f.read())
@@ -138,6 +138,7 @@ async def update_db(db: aiosqlite.Connection):
         chunithm_id = -1
         chunithm_catcode = -1
         jacket = ""
+        chunithm_song: dict[str, str] = {}
         try:
             if song.meta.id in MANUAL_MAPPINGS:
                 chunithm_song = MANUAL_MAPPINGS[song.meta.id]

@@ -7,7 +7,7 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from bot import ChuniBot
 
-from .botutils import UtilsCog
+from cogs.botutils import UtilsCog
 
 
 class AuthCog(commands.Cog, name="Auth"):

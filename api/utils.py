@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional, cast
 
 from bs4.element import ResultSet, Tag
 
@@ -10,10 +11,24 @@ def chuni_int(s: str) -> int:
     return int(s.replace(",", ""))
 
 
+def get_attribute(soup: Optional[Tag], attr: str) -> str | list[str]:
+    if soup is None:
+        return ""
+    if (ret := soup.get(attr, "")) is None:
+        return ""
+    return ret
+
+
+def get_text(soup: Optional[Tag]) -> str:
+    if soup is None:
+        return ""
+    return soup.get_text()
+
+
 def parse_player_rating(soup: ResultSet[Tag]) -> float:
     rating = ""
     for x in soup:
-        digit = x["src"].split("_")[-1].split(".")[0]
+        digit = cast(str, x["src"]).split("_")[-1].split(".")[0]
         if digit == "comma":
             rating += "."
         else:
@@ -45,7 +60,7 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
 
 
 def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
-    rank_img_url = soup.select_one("img[src*=_rank_]")["src"]
+    rank_img_url = cast(str, soup.select_one("img[src*=_rank_]")["src"])
     rank = Rank(int(rank_img_url.split("_")[-1].split(".")[0]))
 
     clear_type = (
@@ -67,16 +82,16 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     if idx_elem is None:
         detailed = None
     else:
-        idx = int(idx_elem["value"])
-        token = record.select_one("form input[name=token]")["value"]
+        idx = int(cast(str, idx_elem["value"]))
+        token = cast(str, record.select_one("form input[name=token]")["value"])
         detailed = DetailedParams(idx, token)
 
     date = parse_time(
         (record.select_one(".play_datalist_date, .box_inner01")).get_text()
     )
     jacket_elem = record.select_one(".play_jacket_img img")
-    if (jacket := jacket_elem.get("data-original")) is None:
-        jacket = jacket_elem["src"]
+    if (jacket := cast(str | None, jacket_elem.get("data-original"))) is None:
+        jacket = cast(str, jacket_elem["src"])
     track = int(record.select_one(".play_track_text").get_text().split(" ")[1])
     title = record.select_one(".play_musicdata_title").get_text()
 
@@ -93,7 +108,7 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
         title=title,
         jacket=jacket,
         difficulty=difficulty_from_imgurl(
-            record.select_one(".play_track_result img")["src"]
+            cast(str, record.select_one(".play_track_result img")["src"])
         ),
         score=score,
         rank=rank,

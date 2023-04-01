@@ -18,6 +18,9 @@ dataclasses-json = "^0.5.7"
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+strict_optional = false
+
 [tool.poetry.dev-dependencies]
 black = "^23.1.0"
 isort = "^5.12.0"
@@ -26,6 +29,7 @@ isort = "^5.12.0"
 black = "^23.3.0"
 isort = "^5.12.0"
 mypy = "^1.1.1"
+types-beautifulsoup4 = "^4.12.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

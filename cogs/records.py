@@ -1,4 +1,5 @@
 import asyncio
+from typing import cast
 
 import discord
 from discord.ext import commands
@@ -10,7 +11,7 @@ from bot import ChuniBot
 from views.b30 import B30View
 from views.recent import RecentRecordsView
 
-from .botutils import UtilsCog
+from cogs.botutils import UtilsCog
 
 
 class RecordsCog(commands.Cog, name="Records"):
@@ -45,10 +46,10 @@ class RecordsCog(commands.Cog, name="Records"):
         async with ctx.typing():
             clal = await self.utils.login_check(ctx)
 
-            bot_messages = [
+            bot_messages: list[discord.Message] = [
                 message
                 async for message in ctx.channel.history(limit=50)
-                if message.author.id == self.bot.user.id
+                if message.author.id == cast(discord.ClientUser, self.bot.user).id
                 and len(message.embeds) == 1
                 and "Score of" in message.content
                 and message.embeds[0].thumbnail.url is not None
@@ -61,7 +62,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             embed = bot_messages[0].embeds[0]
             thumbnail_filename = embed.thumbnail.url.split("/")[-1]
-            difficulty = Difficulty.from_embed_color(embed.color.value)
+            difficulty = Difficulty.from_embed_color(embed.color.value if embed.color else 0)  # type: ignore[attr-defined]
 
             cursor = await self.bot.db.execute(
                 "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ?",
@@ -125,19 +126,18 @@ class RecordsCog(commands.Cog, name="Records"):
 
             async with ChuniNet(clal) as client:
                 best30 = await client.best30()
-            
+
             tasks = [self.utils.annotate_song(score) for score in best30]
             best30 = await asyncio.gather(*tasks)
-
 
             view = B30View(best30)
             view.message = await ctx.reply(
                 content=view.format_content(),
-                embed=view.format_page(view.items[:view.per_page]),
+                embed=view.format_page(view.items[: view.per_page]),
                 view=view,
                 mention_author=False,
             )
-    
+
     @commands.command("recent10", aliases=["r10"])
     async def recent10(self, ctx: Context):
         """View top recent plays"""
@@ -147,15 +147,14 @@ class RecordsCog(commands.Cog, name="Records"):
 
             async with ChuniNet(clal) as client:
                 recent10 = await client.recent10()
-            
+
             tasks = [self.utils.annotate_song(score) for score in recent10]
             recent10 = await asyncio.gather(*tasks)
-
 
             view = B30View(recent10)
             view.message = await ctx.reply(
                 content=view.format_content(),
-                embed=view.format_page(view.items[:view.per_page]),
+                embed=view.format_page(view.items[: view.per_page]),
                 mention_author=False,
             )
 
