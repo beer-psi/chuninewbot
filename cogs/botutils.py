@@ -17,8 +17,9 @@ class UtilsCog(commands.Cog, name="Utils"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
 
-    async def login_check(self, ctx: Context) -> str:
-        clal = await self.fetch_cookie(ctx.author.id)
+    async def login_check(self, ctx_or_id: Context | int) -> str:
+        id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
+        clal = await self.fetch_cookie(id)
         if clal is None:
             raise commands.BadArgument(
                 "You are not logged in. Please use `!login <cookie>` in DMs to log in."
@@ -53,15 +54,16 @@ class UtilsCog(commands.Cog, name="Utils"):
             if song.detailed is None:
                 raise Exception("Cannot fetch song details without song.detailed.idx")
             cursor = await self.bot.db.execute(
-                "SELECT id FROM chunirec_songs WHERE chunithm_id = ?",
+                "SELECT id, jacket FROM chunirec_songs WHERE chunithm_id = ?",
                 (song.detailed.idx,),
             )
             song_data = await cursor.fetchone()
             if song_data is None:
                 return MusicRecord.from_record(song)
             id = song_data[0]
-            _song: MusicRecord = MusicRecord.from_record(song)
 
+            _song: MusicRecord = MusicRecord.from_record(song)
+            _song.jacket = f"https://chunithm-net-eng.com/mobile/img/{song_data[1]}"
             _song.rank = Rank.from_score(song.score)
         else:
             cursor = await self.bot.db.execute(

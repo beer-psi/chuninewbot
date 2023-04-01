@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast
+from typing import cast, Optional
 
 import discord
 from discord.ext import commands
@@ -20,11 +20,11 @@ class RecordsCog(commands.Cog, name="Records"):
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.command(name="recent", aliases=["rs"])
-    async def recent(self, ctx: Context):
+    async def recent(self, ctx: Context, user: Optional[discord.User] = None):
         """View your recent scores."""
 
         async with ctx.typing():
-            clal = await self.utils.login_check(ctx)
+            clal = await self.utils.login_check(ctx if user is None else user.id)
 
             client = ChuniNet(clal)
             recent_scores = await client.recent_record()
@@ -40,27 +40,44 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.command("compare", aliases=["c"])
-    async def compare(self, ctx: Context):
+    async def compare(self, ctx: Context, user: Optional[discord.User] = None):
         """Compare your best score with the most recently posted score."""
 
         async with ctx.typing():
-            clal = await self.utils.login_check(ctx)
+            clal = await self.utils.login_check(ctx if user is None else user.id)
 
-            bot_messages: list[discord.Message] = [
-                message
-                async for message in ctx.channel.history(limit=50)
-                if message.author.id == cast(discord.ClientUser, self.bot.user).id
-                and len(message.embeds) == 1
-                and "Score of" in message.content
-                and message.embeds[0].thumbnail.url is not None
-                and "https://chunithm-net-eng.com/mobile/img/"
-                in message.embeds[0].thumbnail.url
-            ]
-            if len(bot_messages) == 0:
-                await ctx.reply("No recent scores found.", mention_author=False)
-                return
+            if ctx.message.reference is not None:
+                message = await ctx.channel.fetch_message(
+                    ctx.message.reference.message_id
+                )
+                if (
+                    message.author.id != cast(discord.ClientUser, self.bot.user).id
+                    or len(message.embeds) > 1
+                    or len(message.embeds) == 0
+                    or message.embeds[0].thumbnail.url is None
+                    or "https://chunithm-net-eng.com/mobile/img/"
+                    not in message.embeds[0].thumbnail.url
+                ):
+                    raise commands.BadArgument(
+                        "The message replied to does not contain a detailed score embed."
+                    )
+                embed = message.embeds[0]
+            else:
+                bot_messages: list[discord.Message] = [
+                    message
+                    async for message in ctx.channel.history(limit=50)
+                    if message.author.id == cast(discord.ClientUser, self.bot.user).id
+                    and len(message.embeds) == 1
+                    and "Score of" in message.content
+                    and message.embeds[0].thumbnail.url is not None
+                    and "https://chunithm-net-eng.com/mobile/img/"
+                    in message.embeds[0].thumbnail.url
+                ]
+                if len(bot_messages) == 0:
+                    await ctx.reply("No recent scores found.", mention_author=False)
+                    return
+                embed = bot_messages[0].embeds[0]
 
-            embed = bot_messages[0].embeds[0]
             thumbnail_filename = embed.thumbnail.url.split("/")[-1]
             difficulty = Difficulty.from_embed_color(embed.color.value if embed.color else 0)  # type: ignore[attr-defined]
 
@@ -99,7 +116,8 @@ class RecordsCog(commands.Cog, name="Records"):
                     description=(
                         f"**{score.title}** [{score.difficulty} {score.internal_level if not score.unknown_const else score.level}]\n\n"
                         f"▸ {score.rank} ▸ {score.clear} ▸ {score.score}"
-                    )
+                    ),
+                    color=score.difficulty.color(),
                 )
                 .set_author(
                     icon_url=ctx.author.display_avatar.url,
@@ -118,11 +136,11 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.command("best30", aliases=["b30"])
-    async def best30(self, ctx: Context):
+    async def best30(self, ctx: Context, user: Optional[discord.User] = None):
         """View top plays"""
 
         async with ctx.typing():
-            clal = await self.utils.login_check(ctx)
+            clal = await self.utils.login_check(ctx if user is None else user.id)
 
             async with ChuniNet(clal) as client:
                 best30 = await client.best30()
@@ -133,17 +151,17 @@ class RecordsCog(commands.Cog, name="Records"):
             view = B30View(best30)
             view.message = await ctx.reply(
                 content=view.format_content(),
-                embed=view.format_page(view.items[: view.per_page]),
+                embeds=view.format_page(view.items[: view.per_page]),
                 view=view,
                 mention_author=False,
             )
 
     @commands.command("recent10", aliases=["r10"])
-    async def recent10(self, ctx: Context):
+    async def recent10(self, ctx: Context, user: Optional[discord.User] = None):
         """View top recent plays"""
 
         async with ctx.typing():
-            clal = await self.utils.login_check(ctx)
+            clal = await self.utils.login_check(ctx if user is None else user.id)
 
             async with ChuniNet(clal) as client:
                 recent10 = await client.recent10()
@@ -154,7 +172,8 @@ class RecordsCog(commands.Cog, name="Records"):
             view = B30View(recent10)
             view.message = await ctx.reply(
                 content=view.format_content(),
-                embed=view.format_page(view.items[: view.per_page]),
+                embeds=view.format_page(view.items[: view.per_page]),
+                view=view,
                 mention_author=False,
             )
 

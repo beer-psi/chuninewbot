@@ -81,6 +81,10 @@ class ChuniNet:
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
                 raise InvalidTokenException("Invalid cookie")
 
+            return self._parse_player_card(
+                BeautifulSoup(await req.text(), "html.parser")
+            )
+
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
             await self.authenticate()
@@ -94,18 +98,17 @@ class ChuniNet:
             )
         return response
 
-    async def player_data(self):
-        resp = await self._request("mobile/home/playerData")
-        soup = BeautifulSoup(await resp.text(), "html.parser")
-
-        avatar = soup.select_one(".player_chara_info img")["src"]
+    def _parse_player_card(self, soup: BeautifulSoup):
+        avatar = cast(str, soup.select_one(".player_chara_info img")["src"])
 
         name = soup.select_one(".player_name_in").get_text()
         lv = chuni_int(soup.select_one(".player_lv").get_text())
 
         nameplate_content = soup.select_one(".player_honor_text").get_text()
         nameplate_rarity = (
-            soup.select_one(".player_honor_short")["style"].split("_")[-1].split(".")[0]
+            str(soup.select_one(".player_honor_short")["style"])
+            .split("_")[-1]
+            .split(".")[0]
         )
 
         rating = parse_player_rating(soup.select(".player_rating_num_block img"))
@@ -120,27 +123,36 @@ class ChuniNet:
         last_play_date_str = soup.select_one(".player_lastplaydate_text").get_text()
         last_play_date = parse_time(last_play_date_str)
 
+        return PlayerData(
+            avatar=avatar,
+            name=name,
+            lv=lv,
+            nameplate=Nameplate(content=nameplate_content, rarity=nameplate_rarity),
+            rating=Rating(rating, max_rating),
+            overpower=Overpower(overpower_value, overpower_progress),
+            last_play_date=last_play_date,
+        )
+
+    async def player_data(self):
+        resp = await self._request("mobile/home/playerData")
+        soup = BeautifulSoup(await resp.text(), "html.parser")
+
+        data = self._parse_player_card(soup)
+
         owned_currency = chuni_int(
             soup.select_one(".user_data_point .user_data_text").get_text()
         )
         total_currency = chuni_int(
             soup.select_one(".user_data_total_point .user_data_text").get_text()
         )
+        data.currency = Currency(owned_currency, total_currency)
+
         playcount = chuni_int(
             soup.select_one(".user_data_play_count .user_data_text").get_text()
         )
+        data.playcount = playcount
 
-        return PlayerData(
-            avatar,
-            name,
-            lv,
-            playcount,
-            last_play_date,
-            overpower=Overpower(overpower_value, overpower_progress),
-            nameplate=Nameplate(nameplate_content, nameplate_rarity),
-            rating=Rating(rating, max_rating),
-            currency=Currency(owned_currency, total_currency),
-        )
+        return data
 
     async def recent_record(self) -> list[RecentRecord]:
         resp = await self._request("mobile/record/playlog")
@@ -195,12 +207,8 @@ class ChuniNet:
         return [
             Record(
                 detailed=DetailedParams(
-                    idx=int(
-                        str(x.select_one("input[name=idx]")["value"])
-                    ),
-                    token=str(
-                        x.select_one("input[name=token]")["value"]
-                    ),
+                    idx=int(str(x.select_one("input[name=idx]")["value"])),
+                    token=str(x.select_one("input[name=token]")["value"]),
                 ),
                 title=x.select_one(".music_title").get_text(),
                 difficulty=difficulty_from_imgurl(" ".join(x["class"])),

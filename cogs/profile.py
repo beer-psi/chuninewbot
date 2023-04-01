@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -14,11 +16,11 @@ class ProfileCog(commands.Cog, name="Profile"):
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.command(name="chunithm", aliases=["chuni", "profile"])
-    async def chunithm(self, ctx: Context):
+    async def chunithm(self, ctx: Context, user: Optional[discord.User] = None):
         """View your CHUNITHM profile."""
 
         async with ctx.typing():
-            clal = await self.utils.login_check(ctx)
+            clal = await self.utils.login_check(ctx if user is None else user.id)
 
             async with ChuniNet(clal) as client:
                 player_data = await client.player_data()

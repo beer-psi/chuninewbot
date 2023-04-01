@@ -49,6 +49,21 @@ class Difficulty(Enum):
         else:
             raise ValueError(f"Unknown difficulty color: {color}")
 
+    @classmethod
+    def from_short_form(cls, short_form: str):
+        if short_form == "BAS":
+            return cls.BASIC
+        elif short_form == "ADV":
+            return cls.ADVANCED
+        elif short_form == "EXP":
+            return cls.EXPERT
+        elif short_form == "MAS":
+            return cls.MASTER
+        elif short_form == "WE":
+            return cls.WORLDS_END
+        else:
+            raise ValueError(f"Unknown difficulty short form: {short_form}")
+
 
 class ClearType(Enum):
     FAILED = 0

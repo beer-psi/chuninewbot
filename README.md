@@ -10,7 +10,7 @@ Discord bot for CHUNITHM International version.
   - [x] b30 and recent 10
   - [ ] by song
 - [x] Comparing scores
-- [ ] Song information
+- [ ] Song information (with sdvx.in integration for chart view)
 - [x] Search tracks by internal level
 - [x] Calculate play rating
 - [ ] Slash command support

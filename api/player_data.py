@@ -27,16 +27,16 @@ class Overpower:
     progress: float
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PlayerData:
     avatar: str
 
     name: str
     lv: int
-    playcount: int
+    playcount: Optional[int] = 0
     last_play_date: datetime
 
     overpower: Overpower
     nameplate: Nameplate
     rating: Rating
-    currency: Currency
+    currency: Optional[Currency] = None
