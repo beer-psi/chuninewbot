@@ -68,7 +68,6 @@ class RecordsCog(commands.Cog, name="Records"):
                     async for message in ctx.channel.history(limit=50)
                     if message.author.id == cast(discord.ClientUser, self.bot.user).id
                     and len(message.embeds) == 1
-                    and "Score of" in message.content
                     and message.embeds[0].thumbnail.url is not None
                     and "https://chunithm-net-eng.com/mobile/img/"
                     in message.embeds[0].thumbnail.url
