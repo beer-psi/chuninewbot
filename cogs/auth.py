@@ -44,7 +44,7 @@ class AuthCog(commands.Cog, name="Auth"):
                     "Then enter [this webpage](https://lng-tgk-aime-gw.am-all.net/common_auth/). You should see a `Not Found` error.\n"
                     "Open developer tools (Ctrl + Shift + I or F12) and paste this into the console:\n"
                     "```js\n"
-                    "javascript:void(function (d) {function getCookie(b){let c=`; ${d.cookie}`,a=c.split(`; ${b}=`);if(2===a.length)return a.pop().split(';').shift()};navigator.clipboard.writeText(getCookie('clal'),alert('Copied the cookie, please continue in the bot\\'s DMs'))})(document)\n"
+                    "(function(d){c=(n)=>Object.fromEntries(d.cookie.split(';').map(c => c.split('=')))[n];navigator.clipboard.writeText(c('clal'),alert('Copied the cookie, please continue in the bot\\'s DMs'))})(document)\n"
                     "```\n"
                     "(This cookie cannot access your Aime account! It can only be used to login to CHUNITHM-NET.)\n\n"
                     "**Step 2**\n"
