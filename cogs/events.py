@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 import aiohttp
 import discord
@@ -69,8 +70,10 @@ class EventsCog(commands.Cog, name="Events"):
                         description=f"```{error}```",
                     )
                     await webhook.send(
-                        username=self.bot.user.display_name,
-                        avatar_url=self.bot.user.display_avatar.url,
+                        username=cast(discord.ClientUser, self.bot.user).display_name,
+                        avatar_url=cast(
+                            discord.ClientUser, self.bot.user
+                        ).display_avatar.url,
                         embed=embed,
                         allowed_mentions=discord.AllowedMentions.none(),
                     )

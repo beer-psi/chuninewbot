@@ -48,7 +48,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             if ctx.message.reference is not None:
                 message = await ctx.channel.fetch_message(
-                    ctx.message.reference.message_id
+                    cast(int, ctx.message.reference.message_id)
                 )
                 if (
                     message.author.id != cast(discord.ClientUser, self.bot.user).id
@@ -77,8 +77,8 @@ class RecordsCog(commands.Cog, name="Records"):
                     return
                 embed = bot_messages[0].embeds[0]
 
-            thumbnail_filename = embed.thumbnail.url.split("/")[-1]
-            difficulty = Difficulty.from_embed_color(embed.color.value if embed.color else 0)  # type: ignore[attr-defined]
+            thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
+            difficulty = Difficulty.from_embed_color(embed.color.value if embed.color is not None else 0)  # type: ignore[attr-defined]
 
             cursor = await self.bot.db.execute(
                 "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ?",
