@@ -29,7 +29,7 @@ class B30View(PaginationView):
                     color=item.difficulty.color(),
                 )
                 .set_author(
-                    name=f"{idx + start_index + 1}. {item.title} [{item.difficulty} {item.internal_level if not item.unknown_const else item.level}]"
+                    name=f"{idx + start_index + 1}. {item.title} [{item.displayed_difficulty}]"
                 )
                 .set_thumbnail(url=item.jacket)
             )

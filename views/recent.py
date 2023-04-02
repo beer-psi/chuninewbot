@@ -46,7 +46,7 @@ class RecentRecordsView(PaginationView):
         for score in scores:
             embed = (
                 discord.Embed(
-                    description=f"**{score.title} [{score.difficulty} {score.internal_level if not score.unknown_const else score.level}]**\n\n▸ **{score.rank}** ▸ {score.clear} ▸ {score.score}",
+                    description=f"**{score.title} [{score.displayed_difficulty}]**\n\n▸ **{score.rank}** ▸ {score.clear} ▸ {score.score}",
                     timestamp=score.date,
                     color=score.difficulty.color(),
                 )
@@ -66,7 +66,7 @@ class RecentRecordsView(PaginationView):
         embed = (
             discord.Embed(
                 description=(
-                    f"**{score.title} [{score.difficulty} {score.internal_level if not score.unknown_const else score.level}]**\n\n"
+                    f"**{score.title} [{score.displayed_difficulty}]**\n\n"
                     f"▸ **{score.rank}** ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}\n"
                     f"▸ CRITICAL {score.judgements.jcrit}/JUSTICE {score.judgements.justice}/ATTACK {score.judgements.attack}/MISS {score.judgements.miss}\n"
                     f"▸ TAP {score.note_type.tap * 100:.2f}%/HOLD {score.note_type.hold * 100:.2f}%/SLIDE {score.note_type.slide * 100:.2f}%/AIR {score.note_type.air * 100:.2f}%/FLICK {score.note_type.flick * 100:.2f}%"
