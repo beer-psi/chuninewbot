@@ -17,6 +17,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
+    @commands.command("source", aliases=["src"])
+    async def source(self, ctx: Context):
+        await ctx.reply("<https://github.com/beerpiss/chuninewbot>", mention_author=False)
+
     @commands.command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
         """Calculate rating from score and chart constant."""
