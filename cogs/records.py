@@ -27,6 +27,7 @@ class RecordsCog(commands.Cog, name="Records"):
             clal = await self.utils.login_check(ctx if user is None else user.id)
 
             client = ChuniNet(clal)
+            userinfo = await client.authenticate()
             recent_scores = await client.recent_record()
 
             tasks = [self.utils.annotate_song(score) for score in recent_scores]
@@ -34,6 +35,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             view = RecentRecordsView(self.bot, recent_scores, client)
             view.message = await ctx.reply(
+                content=f"Most recent credits for {userinfo.name}:",
                 embeds=view.format_score_page(view.items[0]),
                 view=view,
                 mention_author=False,
@@ -92,12 +94,12 @@ class RecordsCog(commands.Cog, name="Records"):
             song_id = song_id[0]
 
             async with ChuniNet(clal) as client:
-                await client.authenticate()
+                userinfo = await client.authenticate()
                 records = await client.music_record(song_id)
 
             if len(records) == 0:
                 await ctx.reply(
-                    "No scores found for this player.", mention_author=False
+                    f"No scores found for {userinfo.name}.", mention_author=False
                 )
                 return
 
@@ -120,7 +122,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
                 .set_author(
                     icon_url=ctx.author.display_avatar.url,
-                    name=f"Top play for {ctx.author.display_name}",
+                    name=f"Top play for {userinfo.name}",
                 )
                 .set_thumbnail(url=embed.thumbnail.url)
             )
