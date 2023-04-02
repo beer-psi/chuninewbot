@@ -66,7 +66,7 @@ class EventsCog(commands.Cog, name="Events"):
                     webhook = Webhook.from_url(webhook_url, session=session)
 
                     embed = discord.Embed(
-                        title=f"Error in command {ctx.command}",
+                        title=f"Exception in command {ctx.command}",
                         description=f"```{error}```",
                     )
                     await webhook.send(
