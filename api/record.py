@@ -55,7 +55,7 @@ class MusicRecord(Record):
     # These are not returned by the website, the bot fills it in
     level: Optional[str] = None
     internal_level: Optional[float] = None
-    unknown_const: bool = False
+    unknown_const: bool = True
     play_rating: float = 0.0
 
     @classmethod
@@ -73,6 +73,15 @@ class MusicRecord(Record):
             unknown_const=False,
             play_rating=0.0,
         )
+    
+    @property
+    def displayed_difficulty(self) -> str:
+        if self.level is None and self.internal_level is None:
+            return f"{self.difficulty}"
+        elif self.internal_level is None or self.internal_level == 0 or self.unknown_const:
+            return f"{self.difficulty} {self.level}"
+        else:
+            return f"{self.difficulty} {self.internal_level}"
 
 
 @dataclass(kw_only=True)
