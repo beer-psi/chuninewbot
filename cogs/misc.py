@@ -58,7 +58,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 continue
             results.append((title[0], chart[1]))
 
-        view = SonglistView(results)
+        view = SonglistView(ctx, results)
         view.message = await ctx.reply(
             embed=view.format_songlist(view.items[: view.per_page]),
             view=view,

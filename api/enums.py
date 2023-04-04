@@ -14,7 +14,7 @@ class Difficulty(Enum):
             return "WORLD'S END"
         else:
             return self.name
-
+    
     def color(self):
         match self.value:
             case 0:

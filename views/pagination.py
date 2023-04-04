@@ -2,17 +2,23 @@ from abc import abstractmethod
 from math import ceil
 
 import discord.ui
+from discord import Interaction
+from discord.ext.commands import Context
 
 
 class PaginationView(discord.ui.View):
     message: discord.Message
 
-    def __init__(self, items: list, per_page: int = 5):
+    def __init__(self, ctx: Context, items: list, per_page: int = 5):
         super().__init__(timeout=120)
+        self.ctx = ctx
         self.items = items
         self.page = 0
         self.per_page = per_page
         self.max_index = ceil(len(self.items) / per_page) - 1
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        return interaction.user == self.ctx.author    
 
     async def on_timeout(self) -> None:
         for item in self.children:

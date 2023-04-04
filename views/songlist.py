@@ -2,14 +2,15 @@ from urllib.parse import quote
 
 import discord
 import discord.ui
+from discord.ext.commands import Context
 
 from .pagination import PaginationView
 
 
 class SonglistView(PaginationView):
     # tuple is (title, difficulty)
-    def __init__(self, songs: list[tuple[str, str]]):
-        super().__init__(items=songs, per_page=15)
+    def __init__(self, ctx: Context, songs: list[tuple[str, str]]):
+        super().__init__(ctx, items=songs, per_page=15)
 
     def yt_search_query(self, song: tuple[str, str]) -> str:
         return quote(f"CHUNITHM {song[0]} {song[1]}")

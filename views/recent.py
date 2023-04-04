@@ -1,6 +1,5 @@
-from math import floor
-
 import discord.ui
+from discord.ext.commands import Context
 
 from api import ChuniNet
 from api.record import DetailedRecentRecord, RecentRecord
@@ -23,9 +22,9 @@ def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRec
 
 class RecentRecordsView(PaginationView):
     def __init__(
-        self, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet
+        self, ctx: Context, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet
     ):
-        super().__init__(items=split_scores_into_credits(scores), per_page=1)
+        super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
         self.chuni_client = chuni_client
         self.page = 0
         self.max_index = len(self.items) - 1

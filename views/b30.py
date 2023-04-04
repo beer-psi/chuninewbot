@@ -1,13 +1,14 @@
 import discord
 import discord.ui
+from discord.ext.commands import Context
 
 from api import MusicRecord
 from .pagination import PaginationView
 
 
 class B30View(PaginationView):
-    def __init__(self, items: list[MusicRecord], per_page: int = 3):
-        super().__init__(items, per_page)
+    def __init__(self, ctx: Context, items: list[MusicRecord], per_page: int = 3):
+        super().__init__(ctx, items, per_page)
         self.average = sum(item.play_rating for item in items) / len(items)
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
 

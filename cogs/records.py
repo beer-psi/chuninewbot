@@ -33,7 +33,7 @@ class RecordsCog(commands.Cog, name="Records"):
             tasks = [self.utils.annotate_song(score) for score in recent_scores]
             recent_scores = await asyncio.gather(*tasks)
 
-            view = RecentRecordsView(self.bot, recent_scores, client)
+            view = RecentRecordsView(ctx, self.bot, recent_scores, client)
             view.message = await ctx.reply(
                 content=f"Most recent credits for {userinfo.name}:",
                 embeds=view.format_score_page(view.items[0]),
@@ -149,7 +149,7 @@ class RecordsCog(commands.Cog, name="Records"):
             tasks = [self.utils.annotate_song(score) for score in best30]
             best30 = await asyncio.gather(*tasks)
 
-            view = B30View(best30)
+            view = B30View(ctx, best30)
             view.message = await ctx.reply(
                 content=view.format_content(),
                 embeds=view.format_page(view.items[: view.per_page]),
@@ -170,7 +170,7 @@ class RecordsCog(commands.Cog, name="Records"):
             tasks = [self.utils.annotate_song(score) for score in recent10]
             recent10 = await asyncio.gather(*tasks)
 
-            view = B30View(recent10)
+            view = B30View(ctx, recent10)
             view.message = await ctx.reply(
                 content=view.format_content(),
                 embeds=view.format_page(view.items[: view.per_page]),
