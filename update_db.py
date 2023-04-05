@@ -118,6 +118,33 @@ def normalize_title(title: str, remove_we_kanji: bool = False) -> str:
     return title
 
 
+async def update_aliases(db: aiosqlite.Connection):
+    async with aiohttp.ClientSession() as client:
+        resp = await client.get(
+            "https://github.com/lomotos10/GCM-bot/raw/main/data/aliases/en/chuni.tsv"
+        )
+        aliases = [x.split("\t") for x in (await resp.text()).splitlines()]
+
+    inserted_aliases = []
+    for alias in aliases:
+        if len(alias) < 2:
+            continue
+        title = alias[0]
+        cursor = await db.execute(
+            "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
+        )
+        song_id = await cursor.fetchone()
+        if song_id is None:
+            continue
+        inserted_aliases.extend([(x, song_id[0]) for x in alias[1:]])
+    await db.executemany(
+        "INSERT INTO aliases (alias, guild_id, song_id) VALUES (?, NULL, ?)"
+        "ON CONFLICT (alias, guild_id) DO UPDATE SET song_id = excluded.song_id",
+        inserted_aliases,
+    )
+    await db.commit()
+
+
 async def update_db(db: aiosqlite.Connection):
     async with aiohttp.ClientSession() as client:
         resp = await client.get(
@@ -128,9 +155,6 @@ async def update_db(db: aiosqlite.Connection):
         )
         songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore[attr-defined]
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
-
-    with (BOT_DIR / "database" / "schema.sql").open() as f:
-        await db.executescript(f.read())
 
     inserted_songs = []
     inserted_charts = []
@@ -217,7 +241,10 @@ async def update_db(db: aiosqlite.Connection):
 
 async def main():
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
+        with (BOT_DIR / "database" / "schema.sql").open() as f:
+            await db.executescript(f.read())
         await update_db(db)
+        await update_aliases(db)
 
 
 if __name__ == "__main__":

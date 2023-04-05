@@ -76,6 +76,10 @@ async def startup():
             print(f"{type(e).__name__}: {e}")
 
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
+        await db.enable_load_extension(True)
+        await db.load_extension(str(BOT_DIR / "database" / "distlib"))
+        await db.enable_load_extension(False)
+
         with (BOT_DIR / "database" / "schema.sql").open() as f:
             await db.executescript(f.read())
         await db.commit()

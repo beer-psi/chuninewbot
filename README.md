@@ -6,11 +6,12 @@ Discord bot for CHUNITHM International version.
 ### Features
 - [x] Player data
 - [x] Recent scores (including detailed judgements)
-- [ ] Best scores
+- [x] Best scores
   - [x] b30 and recent 10
-  - [ ] by song
+  - [x] by song
 - [x] Comparing scores
-- [ ] Song information (with sdvx.in integration for chart view)
+- [x] Song information
+  - [ ] sdvx.in integration
 - [x] Search tracks by internal level
 - [x] Calculate play rating
 - [ ] Slash command support
@@ -22,6 +23,14 @@ Discord bot for CHUNITHM International version.
 - `CHUNIREC_TOKEN` with a token obtained from [Chunirec Developer Portal](https://developer.chunirec.net/)
 2. `poetry install`
 3. Run `update_db.py` to populate the song database
-4. `python bot.py`
+4. Build [distlib](https://github.com/schiffma/distlib) and place it in `database/`
+5. `python bot.py`
+
+### Credits
+Thanks to these projects for making this bot possible and less miserable to make:
+- [chunirec](https://twitter.com/chunirec) for the wonderful [Chunirec DB](https://db.chunirec.net), which is the bot's primary data source
+- [lomotos10](https://github.com/lomotos10) for [CHUNITHM's song alias list](https://github.com/lomotos10/GCM-bot/blob/main/data/aliases/en/chuni.tsv)
+- [schiffma](https://github.com/schiffma) for [distlib](https://github.com/schiffma/distlib)
+
 
 
