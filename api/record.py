@@ -73,12 +73,16 @@ class MusicRecord(Record):
             unknown_const=False,
             play_rating=0.0,
         )
-    
+
     @property
     def displayed_difficulty(self) -> str:
         if self.level is None and self.internal_level is None:
             return f"{self.difficulty}"
-        elif self.internal_level is None or self.internal_level == 0 or self.unknown_const:
+        elif (
+            self.internal_level is None
+            or self.internal_level == 0
+            or self.unknown_const
+        ):
             return f"{self.difficulty} {self.level}"
         else:
             return f"{self.difficulty} {self.internal_level}"

@@ -22,7 +22,11 @@ def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRec
 
 class RecentRecordsView(PaginationView):
     def __init__(
-        self, ctx: Context, bot: ChuniBot, scores: list[RecentRecord], chuni_client: ChuniNet
+        self,
+        ctx: Context,
+        bot: ChuniBot,
+        scores: list[RecentRecord],
+        chuni_client: ChuniNet,
     ):
         super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
         self.chuni_client = chuni_client

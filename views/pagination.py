@@ -18,7 +18,7 @@ class PaginationView(discord.ui.View):
         self.max_index = ceil(len(self.items) / per_page) - 1
 
     async def interaction_check(self, interaction: Interaction) -> bool:
-        return interaction.user == self.ctx.author    
+        return interaction.user == self.ctx.author
 
     async def on_timeout(self) -> None:
         for item in self.children:
