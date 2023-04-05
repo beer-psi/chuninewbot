@@ -6,9 +6,10 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from api import ChuniNet
-from api.enums import Difficulty
 from bot import ChuniBot
+from api.enums import Difficulty
 from views.b30 import B30View
+from views.compare import CompareView
 from views.recent import RecentRecordsView
 
 from cogs.botutils import UtilsCog
@@ -53,11 +54,10 @@ class RecordsCog(commands.Cog, name="Records"):
                     cast(int, ctx.message.reference.message_id)
                 )
                 if (
-                    message.author.id != cast(discord.ClientUser, self.bot.user).id
-                    or len(message.embeds) > 1
+                    len(message.embeds) > 1
                     or len(message.embeds) == 0
                     or message.embeds[0].thumbnail.url is None
-                    or "https://chunithm-net-eng.com/mobile/img/"
+                    or "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
                     not in message.embeds[0].thumbnail.url
                 ):
                     raise commands.BadArgument(
@@ -68,10 +68,9 @@ class RecordsCog(commands.Cog, name="Records"):
                 bot_messages: list[discord.Message] = [
                     message
                     async for message in ctx.channel.history(limit=50)
-                    if message.author.id == cast(discord.ClientUser, self.bot.user).id
-                    and len(message.embeds) == 1
+                    if len(message.embeds) == 1
                     and message.embeds[0].thumbnail.url is not None
-                    and "https://chunithm-net-eng.com/mobile/img/"
+                    and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
                     in message.embeds[0].thumbnail.url
                 ]
                 if len(bot_messages) == 0:
@@ -80,7 +79,6 @@ class RecordsCog(commands.Cog, name="Records"):
                 embed = bot_messages[0].embeds[0]
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
-            difficulty = Difficulty.from_embed_color(embed.color.value if embed.color is not None else 0)  # type: ignore[attr-defined]
 
             cursor = await self.bot.db.execute(
                 "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ?",
@@ -97,42 +95,36 @@ class RecordsCog(commands.Cog, name="Records"):
                 userinfo = await client.authenticate()
                 records = await client.music_record(song_id)
 
+            futures = [self.utils.annotate_song(record) for record in records]
+            records = await asyncio.gather(*futures)
+
             if len(records) == 0:
                 await ctx.reply(
-                    f"No scores found for {userinfo.name}.", mention_author=False
+                    f"No records found for {userinfo.name}.", mention_author=False
                 )
                 return
 
-            records = [record for record in records if record.difficulty == difficulty]
-            if len(records) == 0:
-                await ctx.reply(
-                    "No scores found on selected difficulty.", mention_author=False
+            page = 0
+            try:
+                difficulty = Difficulty.from_embed_color(
+                    embed.color.value if embed.color else 0x8C1BE1
                 )
-                return
-            score = records[0]
-            score = await self.utils.annotate_song(score)
-
-            embed = (
-                discord.Embed(
-                    description=(
-                        f"**{score.title}** {score.displayed_difficulty}\n\n"
-                        f"▸ {score.rank} ▸ {score.clear} ▸ {score.score}"
+                page = next(
+                    (
+                        i
+                        for i, record in enumerate(records)
+                        if record.difficulty == difficulty
                     ),
-                    color=score.difficulty.color(),
+                    0,
                 )
-                .set_author(
-                    icon_url=ctx.author.display_avatar.url,
-                    name=f"Top play for {userinfo.name}",
-                )
-                .set_thumbnail(url=embed.thumbnail.url)
-            )
-            if score.play_rating is not None:
-                embed.set_footer(
-                    text=f"Play rating {score.play_rating:.2f}  •  {score.play_count} attempts"
-                )
+            except ValueError:
+                pass
 
-            await ctx.reply(
-                embed=embed,
+            view = CompareView(ctx, userinfo, records)
+            view.page = page
+            view.message = await ctx.reply(
+                embed=view.format_embed(view.items[view.page]),
+                view=view,
                 mention_author=False,
             )
 
