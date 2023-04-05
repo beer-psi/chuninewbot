@@ -172,7 +172,7 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "html.parser")
 
-        jacket = str(soup.select_one(".play_jacket_img img")["src"])
+        jacket = str(soup.select_one(".play_jacket_img img")["src"]).split("/")[-1]
         title = soup.select_one(".play_musicdata_title").get_text()
         records = []
         for block in soup.select(".music_box"):

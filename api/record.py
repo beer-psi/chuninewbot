@@ -58,6 +58,11 @@ class MusicRecord(Record):
     unknown_const: bool = True
     play_rating: float = 0.0
 
+    def full_jacket_url(self) -> str:
+        return (
+            f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{self.jacket}"
+        )
+
     @classmethod
     def from_record(cls, record: Record):
         return cls(

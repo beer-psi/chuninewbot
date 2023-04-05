@@ -63,12 +63,12 @@ class UtilsCog(commands.Cog, name="Utils"):
             id = song_data[0]
 
             _song: MusicRecord = MusicRecord.from_record(song)
-            _song.jacket = f"https://chunithm-net-eng.com/mobile/img/{song_data[1]}"
+            _song.jacket = song_data[1]
             _song.rank = Rank.from_score(song.score)
         else:
             cursor = await self.bot.db.execute(
                 "SELECT id FROM chunirec_songs WHERE title = ? AND jacket = ?",
-                (song.title, song.jacket.split("/")[-1]),
+                (song.title, song.jacket),
             )
             song_data = await cursor.fetchone()
             if song_data is None:

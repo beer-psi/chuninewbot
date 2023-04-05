@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 
 from bot import ChuniBot
 from api.enums import Difficulty
+from utils import format_level
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
 
@@ -93,7 +94,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             embeds: list[discord.Embed] = []
             for chart in charts:
                 difficulty = Difficulty.from_short_form(chart[1])
-                level = str(chart[2]).replace(".5", "+").replace(".0", "")
+                level = format_level(chart[2])
                 cursor = await self.bot.db.execute(
                     "SELECT title, genre, artist, jacket FROM chunirec_songs WHERE id = ?",
                     (chart[0],),
@@ -109,7 +110,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                         color=difficulty.color(),
                     )
                     .set_thumbnail(
-                        url=f"https://chunithm-net-eng.com/mobile/img/{song[3]}"
+                        url=f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{song[3]}"
                     )
                     .add_field(name="Category", value=song[1])
                     .add_field(

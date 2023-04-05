@@ -32,7 +32,7 @@ class B30View(PaginationView):
                 .set_author(
                     name=f"{idx + start_index + 1}. {item.title} [{item.displayed_difficulty}]"
                 )
-                .set_thumbnail(url=item.jacket)
+                .set_thumbnail(url=item.full_jacket_url())
             )
         embeds.append(
             discord.Embed(description=f"Page {self.page + 1}/{self.max_index + 1}")

@@ -54,7 +54,7 @@ class RecentRecordsView(PaginationView):
                     color=score.difficulty.color(),
                 )
                 .set_author(name=f"TRACK {score.track}")
-                .set_thumbnail(url=score.jacket)
+                .set_thumbnail(url=score.full_jacket_url())
             )
             if not score.unknown_const:
                 embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
@@ -78,7 +78,7 @@ class RecentRecordsView(PaginationView):
                 timestamp=score.date,
             )
             .set_author(name=f"TRACK {score.track}")
-            .set_thumbnail(url=score.jacket)
+            .set_thumbnail(url=score.full_jacket_url())
         )
         if not score.unknown_const:
             embed.set_footer(text=f"Play rating {score.play_rating:.2f}")
