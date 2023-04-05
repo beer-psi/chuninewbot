@@ -4,6 +4,8 @@ import discord
 import discord.ui
 from discord.ext.commands import Context
 
+from utils import yt_search_link
+
 from .pagination import PaginationView
 
 
@@ -12,15 +14,12 @@ class SonglistView(PaginationView):
     def __init__(self, ctx: Context, songs: list[tuple[str, str]]):
         super().__init__(ctx, items=songs, per_page=15)
 
-    def yt_search_query(self, song: tuple[str, str]) -> str:
-        return quote(f"CHUNITHM {song[0]} {song[1]}")
-
     def format_songlist(
         self, songs: list[tuple[str, str]], start_index: int = 0
     ) -> discord.Embed:
         songlist = ""
         for idx, song in enumerate(songs):
-            songlist += f"{idx + start_index + 1}. {song[0]} [[{song[1]}]](https://www.youtube.com/results?search_query={self.yt_search_query(song)})\n"
+            songlist += f"{idx + start_index + 1}. {song[0]} [[{song[1]}]]({yt_search_link(song[0], song[1])})\n"
         return discord.Embed(
             description=songlist,
         ).set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")
