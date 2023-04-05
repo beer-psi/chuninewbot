@@ -115,7 +115,7 @@ class RecordsCog(commands.Cog, name="Records"):
             embed = (
                 discord.Embed(
                     description=(
-                        f"**{score.title}** {score.displayed_difficulty()}\n\n"
+                        f"**{score.title}** {score.displayed_difficulty}\n\n"
                         f"▸ {score.rank} ▸ {score.clear} ▸ {score.score}"
                     ),
                     color=score.difficulty.color(),
