@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import cast
 
 import aiohttp
@@ -67,7 +68,7 @@ class EventsCog(commands.Cog, name="Events"):
 
                     embed = discord.Embed(
                         title=f"Exception in command {ctx.command}",
-                        description=f"```{error}```",
+                        description=f"```{''.join(traceback.format_exception(error))}```",
                     )
                     await webhook.send(
                         username=cast(discord.ClientUser, self.bot.user).display_name,
