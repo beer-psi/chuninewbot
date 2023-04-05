@@ -6,7 +6,6 @@ from discord.ext.commands import Context
 
 from api import ChuniNet
 from bot import ChuniBot
-
 from cogs.botutils import UtilsCog
 
 

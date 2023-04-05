@@ -10,8 +10,8 @@ from discord.ext.commands import Context
 
 from api.exceptions import (
     ChuniNetException,
-    MaintenanceException,
     InvalidTokenException,
+    MaintenanceException,
 )
 from bot import ChuniBot, cfg
 

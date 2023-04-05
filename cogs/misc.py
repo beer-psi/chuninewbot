@@ -5,13 +5,12 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from bot import ChuniBot
 from api.enums import Difficulty
+from bot import ChuniBot
+from cogs.botutils import UtilsCog
 from utils import format_level
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
-
-from cogs.botutils import UtilsCog
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):

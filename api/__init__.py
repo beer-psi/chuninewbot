@@ -1,21 +1,21 @@
 from http import HTTPStatus
-from typing import cast, Optional
+from typing import Optional, cast
 
 import aiohttp
 from bs4 import BeautifulSoup
-from yarl import URL
 from bs4.element import Tag
+from yarl import URL
 
 from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
 from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
 from .record import (
-    DetailedRecentRecord,
     DetailedParams,
-    Record,
+    DetailedRecentRecord,
     Judgements,
     MusicRecord,
     NoteType,
     RecentRecord,
+    Record,
     Skill,
 )
 from .utils import (

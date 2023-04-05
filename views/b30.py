@@ -3,6 +3,7 @@ import discord.ui
 from discord.ext.commands import Context
 
 from api import MusicRecord
+
 from .pagination import PaginationView
 
 

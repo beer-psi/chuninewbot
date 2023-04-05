@@ -9,7 +9,6 @@ class Difficulty(Enum):
     MASTER = 3
     ULTIMA = 4
     WORLDS_END = 5
-    
 
     def __str__(self):
         if self.value == 5:

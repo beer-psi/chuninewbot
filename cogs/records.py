@@ -1,18 +1,17 @@
 import asyncio
-from typing import cast, Optional
+from typing import Optional, cast
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from api import ChuniNet
-from bot import ChuniBot
 from api.enums import Difficulty
+from bot import ChuniBot
+from cogs.botutils import UtilsCog
 from views.b30 import B30View
 from views.compare import CompareView
 from views.recent import RecentRecordsView
-
-from cogs.botutils import UtilsCog
 
 
 class RecordsCog(commands.Cog, name="Records"):
