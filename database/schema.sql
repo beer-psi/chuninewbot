@@ -26,3 +26,8 @@ CREATE TABLE IF NOT EXISTS chunirec_charts(
     FOREIGN KEY(song_id) REFERENCES chunirec_songs(id),
     UNIQUE(song_id, difficulty)
 );
+
+CREATE TABLE IF NOT EXISTS guild_prefix(
+    guild_id INTEGER PRIMARY KEY,
+    prefix TEXT
+);

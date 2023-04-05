@@ -25,6 +25,19 @@ class ChuniBot(Bot):
         super().__init__(*args, **kwargs)
 
 
+def guild_specific_prefix(default: str):
+    async def inner(bot: ChuniBot, msg: discord.Message) -> list[str]:
+        when_mentioned = commands.when_mentioned(bot, msg)
+
+        cursor = await bot.db.execute(
+            "SELECT prefix from guild_prefix WHERE guild_id = ?", (msg.guild.id,)
+        )
+        prefix = await cursor.fetchone()
+        return when_mentioned + [(prefix[0] if prefix is not None else default)]
+
+    return inner
+
+
 async def startup():
     logger = logging.getLogger("discord")
     logger.setLevel(logging.DEBUG)
@@ -43,7 +56,10 @@ async def startup():
     logger.addHandler(handler)
 
     (intents := discord.Intents.default()).message_content = True
-    bot = ChuniBot(command_prefix=commands.when_mentioned_or("c>"), intents=intents)
+    bot = ChuniBot(
+        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),
+        intents=intents,
+    )
 
     await bot.load_extension("cogs.botutils")
     if cfg["DEV"] == "1":

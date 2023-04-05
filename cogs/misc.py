@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib.parse import quote
 
 import discord
@@ -19,7 +20,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.command("source", aliases=["src"])
     async def source(self, ctx: Context):
-        await ctx.reply("<https://github.com/beerpiss/chuninewbot>", mention_author=False)
+        await ctx.reply(
+            "<https://github.com/beerpiss/chuninewbot>", mention_author=False
+        )
 
     @commands.command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
@@ -115,6 +118,27 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
+
+    @commands.command("prefix")
+    async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
+        """Get or set the prefix for this server."""
+
+        if new_prefix is None:
+            answer = self.bot.cfg.get("DEFAULT_PREFIX", "c>")
+            cursor = await self.bot.db.execute(
+                "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
+            )
+            prefix = await cursor.fetchone()
+            if prefix is not None:
+                answer = prefix[0]
+            await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
+        else:
+            await self.bot.db.execute(
+                "INSERT INTO guild_prefix (guild_id, prefix) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET prefix = excluded.prefix",
+                (ctx.guild.id, new_prefix),
+            )
+            await self.bot.db.commit()
+            await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
 
 async def setup(bot: ChuniBot) -> None:
