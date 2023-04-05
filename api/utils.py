@@ -54,6 +54,10 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
             return Difficulty.MASTER
         case "worldsend":
             return Difficulty.WORLDS_END
+        case "ultima":
+            return Difficulty.ULTIMA
+        case "ultimate":
+            return Difficulty.ULTIMA
 
         case _:
             raise ValueError(f"Unknown difficulty: {url}")

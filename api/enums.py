@@ -7,10 +7,12 @@ class Difficulty(Enum):
     ADVANCED = 1
     EXPERT = 2
     MASTER = 3
-    WORLDS_END = 4
+    ULTIMA = 4
+    WORLDS_END = 5
+    
 
     def __str__(self):
-        if self.value == 4:
+        if self.value == 5:
             return "WORLD'S END"
         else:
             return self.name
@@ -26,10 +28,12 @@ class Difficulty(Enum):
             case 3:
                 return 0x8C1BE1
             case 4:
+                return 0x131313
+            case 5:
                 return 0x0B6FF3
 
     def short_form(self):
-        if self.value == 4:
+        if self.value == 5:
             return "WE"
         else:
             return self.name[:3]
@@ -44,6 +48,8 @@ class Difficulty(Enum):
             return cls.EXPERT
         elif color == 0x8C1BE1:
             return cls.MASTER
+        elif color == 0x131313:
+            return cls.ULTIMA
         elif color == 0x0B6FF3:
             return cls.WORLDS_END
         else:
@@ -59,6 +65,8 @@ class Difficulty(Enum):
             return cls.EXPERT
         elif short_form == "MAS":
             return cls.MASTER
+        elif short_form == "ULT":
+            return cls.ULTIMA
         elif short_form == "WE":
             return cls.WORLDS_END
         else:
