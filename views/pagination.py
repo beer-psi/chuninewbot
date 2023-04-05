@@ -17,11 +17,11 @@ class PaginationView(discord.ui.View):
         self.per_page = per_page
         self.max_index = ceil(len(self.items) / per_page) - 1
 
-        if len(self.items) == 1:
+        if self.max_index == 0:
             for item in self.children:
                 if isinstance(item, discord.ui.Button):
                     self.remove_item(item)
-        elif len(self.items) == 2:
+        elif self.max_index == 1:
             self.remove_item(self.to_last_page)
             self.remove_item(self.to_first_page)
 
