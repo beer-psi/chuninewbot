@@ -20,7 +20,7 @@ class RecordsCog(commands.Cog, name="Records"):
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.command(name="recent", aliases=["rs"])
-    async def recent(self, ctx: Context, user: Optional[discord.Member] = None):
+    async def recent(self, ctx: Context, user: Optional[discord.User] = None):
         """View your recent scores."""
 
         async with ctx.typing():
@@ -42,7 +42,7 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.command("compare", aliases=["c"])
-    async def compare(self, ctx: Context, user: Optional[discord.Member] = None):
+    async def compare(self, ctx: Context, user: Optional[discord.User] = None):
         """Compare your best score with the most recently posted score."""
 
         async with ctx.typing():
@@ -137,7 +137,7 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.command("best30", aliases=["b30"])
-    async def best30(self, ctx: Context, user: Optional[discord.Member] = None):
+    async def best30(self, ctx: Context, user: Optional[discord.User] = None):
         """View top plays"""
 
         async with ctx.typing():
@@ -158,7 +158,7 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.command("recent10", aliases=["r10"])
-    async def recent10(self, ctx: Context, user: Optional[discord.Member] = None):
+    async def recent10(self, ctx: Context, user: Optional[discord.User] = None):
         """View top recent plays"""
 
         async with ctx.typing():
