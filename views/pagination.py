@@ -13,9 +13,26 @@ class PaginationView(discord.ui.View):
         super().__init__(timeout=120)
         self.ctx = ctx
         self.items = items
-        self.page = 0
+        self._page = 0
         self.per_page = per_page
         self.max_index = ceil(len(self.items) / per_page) - 1
+
+        if len(self.items) == 1:
+            for item in self.children:
+                if isinstance(item, discord.ui.Button):
+                    self.remove_item(item)
+        elif len(self.items) == 2:
+            self.remove_item(self.to_last_page)
+            self.remove_item(self.to_first_page)
+
+    @property
+    def page(self):
+        return self._page
+
+    @page.setter
+    def page(self, value):
+        self._page = max(0, min(value, self.max_index))
+        self.toggle_buttons()
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         return interaction.user == self.ctx.author
@@ -33,7 +50,6 @@ class PaginationView(discord.ui.View):
         )
 
     async def update(self, interaction: discord.Interaction):
-        self.toggle_buttons()
         await self.callback(interaction)
 
     @abstractmethod
