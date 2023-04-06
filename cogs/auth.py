@@ -26,11 +26,16 @@ class AuthCog(commands.Cog, name="Auth"):
     @commands.command("login")
     async def login(self, ctx: Context, clal: Optional[str] = None):
         if not isinstance(ctx.channel, discord.channel.DMChannel):
-            try:
-                await ctx.message.delete()
-            except discord.errors.Forbidden:
-                pass
-            raise commands.PrivateMessageOnly("Please use this command in DMs.")
+            please_delete_message = ""
+            if clal is not None:
+                try:
+                    await ctx.message.delete()
+                except discord.errors.Forbidden:
+                    please_delete_message = " Please also delete your message, as people can use the cookie to access your CHUNITHM-NET."
+
+            raise commands.PrivateMessageOnly(
+                "Please use this command in DMs." + please_delete_message
+            )
 
         if clal is None:
             embed = discord.Embed(
