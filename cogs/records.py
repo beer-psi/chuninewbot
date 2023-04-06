@@ -105,8 +105,9 @@ class RecordsCog(commands.Cog, name="Records"):
 
             page = 0
             try:
+                # intentionally passing an invalid color so it throws and keep the page at 0
                 difficulty = Difficulty.from_embed_color(
-                    embed.color.value if embed.color else 0x8C1BE1  # type: ignore[attr-defined]
+                    embed.color.value if embed.color else 0  # type: ignore[attr-defined]
                 )
                 page = next(
                     (
