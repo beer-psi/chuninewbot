@@ -120,6 +120,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.command("prefix")
+    @commands.has_guild_permissions(manage_guild=True)
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
         """Get or set the prefix for this server."""
 
