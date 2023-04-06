@@ -143,6 +143,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 answer = prefix[0]
             await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
         else:
+            permissions = ctx.author.guild_permissions  # type: ignore
+            missing_permission = permissions.manage_guild != True
+            if missing_permission:
+                raise commands.MissingPermissions(["manage_guild"])
+
             await self.bot.db.execute(
                 "INSERT INTO guild_prefix (guild_id, prefix) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET prefix = excluded.prefix",
                 (ctx.guild.id, new_prefix),
