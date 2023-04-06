@@ -133,10 +133,10 @@ async def update_aliases(db: aiosqlite.Connection):
         if len(alias) < 2:
             continue
         title = alias[0]
-        cursor = await db.execute(
+        async with db.execute(
             "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
-        )
-        song_id = await cursor.fetchone()
+        ) as cursor:
+            song_id = await cursor.fetchone()
         if song_id is None:
             continue
         inserted_aliases.extend([(x, song_id[0]) for x in alias[1:]])
@@ -228,10 +228,10 @@ async def update_sdvxin(db: aiosqlite.Connection):
                     continue
                 title = title_mapping.get(title, title)
                 sdvx_in_id = str(script["src"]).split("/")[-1][:5]  # FIXME: dont assume the ID is always 5 digits
-                cursor = await db.execute(
+                async with db.execute(
                     "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
-                )
-                song_id = await cursor.fetchone()
+                ) as cursor:
+                    song_id = await cursor.fetchone()
                 if song_id is None:
                     print(f"Could not find song with title {title}")
                     continue

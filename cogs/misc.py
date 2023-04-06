@@ -46,10 +46,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def find(self, ctx: Context, query: float):
         """Find charts by chart constant."""
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT song_id, difficulty FROM chunirec_charts WHERE const = ?", (query,)
-        )
-        charts = await cursor.fetchall()
+        ) as cursor:
+            charts = await cursor.fetchall()
         if not charts:
             await ctx.reply("No charts found.", mention_author=False)
             return
@@ -58,10 +58,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         results: list[tuple[str, str]] = []
         for chart in charts:
             song_id = chart[0]
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT title from chunirec_songs WHERE id = ?", (song_id,)
-            )
-            title = await cursor.fetchone()
+            ) as cursor:
+                title = await cursor.fetchone()
             if title is None:
                 continue
             results.append((title[0], chart[1]))
@@ -86,11 +86,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             except:
                 raise commands.BadArgument("Invalid level provided.")
 
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT song_id, difficulty, level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE level = ? OR const = ? ORDER BY random() LIMIT ?",
                 (query_level, query_level, count),
-            )
-            charts = await cursor.fetchall()
+            ) as cursor:
+                charts = await cursor.fetchall()
             if not charts:
                 await ctx.reply("No charts found.", mention_author=False)
                 return
@@ -99,11 +99,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             for chart in charts:
                 difficulty = Difficulty.from_short_form(chart[1])
                 level = format_level(chart[2])
-                cursor = await self.bot.db.execute(
+                async with self.bot.db.execute(
                     "SELECT title, genre, artist, jacket FROM chunirec_songs WHERE id = ?",
                     (chart[0],),
-                )
-                song = await cursor.fetchone()
+                ) as cursor:
+                    song = await cursor.fetchone()
                 if song is None:
                     continue
 
@@ -131,10 +131,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         if new_prefix is None:
             answer = self.bot.cfg.get("DEFAULT_PREFIX", "c>")
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
-            )
-            prefix = await cursor.fetchone()
+            ) as cursor:
+                prefix = await cursor.fetchone()
             if prefix is not None:
                 answer = prefix[0]
             await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)

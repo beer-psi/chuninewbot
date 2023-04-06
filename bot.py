@@ -29,10 +29,10 @@ def guild_specific_prefix(default: str):
     async def inner(bot: ChuniBot, msg: discord.Message) -> list[str]:
         when_mentioned = commands.when_mentioned(bot, msg)
 
-        cursor = await bot.db.execute(
+        async with bot.db.execute(
             "SELECT prefix from guild_prefix WHERE guild_id = ?", (msg.guild.id,)
-        )
-        prefix = await cursor.fetchone()
+        ) as cursor:
+            prefix = await cursor.fetchone()
         return when_mentioned + [(prefix[0] if prefix is not None else default)]
 
     return inner

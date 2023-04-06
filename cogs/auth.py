@@ -19,10 +19,10 @@ class AuthCog(commands.Cog, name="Auth"):
         description="Logs you out of the bot.",
     )
     async def logout(self, ctx: Context):
-        await self.bot.db.execute(
+        async with self.bot.db.execute(
             "DELETE FROM cookies WHERE user_id = ?", (ctx.author.id,)
-        )
-        await self.bot.db.commit()
+        ):
+            await self.bot.db.commit()
         self.utils.fetch_cookie.cache_invalidate(self.utils, ctx.author.id)
         await ctx.reply("Successfully logged out.", mention_author=False)
 
@@ -68,11 +68,11 @@ class AuthCog(commands.Cog, name="Auth"):
         async with ChuniNet(clal) as client:
             try:
                 await client.validate_cookie()
-                await self.bot.db.execute(
+                async with self.bot.db.execute(
                     "INSERT INTO cookies VALUES (?, ?) ON CONFLICT(discord_id) DO UPDATE SET cookie=excluded.cookie",
                     (ctx.author.id, clal),
-                )
-                await self.bot.db.commit()
+                ):
+                    await self.bot.db.commit()
                 await ctx.send("Successfully logged in.")
             except Exception as e:
                 raise commands.BadArgument(f"Invalid cookie: {e}")

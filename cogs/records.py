@@ -79,11 +79,11 @@ class RecordsCog(commands.Cog, name="Records"):
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
 
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ?",
                 (thumbnail_filename,),
-            )
-            song_id = await cursor.fetchone()
+            ) as cursor:
+                song_id = await cursor.fetchone()
             if song_id is None:
                 await ctx.reply("No song found.", mention_author=False)
                 return

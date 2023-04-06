@@ -28,10 +28,10 @@ class UtilsCog(commands.Cog, name="Utils"):
 
     @alru_cache()
     async def fetch_cookie(self, id: int) -> str | None:
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT cookie FROM cookies WHERE discord_id = ?", (id,)
-        )
-        clal = await cursor.fetchone()
+        ) as cursor:
+            clal = await cursor.fetchone()
         if clal is None:
             return None
 
@@ -53,11 +53,11 @@ class UtilsCog(commands.Cog, name="Utils"):
         ):
             if song.detailed is None:
                 raise Exception("Cannot fetch song details without song.detailed.idx")
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT id, jacket FROM chunirec_songs WHERE chunithm_id = ?",
                 (song.detailed.idx,),
-            )
-            song_data = await cursor.fetchone()
+            ) as cursor:
+                song_data = await cursor.fetchone()
             if song_data is None:
                 return MusicRecord.from_record(song)
             id = song_data[0]
@@ -66,21 +66,21 @@ class UtilsCog(commands.Cog, name="Utils"):
             _song.jacket = song_data[1]
             _song.rank = Rank.from_score(song.score)
         else:
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT id FROM chunirec_songs WHERE title = ? AND jacket = ?",
                 (song.title, song.jacket),
-            )
-            song_data = await cursor.fetchone()
+            ) as cursor:
+                song_data = await cursor.fetchone()
             if song_data is None:
                 return song
             id = song_data[0]
             _song = song
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE song_id = ? AND difficulty = ?",
             (id, song.difficulty.short_form()),
-        )
-        chart_data = await cursor.fetchone()
+        ) as cursor:
+            chart_data = await cursor.fetchone()
         if chart_data is None:
             return _song
         _song.internal_level = chart_data[1]

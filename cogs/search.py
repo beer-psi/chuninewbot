@@ -32,16 +32,16 @@ class SearchCog(commands.Cog, name="Search"):
         addalias "祈 -我ら神祖と共に歩む者なり-" prayer
         """
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT id FROM chunirec_songs WHERE title = ?", (song_title_or_alias,)
-        )
-        song = await cursor.fetchone()
+        ) as cursor:
+            song = await cursor.fetchone()
         if song is None:
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
                 (song_title_or_alias.lower(), ctx.guild.id),
-            )
-            alias = await cursor.fetchone()
+            ) as cursor:
+                alias = await cursor.fetchone()
             if alias is None:
                 await ctx.reply(
                     f"**{song_title_or_alias}** does not exist.", mention_author=False
@@ -51,11 +51,11 @@ class SearchCog(commands.Cog, name="Search"):
         else:
             song_id = song[0]
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT alias FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
             (added_alias.lower(), ctx.guild.id),
-        )
-        alias = await cursor.fetchone()
+        ) as cursor:
+            alias = await cursor.fetchone()
         if alias is not None:
             await ctx.reply(f"**{added_alias}** already exists.", mention_author=False)
             return
@@ -80,11 +80,11 @@ class SearchCog(commands.Cog, name="Search"):
             The alias to remove.
         """
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT alias FROM aliases WHERE lower(alias) = ? AND guild_id = ?",
             (removed_alias.lower(), ctx.guild.id),
-        )
-        alias = await cursor.fetchone()
+        ) as cursor:
+            alias = await cursor.fetchone()
         if alias is None:
             await ctx.reply(
                 f"**{removed_alias}** does not exist.", mention_author=False
@@ -102,22 +102,22 @@ class SearchCog(commands.Cog, name="Search"):
     async def info(self, ctx: Context, *, query: str):
         """Search for a song."""
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT jwsim(lower(title), ?), id, title, genre, artist, release, bpm, jacket FROM chunirec_songs ORDER BY jwsim(lower(title), ?) DESC LIMIT 1",
             (query.lower(), query.lower()),
-        )
-        song = await cursor.fetchone()
+        ) as cursor:
+            song = await cursor.fetchone()
         if song is None:
             await ctx.reply("No songs found.", mention_author=False)
             return
 
         similarity, id, title, genre, artist, release, bpm, jacket = song
         if similarity < 0.9:
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
                 (query.lower(), ctx.guild.id),
-            )
-            alias = await cursor.fetchone()
+            ) as cursor:
+                alias = await cursor.fetchone()
             if alias is None:
                 await ctx.reply(
                     f"I couldn't find any results for **{query}**. Did you mean: **{title}**?",
@@ -125,11 +125,11 @@ class SearchCog(commands.Cog, name="Search"):
                 )
                 return
             song_id = alias[0]
-            cursor = await self.bot.db.execute(
+            async with self.bot.db.execute(
                 "SELECT id, title, genre, artist, release, bpm, jacket FROM chunirec_songs WHERE id = ?",
                 (song_id,),
-            )
-            song = await cursor.fetchone()
+            ) as cursor:
+                song = await cursor.fetchone()
             if song is None:
                 await ctx.reply(
                     f"I couldn't find any results for **{query}**. Did you mean: **{title}**?",
@@ -152,16 +152,16 @@ class SearchCog(commands.Cog, name="Search"):
         )
 
         chart_level_desc = []
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT id, difficulty, level, const, maxcombo FROM chunirec_charts WHERE song_id = ? ORDER BY id ASC",
             (id,),
-        )
-        charts = await cursor.fetchall()
+        ) as cursor:
+            charts = await cursor.fetchall()
 
-        cursor = await self.bot.db.execute(
+        async with self.bot.db.execute(
             "SELECT id, difficulty FROM sdvxin WHERE song_id = ?", (id,)
-        )
-        sdvxin = await cursor.fetchall()
+        ) as cursor:
+            sdvxin = await cursor.fetchall()
         sdvxin_ids = {difficulty: id for id, difficulty in sdvxin}
         for chart in charts:
             _, difficulty, level, const, _ = chart
