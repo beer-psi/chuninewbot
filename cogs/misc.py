@@ -1,3 +1,4 @@
+from random import random
 from typing import Optional
 from urllib.parse import quote
 
@@ -20,9 +21,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.command("source", aliases=["src"])
     async def source(self, ctx: Context):
-        await ctx.reply(
-            "<https://github.com/beerpiss/chuninewbot>", mention_author=False
+        reply = (
+            "https://tenor.com/view/metal-gear-rising-metal-gear-rising-revengeance-senator-armstrong-revengeance-i-made-it-the-fuck-up-gif-25029602"
+            if random() < 0.1
+            else "<https://github.com/beerpiss/chuninewbot>"
         )
+
+        await ctx.reply(reply, mention_author=False)
 
     @commands.command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
