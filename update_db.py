@@ -4,6 +4,9 @@ from typing import Optional
 
 import aiohttp
 import aiosqlite
+from aiolimiter import AsyncLimiter
+from bs4 import BeautifulSoup
+from bs4.element import Comment
 from dataclasses_json import dataclass_json
 
 from bot import BOT_DIR, cfg
@@ -145,6 +148,115 @@ async def update_aliases(db: aiosqlite.Connection):
     await db.commit()
 
 
+async def update_sdvxin(db: aiosqlite.Connection):
+    categories = ["pops", "niconico", "toho", "variety", "irodorimidori", "gekimai", "original", "ultima"]
+    difficulties = {
+        "B": "BAS",
+        "A": "ADV",
+        "E": "EXP",
+        "M": "MAS",
+        "U": "ULT",
+        "W": "WE",
+    }
+    title_mapping = {
+        "めいど・うぃず・どらごんず": "めいど・うぃず・どらごんず♥",
+        "失礼しますが、RIP": "失礼しますが、RIP♡",
+        "Ray ?はじまりのセカイ?": "Ray ―はじまりのセカイ― (クロニクルアレンジver.)",
+        "ラブって?ジュエリー♪えんじぇる☆ブレイク！！": "ラブって♡ジュエリー♪えんじぇる☆ブレイク！！",
+        "Daydream cafe": "Daydream café",
+        "多重未来のカルテット": "多重未来のカルテット -Quartet Theme-",
+        "崩壊歌姫": "崩壊歌姫 -disruptive diva-",
+        "Seyana": "Seyana. ～何でも言うことを聞いてくれるアカネチャン～",
+        "ECHO-": "ECHO",
+        "Little ”Sister” Bitch": 'Little "Sister" Bitch',
+        "ナイト・オブ・ナイツ (かめりあ’s“": "ナイト・オブ・ナイツ (かめりあ’s“ワンス・アポン・ア・ナイト”Remix)",
+        "Pump": "Pump!n",
+        "チルノおかん": "チルノおかんのさいきょう☆バイブスごはん",
+        "キュアリアス光吉古牌　?祭?": "キュアリアス光吉古牌　－祭－",
+        "Yet Another ''drizzly rain''": "Yet Another ”drizzly rain”",
+        "DAZZLING SEASON": "DAZZLING♡SEASON",
+        "Super Lovely": "Super Lovely (Heavenly Remix)",
+        "Mass Destruction (''P3'' + ''P3F'' ver.)": 'Mass Destruction ("P3" + "P3F" ver.)',
+        "ouroboros": "ouroboros -twin stroke of the end-",
+        "In The Blue Sky ’01": "In The Blue Sky '01",
+        "Aventyr": "Äventyr",
+        "Reach for the Stars": "Reach For The Stars",
+        "”STAR”T": '"STAR"T',
+        "一世嬉遊曲": "一世嬉遊曲‐ディヴェルティメント‐",
+        "光線チューニング～なずな": "光線チューニング ～なずな妄想海フェスイメージトレーニングVer.～",
+        "ウソテイ": "イロドリミドリ杯花映塚全一決定戦公式テーマソング『ウソテイ』",
+        "ＧＯ！ＧＯ！ラブリズム ～あーりん書類審査通過記念Ver.～": "ＧＯ！ＧＯ！ラブリズム♥ ～あーりん書類審査通過記念Ver.～",
+        "Session High": "Session High⤴",
+        "Help,me あーりん！": "Help me, あーりん！",
+        "私の中の幻想的世界観": "私の中の幻想的世界観及びその顕現を想起させたある現実での出来事に関する一考察",
+        "GRANDIR": "GRÄNDIR",
+        "AstroNotes.": "AstrøNotes.",
+        "まっすぐ→→→ストリーム!": "まっすぐ→→→ストリーム！",
+        "GranFatalite": "GranFatalité",
+        "Excalibur": "Excalibur ～Revived resolution～",
+        "DON’T STOP ROCKIN’ ～[O_O] MIX～": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
+        "L'epilogue": "L'épilogue",
+        "Give me Love?": "Give me Love♡",
+        "Athlete Killer ”Meteor”": 'Athlete Killer "Meteor"',
+        "萌豚功夫大乱舞": "萌豚♥功夫♥大乱舞",
+        "Jorqer": "Jörqer",
+        "Walzer fur das Nichts": "Walzer für das Nichts",
+        "Solstand": "Solstånd",
+        "男装女形表裏一体発狂小娘": "男装女形表裏一体発狂小娘の詐称疑惑と苦悩と情熱。",
+        "NYAN-NYA, More! ラブシャイン、Chu?": "NYAN-NYA, More! ラブシャイン、Chu♥",
+        "L'&#233;pisode": "L'épisode",
+        "ＧＯ！ＧＯ！ラブリズム&#9829;": "ＧＯ！ＧＯ！ラブリズム♥",
+        "今ぞ崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～": "今ぞ♡崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～",
+        "砂漠のハンティングガール": "砂漠のハンティングガール♡",
+    }
+    # sdvx.in ID, song_id, difficulty
+    inserted_data: list[tuple[str, str, str]] = []
+    limiter = AsyncLimiter(3, 1)
+    async with limiter, aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as client:
+        for category in categories:
+            resp = await client.get(f"https://sdvx.in/chunithm/sort/{category}.htm")
+            soup = BeautifulSoup(await resp.text(), "html.parser")
+
+            table = soup.select_one("table:has(td.tbgl)")
+            if table is None:
+                print(f"Could not find table for category {category}")
+                continue
+            scripts = table.select("script[src]")
+            for script in scripts:
+                title = next((str(x) for x in script.next_elements if isinstance(x, Comment)), None)
+                if title is None:
+                    continue
+                title = title_mapping.get(title, title)
+                sdvx_in_id = str(script["src"]).split("/")[-1][:5]  # FIXME: dont assume the ID is always 5 digits
+                cursor = await db.execute(
+                    "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
+                )
+                song_id = await cursor.fetchone()
+                if song_id is None:
+                    print(f"Could not find song with title {title}")
+                    continue
+                
+                script_resp = await client.get(f"https://sdvx.in{script['src']}")
+                script_data = await script_resp.text()
+
+                for line in script_data.splitlines():
+                    if not line.startswith(f"var LV{sdvx_in_id}"):
+                        continue
+
+                    key, value = line.split("=", 1)
+                    difficulty = difficulties[key[-1]]
+                    value_soup = BeautifulSoup(value.removeprefix('"').removesuffix('";'), "html.parser")
+                    if value_soup.select_one("a") is None:
+                        continue
+                    inserted_data.append((sdvx_in_id, song_id[0], difficulty))
+    await db.executemany(
+        "INSERT INTO sdvxin (id, song_id, difficulty) VALUES (?, ?, ?)"
+        "ON CONFLICT (id, difficulty) DO NOTHING",
+        inserted_data,
+    )
+    await db.commit()
+
+
 async def update_db(db: aiosqlite.Connection):
     async with aiohttp.ClientSession() as client:
         resp = await client.get(
@@ -243,8 +355,9 @@ async def main():
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
         with (BOT_DIR / "database" / "schema.sql").open() as f:
             await db.executescript(f.read())
-        await update_db(db)
-        await update_aliases(db)
+        #await update_db(db)
+        #await update_aliases(db)
+        await update_sdvxin(db)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import ChuniBot
-from utils import format_level, yt_search_link
+from utils import format_level, yt_search_link, sdvxin_link
 
 from .botutils import UtilsCog
 
@@ -157,9 +157,18 @@ class SearchCog(commands.Cog, name="Search"):
             (id,),
         )
         charts = await cursor.fetchall()
+
+        cursor = await self.bot.db.execute(
+            "SELECT id, difficulty FROM sdvxin WHERE song_id = ?", (id,)
+        )
+        sdvxin = await cursor.fetchall()
+        sdvxin_ids = {difficulty: id for id, difficulty in sdvxin}
         for chart in charts:
             _, difficulty, level, const, _ = chart
-            desc = f"[{difficulty[0]}]({yt_search_link(title, difficulty)}) {format_level(level)}"
+            url = yt_search_link(title, difficulty)
+            if difficulty in sdvxin_ids:
+                url = sdvxin_link(sdvxin_ids[difficulty], difficulty)
+            desc = f"[{difficulty[0]}]({url}) {format_level(level)}"
             if const != 0:
                 desc += f" ({const:.1f})"
             chart_level_desc.append(desc)

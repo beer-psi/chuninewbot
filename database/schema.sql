@@ -39,3 +39,11 @@ CREATE TABLE IF NOT EXISTS guild_prefix(
     guild_id INTEGER PRIMARY KEY,
     prefix TEXT
 );
+
+CREATE TABLE IF NOT EXISTS sdvxin(
+    id TEXT,
+    song_id TEXT,
+    difficulty TEXT,
+    FOREIGN KEY(song_id) REFERENCES chunirec_songs(id),
+    UNIQUE(id, difficulty)
+)
