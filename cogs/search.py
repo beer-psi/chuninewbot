@@ -14,6 +14,7 @@ class SearchCog(commands.Cog, name="Search"):
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command("addalias")
+    @commands.guild_only()
     async def addalias(self, ctx: Context, song_title_or_alias: str, added_alias: str):
         """Manually add a song alias for this server.
 
@@ -31,6 +32,9 @@ class SearchCog(commands.Cog, name="Search"):
         addalias Titania tritania
         addalias "祈 -我ら神祖と共に歩む者なり-" prayer
         """
+
+        # this command is guild-only
+        assert ctx.guild is not None
 
         async with self.bot.db.execute(
             "SELECT id FROM chunirec_songs WHERE title = ?", (song_title_or_alias,)
@@ -71,6 +75,7 @@ class SearchCog(commands.Cog, name="Search"):
         )
 
     @commands.hybrid_command("removealias")
+    @commands.guild_only()
     async def removealias(self, ctx: Context, removed_alias: str):
         """Remove an alias for this server.
 
@@ -79,6 +84,9 @@ class SearchCog(commands.Cog, name="Search"):
         alias: str
             The alias to remove.
         """
+
+        # this command is guild-only
+        assert ctx.guild is not None
 
         async with self.bot.db.execute(
             "SELECT alias FROM aliases WHERE lower(alias) = ? AND guild_id = ?",
@@ -102,6 +110,8 @@ class SearchCog(commands.Cog, name="Search"):
     async def info(self, ctx: Context, *, query: str):
         """Search for a song."""
 
+        guild_id = ctx.guild.id if ctx.guild is not None else 0
+
         async with self.bot.db.execute(
             "SELECT jwsim(lower(title), ?), id, title, genre, artist, release, bpm, jacket FROM chunirec_songs ORDER BY jwsim(lower(title), ?) DESC LIMIT 1",
             (query.lower(), query.lower()),
@@ -115,7 +125,7 @@ class SearchCog(commands.Cog, name="Search"):
         if similarity < 0.9:
             async with self.bot.db.execute(
                 "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
-                (query.lower(), ctx.guild.id),
+                (query.lower(), guild_id),
             ) as cursor:
                 alias = await cursor.fetchone()
             if alias is None:
@@ -174,7 +184,8 @@ class SearchCog(commands.Cog, name="Search"):
             chart_level_desc.append(desc)
 
         if len(chart_level_desc) > 0:
-            embed.description += "\n" "**Level**:\n"
+            # embed.description is already set above
+            embed.description += "\n" "**Level**:\n"  # type: ignore
             embed.description += " / ".join(chart_level_desc)
         await ctx.reply(embed=embed, mention_author=False)
 

@@ -125,9 +125,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("prefix")
+    @commands.guild_only()
     @commands.has_guild_permissions(manage_guild=True)
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
         """Get or set the prefix for this server."""
+        
+        # discord.TextChannel should have an associated guild
+        assert ctx.guild is not None
 
         if new_prefix is None:
             answer = self.bot.cfg.get("DEFAULT_PREFIX", "c>")

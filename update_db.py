@@ -265,7 +265,7 @@ async def update_db(db: aiosqlite.Connection):
         chuni_resp = await client.get(
             "https://chunithm.sega.jp/storage/json/music.json"
         )
-        songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore[attr-defined]
+        songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
 
     inserted_songs = []

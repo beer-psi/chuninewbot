@@ -35,7 +35,7 @@ class RecentRecordsView(PaginationView):
 
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
-        self.dropdown.options = [  # type: ignore[attr-defined]
+        self.dropdown.options = [
             discord.SelectOption(
                 label=f"{idx + 1}. {score.title} - {score.difficulty}",
                 value=f"{score.detailed.idx}",

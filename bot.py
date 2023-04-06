@@ -29,11 +29,14 @@ def guild_specific_prefix(default: str):
     async def inner(bot: ChuniBot, msg: discord.Message) -> list[str]:
         when_mentioned = commands.when_mentioned(bot, msg)
 
-        async with bot.db.execute(
-            "SELECT prefix from guild_prefix WHERE guild_id = ?", (msg.guild.id,)
-        ) as cursor:
-            prefix = await cursor.fetchone()
-        return when_mentioned + [(prefix[0] if prefix is not None else default)]
+        if msg.guild is None:
+            return when_mentioned + [default]
+        else:
+            async with bot.db.execute(
+                "SELECT prefix from guild_prefix WHERE guild_id = ?", (msg.guild.id,)
+            ) as cursor:
+                prefix = await cursor.fetchone()
+            return when_mentioned + [(prefix[0] if prefix is not None else default)]
 
     return inner
 
@@ -57,7 +60,7 @@ async def startup():
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),
+        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")), # type: ignore
         intents=intents,
     )
 

@@ -19,9 +19,6 @@ aiolimiter = "^1.0.0"
 [tool.isort]
 profile = "black"
 
-[tool.mypy]
-strict_optional = false
-
 [tool.poetry.dev-dependencies]
 black = "^23.1.0"
 isort = "^5.12.0"
@@ -29,7 +26,6 @@ isort = "^5.12.0"
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 isort = "^5.12.0"
-mypy = "^1.1.1"
 types-beautifulsoup4 = "^4.12.0.1"
 jishaku = "^2.5.1"
 
