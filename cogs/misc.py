@@ -19,7 +19,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
-    @commands.command("source", aliases=["src"])
+    @commands.hybrid_command("source", aliases=["src"])
     async def source(self, ctx: Context):
         reply = (
             "https://tenor.com/view/metal-gear-rising-metal-gear-rising-revengeance-senator-armstrong-revengeance-i-made-it-the-fuck-up-gif-25029602"
@@ -29,7 +29,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         await ctx.reply(reply, mention_author=False)
 
-    @commands.command("calculate", aliases=["calc"])
+    @commands.hybrid_command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
         """Calculate rating from score and chart constant."""
 
@@ -42,7 +42,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         rating = calculate_rating(score, chart_constant)
         await ctx.reply(f"Calculation result: {rating:.2f}", mention_author=False)
 
-    @commands.command("find")
+    @commands.hybrid_command("find")
     async def find(self, ctx: Context, query: float):
         """Find charts by chart constant."""
 
@@ -73,7 +73,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             mention_author=False,
         )
 
-    @commands.command("random")
+    @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
         """Get random charts based on level."""
 
@@ -124,7 +124,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
 
-    @commands.command("prefix")
+    @commands.hybrid_command("prefix")
     @commands.has_guild_permissions(manage_guild=True)
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
         """Get or set the prefix for this server."""

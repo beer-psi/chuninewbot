@@ -14,7 +14,10 @@ class AuthCog(commands.Cog, name="Auth"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
-    @commands.command("logout")
+    @commands.hybrid_command(
+        name="logout",
+        description="Logs you out of the bot.",
+    )
     async def logout(self, ctx: Context):
         await self.bot.db.execute(
             "DELETE FROM cookies WHERE user_id = ?", (ctx.author.id,)
@@ -23,7 +26,7 @@ class AuthCog(commands.Cog, name="Auth"):
         self.utils.fetch_cookie.cache_invalidate(self.utils, ctx.author.id)
         await ctx.reply("Successfully logged out.", mention_author=False)
 
-    @commands.command("login")
+    @commands.hybrid_command("login")
     async def login(self, ctx: Context, clal: Optional[str] = None):
         if not isinstance(ctx.channel, discord.channel.DMChannel):
             please_delete_message = ""

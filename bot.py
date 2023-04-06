@@ -64,6 +64,7 @@ async def startup():
     await bot.load_extension("cogs.botutils")
     if cfg["DEV"] == "1":
         await bot.load_extension("cogs.hotreload")
+        await bot.load_extension("jishaku")
 
     for file in (BOT_DIR / "cogs").glob("*.py"):
         if file.stem in ["hotreload", "botutils", "__init__"]:

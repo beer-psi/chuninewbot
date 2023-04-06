@@ -13,7 +13,7 @@ class SearchCog(commands.Cog, name="Search"):
         self.bot = bot
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
-    @commands.command("addalias")
+    @commands.hybrid_command("addalias")
     async def addalias(self, ctx: Context, song_title_or_alias: str, added_alias: str):
         """Manually add a song alias for this server.
 
@@ -70,7 +70,7 @@ class SearchCog(commands.Cog, name="Search"):
             mention_author=False,
         )
 
-    @commands.command("removealias")
+    @commands.hybrid_command("removealias")
     async def removealias(self, ctx: Context, removed_alias: str):
         """Remove an alias for this server.
 
@@ -98,7 +98,7 @@ class SearchCog(commands.Cog, name="Search"):
         await self.bot.db.commit()
         await ctx.reply(f"Removed **{removed_alias}**.", mention_author=False)
 
-    @commands.command("info")
+    @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
         """Search for a song."""
 

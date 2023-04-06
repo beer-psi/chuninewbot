@@ -14,7 +14,7 @@ Discord bot for CHUNITHM International version.
   - [ ] sdvx.in integration
 - [x] Search tracks by internal level
 - [x] Calculate play rating
-- [ ] Slash command support
+- [x] Slash command support
 - [ ] Minigames (song quiz)
 
 ### Setup instructions

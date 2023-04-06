@@ -19,7 +19,7 @@ class RecordsCog(commands.Cog, name="Records"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
-    @commands.command(name="recent", aliases=["rs"])
+    @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(self, ctx: Context, user: Optional[discord.User] = None):
         """View your recent scores."""
 
@@ -41,7 +41,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 mention_author=False,
             )
 
-    @commands.command("compare", aliases=["c"])
+    @commands.hybrid_command("compare", aliases=["c"])
     async def compare(self, ctx: Context, user: Optional[discord.User] = None):
         """Compare your best score with the most recently posted score."""
 
@@ -128,7 +128,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 mention_author=False,
             )
 
-    @commands.command("best30", aliases=["b30"])
+    @commands.hybrid_command("best30", aliases=["b30"])
     async def best30(self, ctx: Context, user: Optional[discord.User] = None):
         """View top plays"""
 
@@ -149,7 +149,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 mention_author=False,
             )
 
-    @commands.command("recent10", aliases=["r10"])
+    @commands.hybrid_command("recent10", aliases=["r10"])
     async def recent10(self, ctx: Context, user: Optional[discord.User] = None):
         """View top recent plays"""
 
