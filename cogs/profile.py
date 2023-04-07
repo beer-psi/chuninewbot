@@ -44,7 +44,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                 view = ProfileView(ctx, player_data)
                 view.message = await ctx.reply(
                     embed=embed,
-                    view=view,
+                    view=view if user is None else None,
                     mention_author=False,
                 )
 
