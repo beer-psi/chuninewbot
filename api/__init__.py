@@ -152,6 +152,8 @@ class ChuniNet:
         )
         data.playcount = playcount
 
+        data.friend_code = soup.select_one(".user_data_friend_code .user_data_text span:not(.font_90)").get_text()
+
         return data
 
     async def recent_record(self) -> list[RecentRecord]:

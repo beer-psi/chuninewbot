@@ -33,10 +33,12 @@ class PlayerData:
 
     name: str
     lv: int
-    playcount: Optional[int] = 0
+    playcount: Optional[int] = None
     last_play_date: datetime
 
     overpower: Overpower
     nameplate: Nameplate
     rating: Rating
     currency: Optional[Currency] = None
+
+    friend_code: Optional[str] = None
