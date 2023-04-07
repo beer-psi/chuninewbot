@@ -9,7 +9,7 @@ from discord.ext.commands import Context
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
-from utils import format_level
+from utils import format_level, sdvxin_link, yt_search_link
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
 
@@ -118,6 +118,16 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 if song is None:
                     continue
 
+                async with self.bot.db.execute(
+                    "SELECT id FROM sdvxin WHERE song_id = ? and difficulty = ?",
+                    (chart[0], chart[1]),
+                ) as cursor:
+                    sdvxin_id = await cursor.fetchone()
+                if sdvxin_id is not None:
+                    url = sdvxin_link(sdvxin_id[0], chart[1])
+                else:
+                    url = yt_search_link(song[0], chart[1])
+
                 embeds.append(
                     discord.Embed(
                         title=song[0],
@@ -130,7 +140,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(name="Category", value=song[1])
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{level}{f' ({chart[3]})' if not chart[5] else ''}](https://www.youtube.com/results?search_query={quote(f'CHUNITHM {song[0]} {difficulty}')})",
+                        value=f"[{level}{f' ({chart[3]})' if not chart[5] else ''}]({url})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
