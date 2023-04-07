@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from views.profile import ProfileView
 
 
 class ProfileCog(commands.Cog, name="Profile"):
@@ -32,7 +33,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                 )
 
                 embed = (
-                    discord.Embed(description=description)
+                    discord.Embed(title=player_data.name, description=description)
                     .set_author(name=player_data.nameplate.content)
                     .set_thumbnail(url=player_data.avatar)
                     .set_footer(
@@ -40,9 +41,10 @@ class ProfileCog(commands.Cog, name="Profile"):
                     )
                 )
 
-                await ctx.reply(
-                    content=f"CHUNITHM profile for {player_data.name}",
+                view = ProfileView(ctx, player_data)
+                view.message = await ctx.reply(
                     embed=embed,
+                    view=view,
                     mention_author=False,
                 )
 
