@@ -128,7 +128,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.guild_only()
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
         """Get or set the prefix for this server."""
-        
+
         # discord.TextChannel should have an associated guild
         assert ctx.guild is not None
 

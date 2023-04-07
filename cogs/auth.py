@@ -37,7 +37,8 @@ class AuthCog(commands.Cog, name="Auth"):
                     please_delete_message = " Please also delete your message, as people can use the cookie to access your CHUNITHM-NET."
 
             raise commands.PrivateMessageOnly(
-                "This command can only be used in private messages." + please_delete_message
+                "This command can only be used in private messages."
+                + please_delete_message
             )
 
         if clal is None:

@@ -60,7 +60,7 @@ async def startup():
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")), # type: ignore
+        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore
         intents=intents,
     )
 

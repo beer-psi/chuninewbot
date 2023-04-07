@@ -35,14 +35,15 @@ class RecentRecordsView(PaginationView):
 
         self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
 
-        self.dropdown.options = [
+        self._dropdown_options = [
             discord.SelectOption(
                 label=f"{idx + 1}. {score.title} - {score.difficulty}",
                 value=f"{score.detailed.idx}",
             )
             for (idx, score) in enumerate(scores)
             if score.detailed is not None
-        ][:25]
+        ]
+        self.dropdown.options = self._dropdown_options[:25]
 
     def format_score_page(self, scores: list[RecentRecord]) -> list[discord.Embed]:
         embeds = []
@@ -88,6 +89,14 @@ class RecentRecordsView(PaginationView):
         await interaction.response.edit_message(
             embeds=self.format_score_page(self.items[self.page]), view=self
         )
+
+    @discord.ui.button(label="26-50")
+    async def switch_to_26_50(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.dropdown.options = self._dropdown_options[25:]
+        self.switch_to_26_50.label = "1-25"
+        await interaction.response.edit_message(view=self)
 
     @discord.ui.select(placeholder="Select a score", row=1)
     async def dropdown(

@@ -149,7 +149,16 @@ async def update_aliases(db: aiosqlite.Connection):
 
 
 async def update_sdvxin(db: aiosqlite.Connection):
-    categories = ["pops", "niconico", "toho", "variety", "irodorimidori", "gekimai", "original", "ultima"]
+    categories = [
+        "pops",
+        "niconico",
+        "toho",
+        "variety",
+        "irodorimidori",
+        "gekimai",
+        "original",
+        "ultima",
+    ]
     difficulties = {
         "B": "BAS",
         "A": "ADV",
@@ -212,7 +221,9 @@ async def update_sdvxin(db: aiosqlite.Connection):
     # sdvx.in ID, song_id, difficulty
     inserted_data: list[tuple[str, str, str]] = []
     limiter = AsyncLimiter(3, 1)
-    async with limiter, aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as client:
+    async with limiter, aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=600)
+    ) as client:
         for category in categories:
             resp = await client.get(f"https://sdvx.in/chunithm/sort/{category}.htm")
             soup = BeautifulSoup(await resp.text(), "html.parser")
@@ -223,11 +234,16 @@ async def update_sdvxin(db: aiosqlite.Connection):
                 continue
             scripts = table.select("script[src]")
             for script in scripts:
-                title = next((str(x) for x in script.next_elements if isinstance(x, Comment)), None)
+                title = next(
+                    (str(x) for x in script.next_elements if isinstance(x, Comment)),
+                    None,
+                )
                 if title is None:
                     continue
                 title = title_mapping.get(title, title)
-                sdvx_in_id = str(script["src"]).split("/")[-1][:5]  # FIXME: dont assume the ID is always 5 digits
+                sdvx_in_id = str(script["src"]).split("/")[-1][
+                    :5
+                ]  # FIXME: dont assume the ID is always 5 digits
                 async with db.execute(
                     "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
                 ) as cursor:
@@ -235,7 +251,7 @@ async def update_sdvxin(db: aiosqlite.Connection):
                 if song_id is None:
                     print(f"Could not find song with title {title}")
                     continue
-                
+
                 script_resp = await client.get(f"https://sdvx.in{script['src']}")
                 script_data = await script_resp.text()
 
@@ -245,7 +261,9 @@ async def update_sdvxin(db: aiosqlite.Connection):
 
                     key, value = line.split("=", 1)
                     difficulty = difficulties[key[-1]]
-                    value_soup = BeautifulSoup(value.removeprefix('"').removesuffix('";'), "html.parser")
+                    value_soup = BeautifulSoup(
+                        value.removeprefix('"').removesuffix('";'), "html.parser"
+                    )
                     if value_soup.select_one("a") is None:
                         continue
                     inserted_data.append((sdvx_in_id, song_id[0], difficulty))
@@ -355,8 +373,8 @@ async def main():
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
         with (BOT_DIR / "database" / "schema.sql").open() as f:
             await db.executescript(f.read())
-        #await update_db(db)
-        #await update_aliases(db)
+        # await update_db(db)
+        # await update_aliases(db)
         await update_sdvxin(db)
 
 

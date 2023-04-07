@@ -176,8 +176,8 @@ class SearchCog(commands.Cog, name="Search"):
         for chart in charts:
             _, difficulty, level, const, _ = chart
             url = (
-                sdvxin_link(sdvxin_ids[difficulty], difficulty) 
-                if difficulty in sdvxin_ids 
+                sdvxin_link(sdvxin_ids[difficulty], difficulty)
+                if difficulty in sdvxin_ids
                 else yt_search_link(title, difficulty)
             )
             desc = f"[{difficulty[0]}]({url}) {format_level(level)}"

@@ -20,6 +20,4 @@ def sdvxin_link(id: str, difficulty: str) -> str:
         return f"https://sdvx.in/chunithm/{id[:2]}/{id}{difficulty.lower()}.htm"
     else:
         difficulty = difficulty.replace("WE", "end")
-        return f"https://sdvx.in/chunithm/{difficulty.lower()}/{id}{difficulty.lower()}.htm"
-        
-
+        return f"https://sdvx.in/chunithm/{difficulty.lower()[:3]}/{id}{difficulty.lower()}.htm"
