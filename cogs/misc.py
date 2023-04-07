@@ -19,6 +19,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
+    @commands.hybrid_command("treesync")
+    @commands.is_owner()
+    async def treesync(self, ctx: Context, guild_id: Optional[int] = None):
+        """Syncs the slash command tree."""
+
+        guild = discord.Object(id=guild_id) if guild_id is not None else None
+        await self.bot.tree.sync(guild=guild)
+
     @commands.hybrid_command("source", aliases=["src"])
     async def source(self, ctx: Context):
         reply = (
