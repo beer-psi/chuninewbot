@@ -26,6 +26,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         guild = discord.Object(id=guild_id) if guild_id is not None else None
         await self.bot.tree.sync(guild=guild)
+        await ctx.message.add_reaction("✅")
 
     @commands.hybrid_command("source", aliases=["src"])
     async def source(self, ctx: Context):
