@@ -25,6 +25,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """Syncs the slash command tree."""
 
         guild = discord.Object(id=guild_id) if guild_id is not None else None
+        if guild is not None:
+            self.bot.tree.copy_global_to(guild=guild)
         await self.bot.tree.sync(guild=guild)
         await ctx.message.add_reaction("✅")
 
