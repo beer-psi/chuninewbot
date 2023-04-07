@@ -95,7 +95,7 @@ class RecentRecordsView(PaginationView):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         self.dropdown.options = self._dropdown_options[25:]
-        self.switch_to_26_50.label = "1-25"
+        self.switch_to_26_50.label = "1-25" if self.switch_to_26_50.label == "26-50" else "26-50"
         await interaction.response.edit_message(view=self)
 
     @discord.ui.select(placeholder="Select a score", row=1)
