@@ -20,7 +20,7 @@ class AuthCog(commands.Cog, name="Auth"):
     )
     async def logout(self, ctx: Context):
         async with self.bot.db.execute(
-            "DELETE FROM cookies WHERE user_id = ?", (ctx.author.id,)
+            "DELETE FROM cookies WHERE discord_id = ?", (ctx.author.id,)
         ):
             await self.bot.db.commit()
         self.utils.fetch_cookie.cache_invalidate(self.utils, ctx.author.id)
