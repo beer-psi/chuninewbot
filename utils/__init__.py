@@ -26,9 +26,9 @@ def sdvxin_link(id: str, difficulty: str) -> str:
 
 def release_to_chunithm_version(date: datetime) -> str:
     if datetime(2015, 7, 16) <= date <= datetime(2016, 1, 21):
-        return ""
+        return "CHUNITHM"
     if datetime(2016, 2, 4) <= date <= datetime(2016, 7, 28):
-        return "PLUS"
+        return "CHUNITHM PLUS"
     if datetime(2016, 8, 25) <= date <= datetime(2017, 1, 26):
         return "AIR"
     if datetime(2017, 2, 9) <= date <= datetime(2017, 8, 3):
