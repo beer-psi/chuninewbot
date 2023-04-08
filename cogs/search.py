@@ -149,7 +149,7 @@ class SearchCog(commands.Cog, name="Search"):
                 )
                 return
             id, title, genre, artist, release, bpm, jacket = song
-        
+
         version = release_to_chunithm_version(datetime.strptime(release, "%Y-%m-%d"))
 
         embed = discord.Embed(
