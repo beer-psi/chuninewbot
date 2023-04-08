@@ -14,6 +14,23 @@ from views.compare import CompareView
 from views.recent import RecentRecordsView
 
 
+class SelectToCompareView(discord.ui.View):
+    def __init__(self, options: list[tuple[str, int]], *, timeout: Optional[float] = 120):
+        super().__init__(timeout=timeout)
+        self.value = None
+        self.select.options = [discord.SelectOption(label=k, value=str(v)) for k, v in options]
+
+    async def on_timeout(self) -> None:
+        self.select.disabled = True
+        self.stop()
+    
+    @discord.ui.select(placeholder="Select a score...")
+    async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction.response.edit_message(content="Please wait...", view=None)
+        self.value = select.values[0]
+        self.stop()
+
+
 class RecordsCog(commands.Cog, name="Records"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
@@ -52,30 +69,40 @@ class RecordsCog(commands.Cog, name="Records"):
                 message = await ctx.channel.fetch_message(
                     cast(int, ctx.message.reference.message_id)
                 )
-                if (
-                    len(message.embeds) > 1
-                    or len(message.embeds) == 0
-                    or message.embeds[0].thumbnail.url is None
-                    or "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
-                    not in message.embeds[0].thumbnail.url
-                ):
-                    raise commands.BadArgument(
-                        "The message replied to does not contain a detailed score embed."
-                    )
-                embed = message.embeds[0]
             else:
                 bot_messages: list[discord.Message] = [
                     message
                     async for message in ctx.channel.history(limit=50)
-                    if len(message.embeds) == 1
-                    and message.embeds[0].thumbnail.url is not None
-                    and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
-                    in message.embeds[0].thumbnail.url
+                    if message.author == self.bot.user
+                    and any([x.thumbnail.url is not None and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/" in x.thumbnail.url for x in message.embeds])
                 ]
                 if len(bot_messages) == 0:
-                    await ctx.reply("No recent scores found.", mention_author=False)
+                    return await ctx.reply("No recent scores found.", mention_author=False)
+                message = bot_messages[0]
+
+            embeds = [x for x in message.embeds if x.thumbnail.url is not None and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/" in x.thumbnail.url]
+            if not embeds:
+                raise commands.BadArgument(
+                    "The message replied to does not contain any charts/scores."
+                )
+            if len(embeds) == 1:
+                embed = embeds[0]
+            else:
+                placeholders = ", ".join("?" for _ in range(len(embeds)))
+                query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders})"
+                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]
+                async with self.bot.db.execute(query, jackets) as cursor:
+                    titles = list(await cursor.fetchall())
+                jacket_map = {jacket: title for title, jacket in titles}
+                view = SelectToCompareView([(jacket_map[x], i) for i, x in enumerate(jackets)])
+                message = await ctx.reply("Select a score to compare with:", view=view, mention_author=False)
+                await view.wait()
+                
+                if view.value is None:
+                    await message.edit(content="Timed out before selecting a score.", view=None)
                     return
-                embed = bot_messages[0].embeds[0]
+                await message.delete()
+                embed = embeds[int(view.value)]
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
 
