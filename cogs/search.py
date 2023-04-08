@@ -1,9 +1,11 @@
+from datetime import datetime
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import ChuniBot
-from utils import format_level, yt_search_link, sdvxin_link
+from utils import format_level, yt_search_link, sdvxin_link, release_to_chunithm_version
 
 from .botutils import UtilsCog
 
@@ -147,13 +149,15 @@ class SearchCog(commands.Cog, name="Search"):
                 )
                 return
             id, title, genre, artist, release, bpm, jacket = song
+        
+        version = release_to_chunithm_version(datetime.strptime(release, "%Y-%m-%d"))
 
         embed = discord.Embed(
             title=title,
             description=(
                 f"**Artist**: {artist}\n"
                 f"**Category**: {genre}\n"
-                f"**Release date**: {release}\n"
+                f"**Version**: {version} ({release})\n"
                 f"**BPM**: {bpm if bpm != 0 else 'Unknown'}\n"
             ),
             color=discord.Color.yellow(),
