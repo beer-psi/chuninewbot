@@ -45,7 +45,7 @@ class SearchCog(commands.Cog, name="Search"):
             song = await cursor.fetchone()
         if song is None:
             async with self.bot.db.execute(
-                "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
+                "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id = -1 OR guild_id = ?)",
                 (song_title_or_alias.lower(), ctx.guild.id),
             ) as cursor:
                 alias = await cursor.fetchone()
@@ -59,7 +59,7 @@ class SearchCog(commands.Cog, name="Search"):
             song_id = song[0]
 
         async with self.bot.db.execute(
-            "SELECT alias FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
+            "SELECT alias FROM aliases WHERE lower(alias) = ? AND (guild_id = -1 OR guild_id = ?)",
             (added_alias.lower(), ctx.guild.id),
         ) as cursor:
             alias = await cursor.fetchone()
@@ -131,7 +131,7 @@ class SearchCog(commands.Cog, name="Search"):
                 "SELECT jwsim(lower(aliases.alias), ?) AS similarity, id, title, genre, artist, release, bpm, jacket, aliases.alias "
                 "FROM chunirec_songs "
                 "LEFT JOIN aliases ON aliases.song_id = chunirec_songs.id "
-                "WHERE aliases.guild_id IS NULL OR aliases.guild_id = ? "
+                "WHERE aliases.guild_id = -1 OR aliases.guild_id = ? "
                 "ORDER BY similarity DESC "
                 "LIMIT 1",
                 (query.lower(), guild_id),

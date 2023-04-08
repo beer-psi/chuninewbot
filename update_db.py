@@ -141,8 +141,8 @@ async def update_aliases(db: aiosqlite.Connection):
             continue
         inserted_aliases.extend([(x, song_id[0]) for x in alias[1:]])
     await db.executemany(
-        "INSERT INTO aliases (alias, guild_id, song_id) VALUES (?, NULL, ?)"
-        "ON CONFLICT (alias, guild_id, song_id) DO UPDATE SET song_id = excluded.song_id",
+        "INSERT INTO aliases (alias, guild_id, song_id) VALUES (?, -1, ?)"
+        "ON CONFLICT (alias, guild_id) DO UPDATE SET song_id = excluded.song_id",
         inserted_aliases,
     )
     await db.commit()
