@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS aliases(
     guild_id INTEGER,
     song_id TEXT,
     FOREIGN KEY(song_id) REFERENCES chunirec_songs(id),
-    UNIQUE(alias, guild_id)
+    UNIQUE(alias, guild_id, song_id)
 );
 
 CREATE TABLE IF NOT EXISTS guild_prefix(

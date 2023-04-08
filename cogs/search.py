@@ -3,6 +3,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.utils import escape_markdown
 
 from bot import ChuniBot
 from utils import format_level, yt_search_link, sdvxin_link, release_to_chunithm_version
@@ -115,40 +116,35 @@ class SearchCog(commands.Cog, name="Search"):
         guild_id = ctx.guild.id if ctx.guild is not None else 0
 
         async with self.bot.db.execute(
-            "SELECT jwsim(lower(title), ?), id, title, genre, artist, release, bpm, jacket FROM chunirec_songs ORDER BY jwsim(lower(title), ?) DESC LIMIT 1",
-            (query.lower(), query.lower()),
+            "SELECT jwsim(lower(title), ?) AS similarity, id, title, genre, artist, release, bpm, jacket "
+            "FROM chunirec_songs "
+            "ORDER BY similarity DESC "
+            "LIMIT 1",
+            (query.lower(),),
         ) as cursor:
             song = await cursor.fetchone()
-        if song is None:
-            await ctx.reply("No songs found.", mention_author=False)
-            return
+        assert song is not None
 
         similarity, id, title, genre, artist, release, bpm, jacket = song
         if similarity < 0.9:
             async with self.bot.db.execute(
-                "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id IS NULL OR guild_id = ?)",
+                "SELECT jwsim(lower(aliases.alias), ?) AS similarity, id, title, genre, artist, release, bpm, jacket, aliases.alias "
+                "FROM chunirec_songs "
+                "LEFT JOIN aliases ON aliases.song_id = chunirec_songs.id "
+                "WHERE aliases.guild_id IS NULL OR aliases.guild_id = ? "
+                "ORDER BY similarity DESC "
+                "LIMIT 1",
                 (query.lower(), guild_id),
             ) as cursor:
-                alias = await cursor.fetchone()
-            if alias is None:
-                await ctx.reply(
-                    f"I couldn't find any results for **{query}**. Did you mean: **{title}**?",
-                    mention_author=False,
-                )
-                return
-            song_id = alias[0]
-            async with self.bot.db.execute(
-                "SELECT id, title, genre, artist, release, bpm, jacket FROM chunirec_songs WHERE id = ?",
-                (song_id,),
-            ) as cursor:
                 song = await cursor.fetchone()
-            if song is None:
+            assert song is not None
+            similarity, id, title, genre, artist, release, bpm, jacket, alias = song
+            if similarity < 0.9:
                 await ctx.reply(
-                    f"I couldn't find any results for **{query}**. Did you mean: **{title}**?",
+                    f"No songs found. Did you mean **{escape_markdown(alias)}** (for **{escape_markdown(title)}**)?",
                     mention_author=False,
                 )
                 return
-            id, title, genre, artist, release, bpm, jacket = song
 
         version = release_to_chunithm_version(datetime.strptime(release, "%Y-%m-%d"))
 
@@ -167,21 +163,20 @@ class SearchCog(commands.Cog, name="Search"):
 
         chart_level_desc = []
         async with self.bot.db.execute(
-            "SELECT id, difficulty, level, const, maxcombo FROM chunirec_charts WHERE song_id = ? ORDER BY id ASC",
+            "SELECT charts.difficulty, level, const, sdvxin.id as sdvxin_id "
+            "FROM chunirec_charts charts "
+            "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
+            "WHERE charts.song_id = ? "
+            "ORDER BY charts.id ASC",
             (id,),
         ) as cursor:
             charts = await cursor.fetchall()
 
-        async with self.bot.db.execute(
-            "SELECT id, difficulty FROM sdvxin WHERE song_id = ?", (id,)
-        ) as cursor:
-            sdvxin = await cursor.fetchall()
-        sdvxin_ids = {difficulty: id for id, difficulty in sdvxin}
         for chart in charts:
-            _, difficulty, level, const, _ = chart
+            difficulty, level, const, sdvxin_id = chart
             url = (
-                sdvxin_link(sdvxin_ids[difficulty], difficulty)
-                if difficulty in sdvxin_ids
+                sdvxin_link(sdvxin_id, difficulty)
+                if sdvxin_id is not None
                 else yt_search_link(title, difficulty)
             )
             desc = f"[{difficulty[0]}]({url}) {format_level(level)}"

@@ -4,22 +4,27 @@ import discord
 import discord.ui
 from discord.ext.commands import Context
 
-from utils import yt_search_link
+from utils import yt_search_link, sdvxin_link
 
 from .pagination import PaginationView
 
 
 class SonglistView(PaginationView):
-    # tuple is (title, difficulty)
-    def __init__(self, ctx: Context, songs: list[tuple[str, str]]):
+    # tuple is (title, difficulty, sdvx.in id)
+    def __init__(self, ctx: Context, songs: list[tuple[str, str, str | None]]):
         super().__init__(ctx, items=songs, per_page=15)
 
     def format_songlist(
-        self, songs: list[tuple[str, str]], start_index: int = 0
+        self, songs: list[tuple[str, str, str | None]], start_index: int = 0
     ) -> discord.Embed:
         songlist = ""
         for idx, song in enumerate(songs):
-            songlist += f"{idx + start_index + 1}. {song[0]} [[{song[1]}]]({yt_search_link(song[0], song[1])})\n"
+            url = (
+                sdvxin_link(song[2], song[1])
+                if song[2]
+                else yt_search_link(song[0], song[1])
+            )
+            songlist += f"{idx + start_index + 1}. {song[0]} [[{song[1]}]]({url})\n"
         return discord.Embed(
             description=songlist,
         ).set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")

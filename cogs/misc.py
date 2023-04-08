@@ -58,24 +58,22 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """Find charts by chart constant."""
 
         async with self.bot.db.execute(
-            "SELECT song_id, difficulty FROM chunirec_charts WHERE const = ?", (query,)
+            "SELECT songs.title, charts.difficulty, sdvxin.id AS sdvxin_id "
+            "FROM chunirec_charts charts "
+            "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
+            "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
+            "WHERE const = ?",
+            (query,),
         ) as cursor:
             charts = await cursor.fetchall()
         if not charts:
             await ctx.reply("No charts found.", mention_author=False)
             return
 
-        # title and difficulty
-        results: list[tuple[str, str]] = []
+        results: list[tuple[str, str, str | None]] = []
         for chart in charts:
-            song_id = chart[0]
-            async with self.bot.db.execute(
-                "SELECT title from chunirec_songs WHERE id = ?", (song_id,)
-            ) as cursor:
-                title = await cursor.fetchone()
-            if title is None:
-                continue
-            results.append((title[0], chart[1]))
+            title, difficulty, sdvxin_id = chart
+            results.append((title, difficulty, sdvxin_id))
 
         view = SonglistView(ctx, results)
         view.message = await ctx.reply(
@@ -98,7 +96,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 raise commands.BadArgument("Invalid level provided.")
 
             async with self.bot.db.execute(
-                "SELECT song_id, difficulty, level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE level = ? OR const = ? ORDER BY random() LIMIT ?",
+                "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
+                "FROM chunirec_charts charts "
+                "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
+                "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
+                "WHERE level = ? OR const = ? "
+                "ORDER BY random() "
+                "LIMIT ?",
                 (query_level, query_level, count),
             ) as cursor:
                 charts = await cursor.fetchall()
@@ -108,39 +112,39 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
             embeds: list[discord.Embed] = []
             for chart in charts:
-                difficulty = Difficulty.from_short_form(chart[1])
-                level = format_level(chart[2])
-                async with self.bot.db.execute(
-                    "SELECT title, genre, artist, jacket FROM chunirec_songs WHERE id = ?",
-                    (chart[0],),
-                ) as cursor:
-                    song = await cursor.fetchone()
-                if song is None:
-                    continue
+                (
+                    title,
+                    genre,
+                    artist,
+                    jacket,
+                    difficulty,
+                    lev,
+                    const,
+                    is_const_unknown,
+                    sdvxin_id,
+                ) = chart
 
-                async with self.bot.db.execute(
-                    "SELECT id FROM sdvxin WHERE song_id = ? and difficulty = ?",
-                    (chart[0], chart[1]),
-                ) as cursor:
-                    sdvxin_id = await cursor.fetchone()
+                difficulty = Difficulty.from_short_form(difficulty)
+                chart_level = format_level(lev)
+
                 if sdvxin_id is not None:
-                    url = sdvxin_link(sdvxin_id[0], chart[1])
+                    url = sdvxin_link(sdvxin_id, difficulty.short_form())
                 else:
-                    url = yt_search_link(song[0], chart[1])
+                    url = yt_search_link(title, difficulty.short_form())
 
                 embeds.append(
                     discord.Embed(
-                        title=song[0],
-                        description=song[2],
+                        title=title,
+                        description=artist,
                         color=difficulty.color(),
                     )
                     .set_thumbnail(
-                        url=f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{song[3]}"
+                        url=f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{jacket}"
                     )
-                    .add_field(name="Category", value=song[1])
+                    .add_field(name="Category", value=genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{level}{f' ({chart[3]})' if not chart[5] else ''}]({url})",
+                        value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
