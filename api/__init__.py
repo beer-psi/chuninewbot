@@ -82,7 +82,7 @@ class ChuniNet:
                 raise InvalidTokenException("Invalid cookie")
 
             return self._parse_player_card(
-                BeautifulSoup(await req.text(), "html.parser")
+                BeautifulSoup(await req.text(), "lxml")
             )
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
@@ -91,7 +91,7 @@ class ChuniNet:
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
         if response.cookies.get("_t") is None:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+            soup = BeautifulSoup(await response.text(), "lxml")
             err = soup.select(".block.text_l .font_small")
             raise ChuniNetException(
                 f"The server returned an error: {err[1].get_text() if err else ''}"
@@ -135,7 +135,7 @@ class ChuniNet:
 
     async def player_data(self):
         resp = await self._request("mobile/home/playerData")
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
 
         data = self._parse_player_card(soup)
 
@@ -160,7 +160,7 @@ class ChuniNet:
 
     async def recent_record(self) -> list[RecentRecord]:
         resp = await self._request("mobile/record/playlog")
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
 
         web_records = soup.select(".frame02.w400")
         return [parse_basic_recent_record(record) for record in web_records]
@@ -174,7 +174,7 @@ class ChuniNet:
                 "token": self.token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
 
         jacket = str(soup.select_one(".play_jacket_img img")["src"]).split("/")[-1]
         title = soup.select_one(".play_musicdata_title").get_text()
@@ -225,13 +225,13 @@ class ChuniNet:
 
     async def best30(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailBest/")
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
 
         return self._parse_music_for_rating(soup)
 
     async def recent10(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailRecent/")
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
 
         return self._parse_music_for_rating(soup)
 
@@ -250,7 +250,7 @@ class ChuniNet:
                 "token": self.token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), "html.parser")
+        soup = BeautifulSoup(await resp.text(), "lxml")
         record = DetailedRecentRecord.from_basic(
             parse_basic_recent_record(cast(Tag, soup.select_one(".frame01_inside")))
         )

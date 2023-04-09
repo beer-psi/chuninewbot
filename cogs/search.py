@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
+from api.consts import JACKET_BASE
 from bot import ChuniBot
 from utils import format_level, yt_search_link, sdvxin_link, release_to_chunithm_version
 
@@ -158,7 +159,7 @@ class SearchCog(commands.Cog, name="Search"):
             ),
             color=discord.Color.yellow(),
         ).set_thumbnail(
-            url=f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{jacket}"
+            url=f"{JACKET_BASE}/{jacket}"
         )
 
         chart_level_desc = []

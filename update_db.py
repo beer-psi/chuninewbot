@@ -226,7 +226,7 @@ async def update_sdvxin(db: aiosqlite.Connection):
     ) as client:
         for category in categories:
             resp = await client.get(f"https://sdvx.in/chunithm/sort/{category}.htm")
-            soup = BeautifulSoup(await resp.text(), "html.parser")
+            soup = BeautifulSoup(await resp.text(), "lxml")
 
             table = soup.select_one("table:has(td.tbgl)")
             if table is None:
@@ -262,7 +262,7 @@ async def update_sdvxin(db: aiosqlite.Connection):
                     key, value = line.split("=", 1)
                     difficulty = difficulties[key[-1]]
                     value_soup = BeautifulSoup(
-                        value.removeprefix('"').removesuffix('";'), "html.parser"
+                        value.removeprefix('"').removesuffix('";'), "lxml"
                     )
                     if value_soup.select_one("a") is None:
                         continue

@@ -15,6 +15,7 @@ python-dotenv = "^1.0.0"
 async-lru = "^2.0.2"
 dataclasses-json = "^0.5.7"
 aiolimiter = "^1.0.0"
+lxml = "^4.9.2"
 
 [tool.isort]
 profile = "black"

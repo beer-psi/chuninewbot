@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from .consts import JACKET_BASE
 from .enums import ClearType, Difficulty, Rank
 
 
@@ -60,7 +61,7 @@ class MusicRecord(Record):
 
     def full_jacket_url(self) -> str:
         return (
-            f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{self.jacket}"
+            f"{JACKET_BASE}/{self.jacket}"
         )
 
     @classmethod

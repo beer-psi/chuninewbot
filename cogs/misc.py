@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from api.consts import JACKET_BASE
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
@@ -139,7 +140,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                         color=difficulty.color(),
                     )
                     .set_thumbnail(
-                        url=f"https://new.chunithm-net.com/chuni-mobile/html/mobile/img/{jacket}"
+                        url=f"{JACKET_BASE}/{jacket}"
                     )
                     .add_field(name="Category", value=genre)
                     .add_field(
