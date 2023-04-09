@@ -5,6 +5,7 @@ from urllib.parse import quote
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.utils import oauth_url
 
 from api.consts import JACKET_BASE
 from api.enums import Difficulty
@@ -40,6 +41,20 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
         await ctx.reply(reply, mention_author=False)
+
+    @commands.hybrid_command("invite")
+    async def invite(self, ctx: Context):
+        """Invite this bot to your server!"""
+
+        permissions = discord.Permissions(
+            read_messages=True,
+            send_messages=True,
+            send_messages_in_threads=True,
+            manage_messages=True,
+            read_message_history=True,
+        )
+
+        await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
