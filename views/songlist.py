@@ -4,7 +4,7 @@ import discord
 import discord.ui
 from discord.ext.commands import Context
 
-from utils import yt_search_link, sdvxin_link
+from utils import sdvxin_link, yt_search_link
 
 from .pagination import PaginationView
 

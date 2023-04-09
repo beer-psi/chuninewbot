@@ -9,11 +9,10 @@ from api import ChuniNet
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from utils import did_you_mean_text
 from views.b30 import B30View
 from views.compare import CompareView
 from views.recent import RecentRecordsView
-
-from utils import did_you_mean_text
 
 
 class SelectToCompareView(discord.ui.View):

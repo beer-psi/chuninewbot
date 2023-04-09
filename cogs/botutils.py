@@ -1,6 +1,6 @@
 from datetime import datetime, time, timezone
 from math import floor
-from typing import overload, Optional
+from typing import Optional, overload
 
 from async_lru import alru_cache
 from discord.ext import commands, tasks
