@@ -16,6 +16,8 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Bot
 
+from utils.help import HelpCommand
+
 
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
@@ -62,6 +64,7 @@ async def startup():
     bot = ChuniBot(
         command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore
         intents=intents,
+        help_command=HelpCommand(),
     )
 
     await bot.load_extension("cogs.botutils")
