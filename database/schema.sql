@@ -1,3 +1,5 @@
+PRAGMA journal_mode=WAL;
+
 CREATE TABLE IF NOT EXISTS cookies(
     discord_id INTEGER PRIMARY KEY,
     cookie TEXT
