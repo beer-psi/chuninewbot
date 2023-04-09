@@ -43,7 +43,13 @@ class RecordsCog(commands.Cog, name="Records"):
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(self, ctx: Context, user: Optional[discord.User] = None):
-        """View your recent scores."""
+        """View your recent scores.
+        
+        Parameters
+        ----------
+        user: Optional[discord.User]
+            The user to view recent scores for. Defaults to the author.
+        """
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)
@@ -65,7 +71,15 @@ class RecordsCog(commands.Cog, name="Records"):
 
     @commands.hybrid_command("compare", aliases=["c"])
     async def compare(self, ctx: Context, user: Optional[discord.User] = None):
-        """Compare your best score with the most recently posted score."""
+        """Compare your best score with the most recently posted score.
+        You can reply to another user's score to compare with that instead.
+        If there are multiple scores, you will be prompted to select one.
+
+        Parameters
+        ----------
+        user: Optional[discord.User]
+            The user to compare with. Defaults to the author.
+        """
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)
@@ -185,7 +199,16 @@ class RecordsCog(commands.Cog, name="Records"):
     async def scores(
         self, ctx: Context, user: Optional[discord.User] = None, *, query: str
     ):
-        """Get a user's scores for a song."""
+        """Get a user's scores for a song.
+        If no user is specified, your scores will be shown.
+
+        Parameters
+        ----------
+        user: Optional[discord.User]
+            The user to get scores for.
+        query: str
+            The song to get scores for.
+        """
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)
@@ -216,7 +239,13 @@ class RecordsCog(commands.Cog, name="Records"):
 
     @commands.hybrid_command("best30", aliases=["b30"])
     async def best30(self, ctx: Context, user: Optional[discord.User] = None):
-        """View top plays"""
+        """View top plays
+        
+        Parameters
+        ----------
+        user: Optional[discord.User]
+            The user to get scores for.
+        """
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)
@@ -237,7 +266,13 @@ class RecordsCog(commands.Cog, name="Records"):
 
     @commands.hybrid_command("recent10", aliases=["r10"])
     async def recent10(self, ctx: Context, user: Optional[discord.User] = None):
-        """View top recent plays"""
+        """View top recent plays
+        
+        Parameters
+        ----------
+        user: Optional[discord.User]
+            The user to get scores for.
+        """
 
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)

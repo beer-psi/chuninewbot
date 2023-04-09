@@ -28,6 +28,14 @@ class AuthCog(commands.Cog, name="Auth"):
 
     @commands.hybrid_command("login")
     async def login(self, ctx: Context, clal: Optional[str] = None):
+        """Link with your CHUNITHM-NET account.
+        
+        Parameters
+        ----------
+        clal: str
+            The `clal` cookie from CHUNITHM-NET. Run this command without arguments to get instructions.
+        """
+
         if not isinstance(ctx.channel, discord.channel.DMChannel):
             please_delete_message = ""
             if clal is not None:

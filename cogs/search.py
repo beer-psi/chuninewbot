@@ -118,7 +118,13 @@ class SearchCog(commands.Cog, name="Search"):
 
     @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
-        """Search for a song."""
+        """Search for a song.
+        
+        Parameters
+        ----------
+        query: str
+            The song title or alias to search for.
+        """
 
         guild_id = ctx.guild.id if ctx.guild is not None else None
         result = await self.utils.find_song(query, guild_id=guild_id)

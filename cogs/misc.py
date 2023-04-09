@@ -34,6 +34,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("source", aliases=["src"])
     async def source(self, ctx: Context):
+        """Get the source code for this bot."""
+
         reply = (
             "https://tenor.com/view/metal-gear-rising-metal-gear-rising-revengeance-senator-armstrong-revengeance-i-made-it-the-fuck-up-gif-25029602"
             if random() < 0.1
@@ -58,7 +60,15 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
-        """Calculate rating from score and chart constant."""
+        """Calculate rating from score and chart constant.
+        
+        Parameters
+        ----------
+        score: int
+            The score to calculate play rating from
+        chart_constant: float
+            Chart constant of the chart. Use the `info` command to find this.
+        """
 
         if not 0 <= score <= 1010000:
             await ctx.reply(
@@ -71,7 +81,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, query: float):
-        """Find charts by chart constant."""
+        """Find charts by chart constant.
+        
+        Parameters
+        ----------
+        query: float
+            Chart constant to search for.
+        """
 
         async with self.bot.db.execute(
             "SELECT songs.title, charts.difficulty, sdvxin.id AS sdvxin_id "
@@ -100,7 +116,15 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
-        """Get random charts based on level."""
+        """Get random charts based on level.
+        
+        Parameters
+        ----------
+        level: str
+            Level to search for. Can be level (13+) or chart constant (13.5).
+        count: int
+            Number of charts to return. Must be between 1 and 4.
+        """
 
         async with ctx.typing():
             if count > 4 or count < 1:
@@ -166,7 +190,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("prefix")
     @commands.guild_only()
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
-        """Get or set the prefix for this server."""
+        """Get or set the prefix for this server. Only users with the Manage Guild
+        permission can set the prefix.
+        
+        Parameters
+        ----------
+        new_prefix: Optional[str]
+            New prefix to set. If not provided, the current prefix will be shown.
+        """
 
         # discord.TextChannel should have an associated guild
         assert ctx.guild is not None
