@@ -133,7 +133,7 @@ class SearchCog(commands.Cog, name="Search"):
             description=(
                 f"**Artist**: {result.artist}\n"
                 f"**Category**: {result.genre}\n"
-                f"**Version**: {version} ({result.release})\n"
+                f"**Version**: {version} ({result.release.date()})\n"
                 f"**BPM**: {result.bpm if result.bpm != 0 else 'Unknown'}\n"
             ),
             color=discord.Color.yellow(),
