@@ -13,17 +13,23 @@ from views.b30 import B30View
 from views.compare import CompareView
 from views.recent import RecentRecordsView
 
+from utils import did_you_mean_text
+
 
 class SelectToCompareView(discord.ui.View):
-    def __init__(self, options: list[tuple[str, int]], *, timeout: Optional[float] = 120):
+    def __init__(
+        self, options: list[tuple[str, int]], *, timeout: Optional[float] = 120
+    ):
         super().__init__(timeout=timeout)
         self.value = None
-        self.select.options = [discord.SelectOption(label=k, value=str(v)) for k, v in options]
+        self.select.options = [
+            discord.SelectOption(label=k, value=str(v)) for k, v in options
+        ]
 
     async def on_timeout(self) -> None:
         self.select.disabled = True
         self.stop()
-    
+
     @discord.ui.select(placeholder="Select a score...")
     async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.edit_message(content="Please wait...", view=None)
@@ -74,13 +80,28 @@ class RecordsCog(commands.Cog, name="Records"):
                     message
                     async for message in ctx.channel.history(limit=50)
                     if message.author == self.bot.user
-                    and any([x.thumbnail.url is not None and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/" in x.thumbnail.url for x in message.embeds])
+                    and any(
+                        [
+                            x.thumbnail.url is not None
+                            and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
+                            in x.thumbnail.url
+                            for x in message.embeds
+                        ]
+                    )
                 ]
                 if len(bot_messages) == 0:
-                    return await ctx.reply("No recent scores found.", mention_author=False)
+                    return await ctx.reply(
+                        "No recent scores found.", mention_author=False
+                    )
                 message = bot_messages[0]
 
-            embeds = [x for x in message.embeds if x.thumbnail.url is not None and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/" in x.thumbnail.url]
+            embeds = [
+                x
+                for x in message.embeds
+                if x.thumbnail.url is not None
+                and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
+                in x.thumbnail.url
+            ]
             if not embeds:
                 raise commands.BadArgument(
                     "The message replied to does not contain any charts/scores."
@@ -94,12 +115,18 @@ class RecordsCog(commands.Cog, name="Records"):
                 async with self.bot.db.execute(query, jackets) as cursor:
                     titles = list(await cursor.fetchall())
                 jacket_map = {jacket: title for title, jacket in titles}
-                view = SelectToCompareView([(jacket_map[x], i) for i, x in enumerate(jackets)])
-                message = await ctx.reply("Select a score to compare with:", view=view, mention_author=False)
+                view = SelectToCompareView(
+                    [(jacket_map[x], i) for i, x in enumerate(jackets)]
+                )
+                message = await ctx.reply(
+                    "Select a score to compare with:", view=view, mention_author=False
+                )
                 await view.wait()
-                
+
                 if view.value is None:
-                    await message.edit(content="Timed out before selecting a score.", view=None)
+                    await message.edit(
+                        content="Timed out before selecting a score.", view=None
+                    )
                     return
                 await message.delete()
                 embed = embeds[int(view.value)]
@@ -121,14 +148,14 @@ class RecordsCog(commands.Cog, name="Records"):
                 userinfo = await client.authenticate()
                 records = await client.music_record(song_id)
 
-            futures = [self.utils.annotate_song(record) for record in records]
-            records = await asyncio.gather(*futures)
-
             if len(records) == 0:
                 await ctx.reply(
                     f"No records found for {userinfo.name}.", mention_author=False
                 )
                 return
+
+            futures = [self.utils.annotate_song(record) for record in records]
+            records = await asyncio.gather(*futures)
 
             page = 0
             try:
@@ -149,6 +176,39 @@ class RecordsCog(commands.Cog, name="Records"):
 
             view = CompareView(ctx, userinfo, records)
             view.page = page
+            view.message = await ctx.reply(
+                embed=view.format_embed(view.items[view.page]),
+                view=view,
+                mention_author=False,
+            )
+
+    @commands.hybrid_command("scores")
+    async def scores(
+        self, ctx: Context, user: Optional[discord.User] = None, *, query: str
+    ):
+        """Get a user's scores for a song."""
+
+        async with ctx.typing():
+            clal = await self.utils.login_check(ctx if user is None else user.id)
+
+            result = await self.utils.find_song(query)
+            if result.similarity < 0.9:
+                return await ctx.reply(did_you_mean_text(result), mention_author=False)
+
+            async with ChuniNet(clal) as client:
+                userinfo = await client.authenticate()
+                records = await client.music_record(result.chunithm_id)
+
+            if len(records) == 0:
+                await ctx.reply(
+                    f"No records found for {userinfo.name}.", mention_author=False
+                )
+                return
+
+            futures = [self.utils.annotate_song(record) for record in records]
+            records = await asyncio.gather(*futures)
+
+            view = CompareView(ctx, userinfo, records)
             view.message = await ctx.reply(
                 embed=view.format_embed(view.items[view.page]),
                 view=view,

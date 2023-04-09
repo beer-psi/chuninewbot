@@ -1,9 +1,20 @@
 from datetime import datetime
 from urllib.parse import quote
 
+from discord.utils import escape_markdown
+
+from .types import SongSearchResult
+
 
 def format_level(level: float) -> str:
     return str(level).replace(".0", "").replace(".5", "+")
+
+
+def did_you_mean_text(result: SongSearchResult) -> str:
+    did_you_mean = f"**{escape_markdown(result.title)}**"
+    if result.alias is not None:
+        did_you_mean = f"**{escape_markdown(result.alias)}** (for {did_you_mean})"
+    return f"No songs found. Did you mean {did_you_mean}?"
 
 
 def yt_search_link(title: str, difficulty: str) -> str:

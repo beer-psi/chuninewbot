@@ -60,9 +60,7 @@ class MusicRecord(Record):
     play_rating: float = 0.0
 
     def full_jacket_url(self) -> str:
-        return (
-            f"{JACKET_BASE}/{self.jacket}"
-        )
+        return f"{JACKET_BASE}/{self.jacket}"
 
     @classmethod
     def from_record(cls, record: Record):

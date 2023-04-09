@@ -139,9 +139,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                         description=artist,
                         color=difficulty.color(),
                     )
-                    .set_thumbnail(
-                        url=f"{JACKET_BASE}/{jacket}"
-                    )
+                    .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
                     .add_field(name="Category", value=genre)
                     .add_field(
                         name=str(difficulty),

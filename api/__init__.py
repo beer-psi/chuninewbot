@@ -81,9 +81,7 @@ class ChuniNet:
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
                 raise InvalidTokenException("Invalid cookie")
 
-            return self._parse_player_card(
-                BeautifulSoup(await req.text(), "lxml")
-            )
+            return self._parse_player_card(BeautifulSoup(await req.text(), "lxml"))
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:

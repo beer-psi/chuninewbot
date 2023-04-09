@@ -7,7 +7,13 @@ from discord.utils import escape_markdown
 
 from api.consts import JACKET_BASE
 from bot import ChuniBot
-from utils import format_level, yt_search_link, sdvxin_link, release_to_chunithm_version
+from utils import (
+    did_you_mean_text,
+    format_level,
+    yt_search_link,
+    sdvxin_link,
+    release_to_chunithm_version,
+)
 
 from .botutils import UtilsCog
 
@@ -114,53 +120,24 @@ class SearchCog(commands.Cog, name="Search"):
     async def info(self, ctx: Context, *, query: str):
         """Search for a song."""
 
-        guild_id = ctx.guild.id if ctx.guild is not None else 0
+        guild_id = ctx.guild.id if ctx.guild is not None else None
+        result = await self.utils.find_song(query, guild_id=guild_id)
 
-        async with self.bot.db.execute(
-            "SELECT jwsim(lower(title), ?) AS similarity, id, title, genre, artist, release, bpm, jacket "
-            "FROM chunirec_songs "
-            "ORDER BY similarity DESC "
-            "LIMIT 1",
-            (query.lower(),),
-        ) as cursor:
-            song = await cursor.fetchone()
-        assert song is not None
+        if result.similarity < 0.9:
+            return await ctx.reply(did_you_mean_text(result), mention_author=False)
 
-        similarity, id, title, genre, artist, release, bpm, jacket = song
-        if similarity < 0.9:
-            async with self.bot.db.execute(
-                "SELECT jwsim(lower(aliases.alias), ?) AS similarity, id, title, genre, artist, release, bpm, jacket, aliases.alias "
-                "FROM chunirec_songs "
-                "LEFT JOIN aliases ON aliases.song_id = chunirec_songs.id "
-                "WHERE aliases.guild_id = -1 OR aliases.guild_id = ? "
-                "ORDER BY similarity DESC "
-                "LIMIT 1",
-                (query.lower(), guild_id),
-            ) as cursor:
-                song = await cursor.fetchone()
-            assert song is not None
-            similarity, id, title, genre, artist, release, bpm, jacket, alias = song
-            if similarity < 0.9:
-                await ctx.reply(
-                    f"No songs found. Did you mean **{escape_markdown(alias)}** (for **{escape_markdown(title)}**)?",
-                    mention_author=False,
-                )
-                return
-
-        version = release_to_chunithm_version(datetime.strptime(release, "%Y-%m-%d"))
+        version = release_to_chunithm_version(result.release)
 
         embed = discord.Embed(
-            title=title,
+            title=result.title,
             description=(
-                f"**Artist**: {artist}\n"
-                f"**Category**: {genre}\n"
-                f"**Version**: {version} ({release})\n"
-                f"**BPM**: {bpm if bpm != 0 else 'Unknown'}\n"
+                f"**Artist**: {result.artist}\n"
+                f"**Category**: {result.genre}\n"
+                f"**Version**: {version} ({result.release})\n"
+                f"**BPM**: {result.bpm if result.bpm != 0 else 'Unknown'}\n"
             ),
             color=discord.Color.yellow(),
-        ).set_thumbnail(
-            url=f"{JACKET_BASE}/{jacket}"
-        )
+        ).set_thumbnail(url=f"{JACKET_BASE}/{result.jacket}")
 
         chart_level_desc = []
         async with self.bot.db.execute(
@@ -169,7 +146,7 @@ class SearchCog(commands.Cog, name="Search"):
             "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
             "WHERE charts.song_id = ? "
             "ORDER BY charts.id ASC",
-            (id,),
+            (result.id,),
         ) as cursor:
             charts = await cursor.fetchall()
 
@@ -178,7 +155,7 @@ class SearchCog(commands.Cog, name="Search"):
             url = (
                 sdvxin_link(sdvxin_id, difficulty)
                 if sdvxin_id is not None
-                else yt_search_link(title, difficulty)
+                else yt_search_link(result.title, difficulty)
             )
             desc = f"[{difficulty[0]}]({url}) {format_level(level)}"
             if const != 0:

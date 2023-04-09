@@ -1,6 +1,6 @@
-from datetime import time, timezone
+from datetime import datetime, time, timezone
 from math import floor
-from typing import overload
+from typing import overload, Optional
 
 from async_lru import alru_cache
 from discord.ext import commands, tasks
@@ -11,6 +11,7 @@ from api.record import DetailedRecentRecord, MusicRecord, Record
 from bot import ChuniBot
 from update_db import update_db
 from utils.rating_calculator import calculate_rating
+from utils.types import SongSearchResult
 
 
 class UtilsCog(commands.Cog, name="Utils"):
@@ -96,6 +97,75 @@ class UtilsCog(commands.Cog, name="Utils"):
         if isinstance(_song, DetailedRecentRecord) and chart_data[2] != 0:
             _song.full_combo = chart_data[2]
         return _song
+
+    async def find_song(
+        self, query: str, *, guild_id: Optional[int] = None
+    ) -> SongSearchResult:
+        """Finds the song that best matches a given query.
+
+        Parameters
+        ----------
+        query: str
+            The query to search for.
+        guild_id: Optional[int]
+            The ID of the guild to search for aliases in. If None, only global aliases are searched.
+
+        Returns
+        -------
+        SongSearchResult
+        """
+
+        async with self.bot.db.execute(
+            "SELECT jwsim(lower(title), ?) AS similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket "
+            "FROM chunirec_songs "
+            "ORDER BY similarity DESC "
+            "LIMIT 1",
+            (query.lower(),),
+        ) as cursor:
+            song = await cursor.fetchone()
+        assert song is not None
+
+        similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
+        alias = None
+        if similarity < 0.9:
+            where_clause = "WHERE aliases.guild_id = -1 "
+            if guild_id is not None:
+                where_clause += "OR aliases.guild_id = :guild_id "
+            async with self.bot.db.execute(
+                "SELECT jwsim(lower(aliases.alias), :query) AS similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket, aliases.alias "
+                "FROM chunirec_songs "
+                "LEFT JOIN aliases ON aliases.song_id = chunirec_songs.id "
+                + where_clause
+                + "ORDER BY similarity DESC "
+                "LIMIT 1",
+                {"query": query.lower(), "guild_id": guild_id},
+            ) as cursor:
+                song = await cursor.fetchone()
+            assert song is not None
+            (
+                similarity,
+                id,
+                chunithm_id,
+                title,
+                genre,
+                artist,
+                release,
+                bpm,
+                jacket,
+                alias,
+            ) = song
+        return SongSearchResult(
+            similarity=similarity,
+            id=id,
+            chunithm_id=chunithm_id,
+            title=title,
+            genre=genre,
+            artist=artist,
+            release=datetime.strptime(release, "%Y-%m-%d"),
+            bpm=bpm,
+            jacket=jacket,
+            alias=alias,
+        )
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
     @tasks.loop(time=time(hour=17, tzinfo=timezone.utc))
