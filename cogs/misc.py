@@ -21,7 +21,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
-    @commands.hybrid_command("treesync")
+    @commands.hybrid_command("treesync", hidden=True)
     @commands.is_owner()
     async def treesync(self, ctx: Context, guild_id: Optional[int] = None):
         """Syncs the slash command tree."""
