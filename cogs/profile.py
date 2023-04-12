@@ -16,7 +16,7 @@ class ProfileCog(commands.Cog, name="Profile"):
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command(name="chunithm", aliases=["chuni", "profile"])
-    async def chunithm(self, ctx: Context, user: Optional[discord.User] = None):
+    async def chunithm(self, ctx: Context, user: Optional[discord.User | discord.Member] = None):
         """View your CHUNITHM profile."""
 
         async with ctx.typing():
