@@ -5,7 +5,7 @@ from urllib.parse import quote
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.utils import oauth_url, escape_markdown
+from discord.utils import escape_markdown, oauth_url
 
 from api.consts import JACKET_BASE
 from api.enums import Difficulty

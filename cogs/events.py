@@ -7,6 +7,7 @@ import discord
 from discord import Webhook
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.ext.commands.errors import CommandInvokeError
 
 from api.exceptions import (
     ChuniNetException,
@@ -21,22 +22,22 @@ class EventsCog(commands.Cog, name="Events"):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error):
+    async def on_command_error(self, ctx: Context, error: CommandInvokeError) -> None:
         if isinstance(error, commands.CommandNotFound):
             return
-        elif isinstance(error, MaintenanceException):
+        elif isinstance(error.original, MaintenanceException):
             await ctx.send(
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
                 mention_author=False,
                 delete_after=5,
             )
-        elif isinstance(error, InvalidTokenException):
+        elif isinstance(error.original, InvalidTokenException):
             await ctx.send(
                 "Your CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.",
                 mention_author=False,
                 delete_after=5,
             )
-        elif isinstance(error, ChuniNetException):
+        elif isinstance(error.original, ChuniNetException):
             await ctx.send(
                 "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login).",
                 mention_author=False,
