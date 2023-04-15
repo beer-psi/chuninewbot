@@ -22,27 +22,29 @@ class EventsCog(commands.Cog, name="Events"):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error: CommandInvokeError) -> None:
+    async def on_command_error(self, ctx: Context, error: CommandInvokeError):
         if isinstance(error, commands.CommandNotFound):
             return
-        elif isinstance(error.original, MaintenanceException):
-            await ctx.send(
-                "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
-                mention_author=False,
-                delete_after=5,
-            )
-        elif isinstance(error.original, InvalidTokenException):
-            await ctx.send(
-                "Your CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.",
-                mention_author=False,
-                delete_after=5,
-            )
-        elif isinstance(error.original, ChuniNetException):
-            await ctx.send(
-                "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login).",
-                mention_author=False,
-                delete_after=5,
-            )
+        
+        if hasattr(error, "original"):
+            if isinstance(error.original, MaintenanceException):
+                return await ctx.send(
+                    "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
+                    mention_author=False,
+                    delete_after=5,
+                )
+            elif isinstance(error.original, InvalidTokenException):
+                return await ctx.send(
+                    "Your CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.",
+                    mention_author=False,
+                    delete_after=5,
+                )
+            elif isinstance(error.original, ChuniNetException):
+                return await ctx.send(
+                    "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login).",
+                    mention_author=False,
+                    delete_after=5,
+                )
         elif (
             isinstance(error, commands.BadArgument)
             or isinstance(error, commands.BadUnionArgument)
