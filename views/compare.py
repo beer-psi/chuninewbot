@@ -1,5 +1,6 @@
 import discord
 from discord.ext.commands import Context
+from discord.utils import escape_markdown
 
 from api.player_data import PlayerData
 from api.record import MusicRecord
@@ -22,7 +23,7 @@ class CompareView(PaginationView):
         embed = (
             discord.Embed(
                 description=(
-                    f"**{score.title}** [{score.displayed_difficulty}]\n\n"
+                    f"**{escape_markdown(score.title)}** [{score.displayed_difficulty}]\n\n"
                     f"▸ {score.rank} ▸ {score.clear} ▸ {score.score}"
                 ),
                 color=score.difficulty.color(),

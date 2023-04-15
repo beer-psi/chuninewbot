@@ -42,9 +42,11 @@ class RecordsCog(commands.Cog, name="Records"):
         self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
-    async def recent(self, ctx: Context, user: Optional[discord.User | discord.Member] = None):
+    async def recent(
+        self, ctx: Context, user: Optional[discord.User | discord.Member] = None
+    ):
         """View your recent scores.
-        
+
         Parameters
         ----------
         user: Optional[discord.User | discord.Member]
@@ -70,7 +72,9 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.hybrid_command("compare", aliases=["c"])
-    async def compare(self, ctx: Context, user: Optional[discord.User | discord.Member] = None):
+    async def compare(
+        self, ctx: Context, user: Optional[discord.User | discord.Member] = None
+    ):
         """Compare your best score with the most recently posted score.
         You can reply to another user's score to compare with that instead.
         If there are multiple scores, you will be prompted to select one.
@@ -197,7 +201,11 @@ class RecordsCog(commands.Cog, name="Records"):
 
     @commands.hybrid_command("scores")
     async def scores(
-        self, ctx: Context, user: Optional[discord.User | discord.Member] = None, *, query: str
+        self,
+        ctx: Context,
+        user: Optional[discord.User | discord.Member] = None,
+        *,
+        query: str,
     ):
         """Get a user's scores for a song.
         If no user is specified, your scores will be shown.
@@ -238,9 +246,11 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.hybrid_command("best30", aliases=["b30"])
-    async def best30(self, ctx: Context, user: Optional[discord.User | discord.Member] = None):
+    async def best30(
+        self, ctx: Context, user: Optional[discord.User | discord.Member] = None
+    ):
         """View top plays
-        
+
         Parameters
         ----------
         user: Optional[discord.User | discord.Member]
@@ -265,9 +275,11 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
     @commands.hybrid_command("recent10", aliases=["r10"])
-    async def recent10(self, ctx: Context, user: Optional[discord.User | discord.Member] = None):
+    async def recent10(
+        self, ctx: Context, user: Optional[discord.User | discord.Member] = None
+    ):
         """View top recent plays
-        
+
         Parameters
         ----------
         user: Optional[discord.User | discord.Member]

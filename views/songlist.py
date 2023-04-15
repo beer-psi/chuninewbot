@@ -1,8 +1,7 @@
-from urllib.parse import quote
-
 import discord
 import discord.ui
 from discord.ext.commands import Context
+from discord.utils import escape_markdown
 
 from utils import sdvxin_link, yt_search_link
 
@@ -24,7 +23,7 @@ class SonglistView(PaginationView):
                 if song[2]
                 else yt_search_link(song[0], song[1])
             )
-            songlist += f"{idx + start_index + 1}. {song[0]} [[{song[1]}]]({url})\n"
+            songlist += f"{idx + start_index + 1}. {escape_markdown(song[0])} [[{song[1]}]]({url})\n"
         return discord.Embed(
             description=songlist,
         ).set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")

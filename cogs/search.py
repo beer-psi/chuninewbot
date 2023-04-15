@@ -119,7 +119,7 @@ class SearchCog(commands.Cog, name="Search"):
     @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
         """Search for a song.
-        
+
         Parameters
         ----------
         query: str
@@ -137,7 +137,7 @@ class SearchCog(commands.Cog, name="Search"):
         embed = discord.Embed(
             title=result.title,
             description=(
-                f"**Artist**: {result.artist}\n"
+                f"**Artist**: {escape_markdown(result.artist)}\n"
                 f"**Category**: {result.genre}\n"
                 f"**Version**: {version} ({result.release.date()})\n"
                 f"**BPM**: {result.bpm if result.bpm != 0 else 'Unknown'}\n"

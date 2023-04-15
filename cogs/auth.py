@@ -29,7 +29,7 @@ class AuthCog(commands.Cog, name="Auth"):
     @commands.hybrid_command("login")
     async def login(self, ctx: Context, clal: Optional[str] = None):
         """Link with your CHUNITHM-NET account.
-        
+
         Parameters
         ----------
         clal: str

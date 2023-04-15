@@ -5,7 +5,7 @@ from urllib.parse import quote
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.utils import oauth_url
+from discord.utils import oauth_url, escape_markdown
 
 from api.consts import JACKET_BASE
 from api.enums import Difficulty
@@ -61,7 +61,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):
         """Calculate rating from score and chart constant.
-        
+
         Parameters
         ----------
         score: int
@@ -82,7 +82,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, query: float):
         """Find charts by chart constant.
-        
+
         Parameters
         ----------
         query: float
@@ -117,7 +117,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
         """Get random charts based on level.
-        
+
         Parameters
         ----------
         level: str
@@ -174,8 +174,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
                 embeds.append(
                     discord.Embed(
-                        title=title,
-                        description=artist,
+                        title=escape_markdown(title),
+                        description=escape_markdown(artist),
                         color=difficulty.color(),
                     )
                     .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
@@ -192,7 +192,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
         """Get or set the prefix for this server. Only users with the Manage Guild
         permission can set the prefix.
-        
+
         Parameters
         ----------
         new_prefix: Optional[str]
