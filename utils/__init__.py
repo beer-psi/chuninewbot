@@ -14,7 +14,10 @@ def did_you_mean_text(result: SongSearchResult) -> str:
     did_you_mean = f"**{escape_markdown(result.title)}**"
     if result.alias is not None:
         did_you_mean = f"**{escape_markdown(result.alias)}** (for {did_you_mean})"
-    return f"No songs found. Did you mean {did_you_mean}?"
+    return (
+        f"No songs found. Did you mean {did_you_mean}?\n"
+        "(You can also use `addalias <title> <alias>` to add this alias for this guild.)"
+    )
 
 
 def yt_search_link(title: str, difficulty: str) -> str:
