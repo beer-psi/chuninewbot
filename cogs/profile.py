@@ -17,7 +17,7 @@ class ProfileCog(commands.Cog, name="Profile"):
 
     @commands.hybrid_command(name="chunithm", aliases=["chuni", "profile"])
     async def chunithm(
-        self, ctx: Context, user: Optional[discord.User | discord.Member] = None
+        self, ctx: Context, *, user: Optional[discord.User | discord.Member] = None
     ):
         """View your CHUNITHM profile."""
 
