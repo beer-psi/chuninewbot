@@ -63,7 +63,7 @@ class RecordsCog(commands.Cog, name="Records"):
             tasks = [self.utils.annotate_song(score) for score in recent_scores]
             recent_scores = await asyncio.gather(*tasks)
 
-            view = RecentRecordsView(ctx, self.bot, recent_scores, client)
+            view = RecentRecordsView(ctx, self.bot, recent_scores, client, userinfo)
             view.message = await ctx.reply(
                 content=f"Most recent credits for {userinfo.name}:",
                 embeds=view.format_score_page(view.items[0]),

@@ -4,8 +4,8 @@ from discord.utils import escape_markdown
 
 from api import ChuniNet
 from api.record import DetailedRecentRecord, RecentRecord
+from api.player_data import PlayerData
 from bot import ChuniBot
-from cogs.botutils import UtilsCog
 
 from .pagination import PaginationView
 
@@ -28,9 +28,11 @@ class RecentRecordsView(PaginationView):
         bot: ChuniBot,
         scores: list[RecentRecord],
         chuni_client: ChuniNet,
+        userinfo: PlayerData,
     ):
         super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
         self.chuni_client = chuni_client
+        self.userinfo = userinfo
         self.page = 0
         self.max_index = len(self.items) - 1
 
@@ -115,6 +117,6 @@ class RecentRecordsView(PaginationView):
         score = await self.chuni_client.detailed_recent_record(idx)
         score = await self.utils.annotate_song(score)
         await interaction.channel.send(
-            content=f"Score of {interaction.user.mention}",
+            content=f"Score of {self.userinfo.name}",
             embed=self.format_detailed_score_page(score),
         )
