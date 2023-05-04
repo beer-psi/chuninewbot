@@ -168,7 +168,9 @@ class UtilsCog(commands.Cog, name="Utils"):
         )
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
-    @tasks.loop(time=time(hour=17, tzinfo=timezone.utc))
+    # 
+    # job is currently disabled until CHUNITHM SUN PLUS reaches international
+    # @tasks.loop(time=time(hour=17, tzinfo=timezone.utc))
     async def update_chunirec_db(self):
         # Disable all commands while updating the DB
         for cmd in self.bot.walk_commands():
