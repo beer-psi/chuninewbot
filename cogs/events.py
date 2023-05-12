@@ -25,7 +25,7 @@ class EventsCog(commands.Cog, name="Events"):
     async def on_command_error(self, ctx: Context, error: CommandInvokeError):
         if isinstance(error, commands.CommandNotFound):
             return
-        
+
         if hasattr(error, "original"):
             if isinstance(error.original, MaintenanceException):
                 return await ctx.send(

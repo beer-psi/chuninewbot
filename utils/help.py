@@ -6,7 +6,6 @@ from discord.ext.commands import Cog, Command, when_mentioned
 
 
 class HelpCommand(commands.HelpCommand):
-
     COLOUR = discord.Colour.yellow()
 
     async def send_bot_help(

@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - trunk
+    paths-ignore:
+      - "**.md"
+      - ".vscode/**"
+      - ".env.example"
+      - ".gitignore"
+      - "LICENSE"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy bot
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: beerpsi
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/beerpsi/chuninewbot
+
+            git pull
+
+            /home/beerpsi/.local/bin/poetry install
+            systemctl --user restart chunibot

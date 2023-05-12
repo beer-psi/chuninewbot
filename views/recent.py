@@ -3,8 +3,8 @@ from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
 from api import ChuniNet
-from api.record import DetailedRecentRecord, RecentRecord
 from api.player_data import PlayerData
+from api.record import DetailedRecentRecord, RecentRecord
 from bot import ChuniBot
 
 from .pagination import PaginationView
