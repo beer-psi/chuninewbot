@@ -23,7 +23,6 @@ class AuthCog(commands.Cog, name="Auth"):
             "DELETE FROM cookies WHERE discord_id = ?", (ctx.author.id,)
         ):
             await self.bot.db.commit()
-        self.utils.fetch_cookie.cache_invalidate(self.utils, ctx.author.id)
         await ctx.reply("Successfully logged out.", mention_author=False)
 
     @commands.hybrid_command("login")

@@ -2,7 +2,6 @@ from datetime import datetime, time, timezone
 from math import floor
 from typing import Optional, overload
 
-from async_lru import alru_cache
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
@@ -27,7 +26,6 @@ class UtilsCog(commands.Cog, name="Utils"):
             )
         return clal
 
-    @alru_cache()
     async def fetch_cookie(self, id: int) -> str | None:
         async with self.bot.db.execute(
             "SELECT cookie FROM cookies WHERE discord_id = ?", (id,)

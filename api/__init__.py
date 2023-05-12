@@ -79,7 +79,7 @@ class ChuniNet:
             if req.status == HTTPStatus.SERVICE_UNAVAILABLE:
                 raise MaintenanceException("Service under maintenance")
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-                raise InvalidTokenException("Invalid cookie")
+                raise InvalidTokenException("Invalid cookie: No userId cookie found")
 
             return self._parse_player_card(BeautifulSoup(await req.text(), "lxml"))
 
