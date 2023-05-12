@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from html import unescape
 from typing import Optional
 
 import aiohttp
@@ -48,6 +49,19 @@ class ChunirecData:
 class ChunirecSong:
     meta: ChunirecMeta
     data: ChunirecData
+
+
+@dataclass_json
+@dataclass
+class ZetarakuSong:
+    title: str
+    imageName: str
+
+
+@dataclass_json
+@dataclass
+class ZetarakuChunithmData:
+    songs: list[ZetarakuSong]
 
 
 CHUNITHM_CATCODES = {
@@ -213,8 +227,6 @@ async def update_sdvxin(db: aiosqlite.Connection):
         "Solstand": "Solstånd",
         "男装女形表裏一体発狂小娘": "男装女形表裏一体発狂小娘の詐称疑惑と苦悩と情熱。",
         "NYAN-NYA, More! ラブシャイン、Chu?": "NYAN-NYA, More! ラブシャイン、Chu♥",
-        "L'&#233;pisode": "L'épisode",
-        "ＧＯ！ＧＯ！ラブリズム&#9829;": "ＧＯ！ＧＯ！ラブリズム♥",
         "今ぞ崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～": "今ぞ♡崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～",
         "砂漠のハンティングガール": "砂漠のハンティングガール♡",
     }
@@ -240,7 +252,7 @@ async def update_sdvxin(db: aiosqlite.Connection):
                 )
                 if title is None:
                     continue
-                title = title_mapping.get(title, title)
+                title = title_mapping.get(title, unescape(title))
                 sdvx_in_id = str(script["src"]).split("/")[-1][
                     :5
                 ]  # FIXME: dont assume the ID is always 5 digits
@@ -283,8 +295,12 @@ async def update_db(db: aiosqlite.Connection):
         chuni_resp = await client.get(
             "https://chunithm.sega.jp/storage/json/music.json"
         )
+        zetaraku_resp = await client.get(
+            "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/data.json"
+        )
         songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
+        zetaraku_songs: ZetarakuChunithmData = ZetarakuChunithmData.from_json(await zetaraku_resp.text())  # type: ignore
 
     inserted_songs = []
     inserted_charts = []
@@ -320,16 +336,32 @@ async def update_db(db: aiosqlite.Connection):
         if not jacket:
             try:
                 chunithm_song = next(
-                    x
-                    for x in chuni_songs
-                    if normalize_title(x["title"])
-                    == normalize_title(song.meta.title, True)
-                    and normalize_title(x["artist"])
-                    == normalize_title(song.meta.artist)
+                    (
+                        x
+                        for x in chuni_songs
+                        if normalize_title(x["title"])
+                        == normalize_title(song.meta.title, True)
+                        and normalize_title(x["artist"])
+                        == normalize_title(song.meta.artist)
+                    ),
+                    {},
                 )
-                jacket = chunithm_song["image"]
+                jacket = chunithm_song.get("image")
             except StopIteration:
                 pass
+
+        zetaraku_song = next(
+            (
+                x
+                for x in zetaraku_songs.songs
+                if normalize_title(x.title) == normalize_title(song.meta.title)
+            ),
+            None,
+        )
+        if zetaraku_song is not None:
+            zetaraku_jacket = zetaraku_song.imageName
+        else:
+            zetaraku_jacket = ""
 
         inserted_songs.append(
             (
@@ -342,6 +374,7 @@ async def update_db(db: aiosqlite.Connection):
                 song.meta.release,
                 song.meta.bpm,
                 jacket,
+                zetaraku_jacket,
             )
         )
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT", "WE"]:
@@ -357,8 +390,8 @@ async def update_db(db: aiosqlite.Connection):
                     )
                 )
     await db.executemany(
-        "INSERT INTO chunirec_songs(id, chunithm_id, title, chunithm_catcode, genre, artist, release, bpm, jacket) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        "ON CONFLICT(id) DO UPDATE SET title=excluded.title,chunithm_catcode=excluded.chunithm_catcode,genre=excluded.genre,artist=excluded.artist,release=excluded.release,bpm=excluded.bpm,jacket=excluded.jacket",
+        "INSERT INTO chunirec_songs(id, chunithm_id, title, chunithm_catcode, genre, artist, release, bpm, jacket, zetaraku_jacket) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "ON CONFLICT(id) DO UPDATE SET title=excluded.title,chunithm_catcode=excluded.chunithm_catcode,genre=excluded.genre,artist=excluded.artist,release=excluded.release,bpm=excluded.bpm,jacket=excluded.jacket,zetaraku_jacket=excluded.zetaraku_jacket",
         inserted_songs,
     )
     await db.executemany(
@@ -373,9 +406,9 @@ async def main():
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
         with (BOT_DIR / "database" / "schema.sql").open() as f:
             await db.executescript(f.read())
-        # await update_db(db)
+        await update_db(db)
         # await update_aliases(db)
-        await update_sdvxin(db)
+        # await update_sdvxin(db)
 
 
 if __name__ == "__main__":

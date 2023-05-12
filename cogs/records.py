@@ -116,8 +116,12 @@ class RecordsCog(commands.Cog, name="Records"):
                 x
                 for x in message.embeds
                 if x.thumbnail.url is not None
-                and "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
-                in x.thumbnail.url
+                and (
+                    "https://new.chunithm-net.com/chuni-mobile/html/mobile/img/"
+                    in x.thumbnail.url
+                    or "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/img/cover/"
+                    in x.thumbnail.url
+                )
             ]
             if not embeds:
                 raise commands.BadArgument(
@@ -127,8 +131,8 @@ class RecordsCog(commands.Cog, name="Records"):
                 embed = embeds[0]
             else:
                 placeholders = ", ".join("?" for _ in range(len(embeds)))
-                query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders})"
-                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]  # type: ignore
+                query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders}) OR zetaraku_jacket IN ({placeholders})"
+                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds] * 2  # type: ignore
                 async with self.bot.db.execute(query, jackets) as cursor:
                     titles = list(await cursor.fetchall())
                 jacket_map = {jacket: title for title, jacket in titles}
