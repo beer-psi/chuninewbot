@@ -155,8 +155,8 @@ class RecordsCog(commands.Cog, name="Records"):
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
 
             async with self.bot.db.execute(
-                "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ?",
-                (thumbnail_filename,),
+                "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ? OR zetaraku_jacket = ?",
+                (thumbnail_filename, thumbnail_filename),
             ) as cursor:
                 song_id = await cursor.fetchone()
             if song_id is None:
