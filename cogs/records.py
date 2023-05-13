@@ -132,8 +132,8 @@ class RecordsCog(commands.Cog, name="Records"):
             else:
                 placeholders = ", ".join("?" for _ in range(len(embeds)))
                 query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders}) OR zetaraku_jacket IN ({placeholders})"
-                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds] * 2  # type: ignore
-                async with self.bot.db.execute(query, jackets) as cursor:
+                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds] # type: ignore
+                async with self.bot.db.execute(query, jackets * 2) as cursor:
                     titles = list(await cursor.fetchall())
                 jacket_map = {jacket: title for title, jacket in titles}
                 view = SelectToCompareView(
