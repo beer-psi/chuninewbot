@@ -35,19 +35,22 @@ class AuthCog(commands.Cog, name="Auth"):
             The `clal` cookie from CHUNITHM-NET. Run this command without arguments to get instructions.
         """
 
+        channel = ctx.channel
+
         if not isinstance(ctx.channel, discord.channel.DMChannel):
             please_delete_message = ""
             if clal is not None:
                 try:
                     await ctx.message.delete()
                 except discord.errors.Forbidden:
-                    please_delete_message = " Please also delete your message, as people can use the cookie to access your CHUNITHM-NET."
+                    please_delete_message = "Please delete the original command, as people can use the cookie to access your CHUNITHM-NET profile."
 
-            raise commands.PrivateMessageOnly(
-                "This command can only be used in private messages."
-                + please_delete_message
+            channel = ctx.author.dm_channel if ctx.author.dm_channel else await ctx.author.create_dm()
+
+            await ctx.send(
+                f"Login instructions have been sent to your DMs. {please_delete_message}"
+                "(please **enable Privacy Settings -> Direct Messages** if you haven't received it.)"
             )
-
         if clal is None:
             embed = discord.Embed(
                 title="How to login",
@@ -68,7 +71,10 @@ class AuthCog(commands.Cog, name="Auth"):
                     "If the cookie is undefined, or if there is extra data after `;`, please logout then login and try again.\n"
                 ),
             )
-            return await ctx.reply(embed=embed, mention_author=False)
+            if ctx.channel == channel:
+                return await ctx.reply(embed=embed, mention_author=False)
+            else:
+                return await channel.send(embed=embed)
 
         if clal.startswith("clal="):
             clal = clal[5:]
