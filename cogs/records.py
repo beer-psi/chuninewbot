@@ -225,7 +225,8 @@ class RecordsCog(commands.Cog, name="Records"):
         async with ctx.typing():
             clal = await self.utils.login_check(ctx if user is None else user.id)
 
-            result = await self.utils.find_song(query)
+            guild_id = ctx.guild.id if ctx.guild else None
+            result = await self.utils.find_song(query, guild_id=guild_id)
             if result.similarity < 0.9:
                 return await ctx.reply(did_you_mean_text(result), mention_author=False)
 
