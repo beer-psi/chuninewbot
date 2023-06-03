@@ -180,13 +180,16 @@ class ChuniNet:
         for block in soup.select(".music_box"):
             if (musicdata := block.select_one(".play_musicdata_icon")) is not None:
                 rank, clear = get_rank_and_cleartype(musicdata)
+            difficulty_class = block.select_one(".musicdata_detail_difficulty")
+            if difficulty_class is None:
+                difficulty_class = block.select_one(".musicdata_detail_difficulty_ultima")
             records.append(
                 MusicRecord(
                     title=title,
                     jacket=jacket,
                     difficulty=difficulty_from_imgurl(
                         " ".join(
-                            block.select_one(".musicdata_detail_difficulty")["class"]
+                            difficulty_class["class"]
                         )
                     ),
                     score=chuni_int(
