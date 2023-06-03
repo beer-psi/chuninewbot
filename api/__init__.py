@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from yarl import URL
 
+from .enums import Possession
 from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
 from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
 from .record import (
@@ -121,10 +122,20 @@ class ChuniNet:
         last_play_date_str = soup.select_one(".player_lastplaydate_text").get_text()
         last_play_date = parse_time(last_play_date_str)
 
+        reborn_elem = soup.select_one(".player_reborn")
+        reborn = chuni_int(reborn_elem.get_text()) if reborn_elem else 0
+
+        possession_elem = soup.select_one(".box_playerprofile")
+        possession = Possession.from_str(
+            possession_elem["style"].split("_")[-1].split(".")[0]  # type: ignore
+        ) if possession_elem and possession_elem.has_attr("style") else Possession.NONE
+
         return PlayerData(
             avatar=avatar,
             name=name,
             lv=lv,
+            reborn=reborn,
+            possession=possession,
             nameplate=Nameplate(content=nameplate_content, rarity=nameplate_rarity),
             rating=Rating(rating, max_rating),
             overpower=Overpower(overpower_value, overpower_progress),

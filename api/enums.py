@@ -131,3 +131,37 @@ class Rank(Enum):
             return cls.C
         else:
             return cls.D
+
+
+class Possession(Enum):
+    NONE = 0
+    SILVER = 1
+    GOLD = 2
+    PLATINUM = 3
+    RAINBOW = 4
+
+    @classmethod
+    def from_str(cls, s: str):
+        if s == "silver":
+            return cls.SILVER
+        elif s == "gold":
+            return cls.GOLD
+        elif s == "platina" or s == "platinum":
+            return cls.PLATINUM
+        elif s == "rainbow":
+            return cls.RAINBOW
+        else:
+            return cls.NONE   
+
+    def color(self):
+        match self.value:
+            case 0:
+                return 0xcecece
+            case 1:
+                return 0x6baac7
+            case 2:
+                return 0xfce620
+            case 3:
+                return 0xfff6c5
+            case 4:
+                return 0x0B6FF3 

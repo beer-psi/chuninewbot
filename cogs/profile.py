@@ -27,15 +27,19 @@ class ProfileCog(commands.Cog, name="Profile"):
             async with ChuniNet(clal) as client:
                 player_data = await client.player_data()
 
+                level = str(player_data.lv)
+                if player_data.reborn > 0:
+                    level += f" ({player_data.reborn}⭐)"
+
                 description = (
-                    f"▸ **Level**: {player_data.lv}\n"
+                    f"▸ **Level**: {level}\n"
                     f"▸ **Rating**: {player_data.rating.current} (MAX {player_data.rating.max})\n"
                     f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"
                     f"▸ **Playcount**: {player_data.playcount}\n"
                 )
 
                 embed = (
-                    discord.Embed(title=player_data.name, description=description)
+                    discord.Embed(title=player_data.name, description=description, color=player_data.possession.color())
                     .set_author(name=player_data.nameplate.content)
                     .set_thumbnail(url=player_data.avatar)
                     .set_footer(

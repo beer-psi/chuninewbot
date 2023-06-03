@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from .enums import Possession
+
 
 @dataclass
 class Nameplate:
@@ -29,10 +31,15 @@ class Overpower:
 
 @dataclass(kw_only=True)
 class PlayerData:
+    possession: Possession
+    
     avatar: str
 
     name: str
+
+    reborn: int = 0
     lv: int
+
     playcount: Optional[int] = None
     last_play_date: datetime
 
