@@ -28,22 +28,22 @@ class EventsCog(commands.Cog, name="Events"):
 
         exc = error.original if hasattr(error, "original") else error
         if isinstance(exc, MaintenanceException):
-            return await ctx.send(
+            return await ctx.reply(
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
                 mention_author=False,
             )
         elif isinstance(exc, InvalidTokenException):
-            return await ctx.send(
+            return await ctx.reply(
                 f"Your CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.\nDetailed error: {error.original}",
                 mention_author=False,
             )
         elif isinstance(exc, ChuniNetException):
-            return await ctx.send(
+            return await ctx.reply(
                 "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login).",
                 mention_author=False,
             )
         elif isinstance(exc, commands.errors.ExpectedClosingQuoteError):
-            return await ctx.send(
+            return await ctx.reply(
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
@@ -57,9 +57,9 @@ class EventsCog(commands.Cog, name="Events"):
             or isinstance(exc, commands.NoPrivateMessage)
             or isinstance(exc, commands.PrivateMessageOnly)
         ):
-            await ctx.send(str(error), mention_author=False, delete_after=5)
+            await ctx.reply(str(error), mention_author=False, delete_after=5)
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"An error occurred while executing the command.",
                 mention_author=False,
             )
