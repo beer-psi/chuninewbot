@@ -165,3 +165,18 @@ class Possession(Enum):
                 return 0xfff6c5
             case 4:
                 return 0x0B6FF3 
+
+
+class SkillClass(Enum):
+    I = 1
+    II = 2
+    III = 3
+    IV = 4
+    V = 5
+    INFINITE = 6
+
+    def __str__(self):
+        if self.value == 6:
+            return "∞"
+        else:
+            return self.name

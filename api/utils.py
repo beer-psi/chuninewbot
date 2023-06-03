@@ -41,9 +41,11 @@ def parse_time(time: str, format: str = "%Y/%m/%d %H:%M") -> datetime:
         tzinfo=timezone.utc
     )  # JP time
 
+def extract_last_part(url: str) -> str:
+    return url.split("_")[-1].split(".")[0]
 
 def difficulty_from_imgurl(url: str) -> Difficulty:
-    match url.split("_")[-1].split(".")[0]:
+    match extract_last_part(url):
         case "basic":
             return Difficulty.BASIC
         case "advanced":

@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from yarl import URL
 
-from .enums import Possession
+from .enums import Possession, SkillClass
 from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
 from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
 from .record import (
@@ -22,6 +22,7 @@ from .record import (
 from .utils import (
     chuni_int,
     difficulty_from_imgurl,
+    extract_last_part,
     get_rank_and_cleartype,
     parse_basic_recent_record,
     parse_player_rating,
@@ -127,8 +128,18 @@ class ChuniNet:
 
         possession_elem = soup.select_one(".box_playerprofile")
         possession = Possession.from_str(
-            possession_elem["style"].split("_")[-1].split(".")[0]  # type: ignore
+            extract_last_part(possession_elem["style"])  # type: ignore
         ) if possession_elem and possession_elem.has_attr("style") else Possession.NONE
+
+        classemblem_base_elem = soup.select_one(".player_classemblem_base img")
+        emblem = SkillClass(
+            chuni_int(extract_last_part(classemblem_base_elem["src"]))  # type: ignore
+        ) if classemblem_base_elem and classemblem_base_elem.has_attr("src") else None
+
+        classemblem_top_elem = soup.select_one(".player_classemblem_top img")
+        medal = SkillClass(
+            chuni_int(extract_last_part(classemblem_top_elem["src"]))  # type: ignore
+        ) if classemblem_top_elem and classemblem_top_elem.has_attr("src") else None
 
         return PlayerData(
             avatar=avatar,
@@ -140,6 +151,8 @@ class ChuniNet:
             rating=Rating(rating, max_rating),
             overpower=Overpower(overpower_value, overpower_progress),
             last_play_date=last_play_date,
+            emblem=emblem,
+            medal=medal,
         )
 
     async def player_data(self):

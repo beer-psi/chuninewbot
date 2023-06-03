@@ -31,7 +31,16 @@ class ProfileCog(commands.Cog, name="Profile"):
                 if player_data.reborn > 0:
                     level += f" ({player_data.reborn}⭐)"
 
+                class_ = ""
+                if player_data.medal is not None:
+                    class_ += f"Class {player_data.medal}"
+                if player_data.emblem is not None:
+                    class_ += f", cleared all of class {player_data.emblem}"
+                if len(class_) > 0:
+                    class_ += "."
+
                 description = (
+                    f"{class_}\n"
                     f"▸ **Level**: {level}\n"
                     f"▸ **Rating**: {player_data.rating.current} (MAX {player_data.rating.max})\n"
                     f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"

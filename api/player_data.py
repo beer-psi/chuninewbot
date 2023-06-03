@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from .enums import Possession
+from .enums import Possession, SkillClass
 
 
 @dataclass
@@ -31,7 +31,7 @@ class Overpower:
 
 @dataclass(kw_only=True)
 class PlayerData:
-    possession: Possession
+    possession: Possession = Possession.NONE
     
     avatar: str
 
@@ -49,3 +49,6 @@ class PlayerData:
     currency: Optional[Currency] = None
 
     friend_code: Optional[str] = None
+
+    emblem: Optional[SkillClass] = None
+    medal: Optional[SkillClass] = None
