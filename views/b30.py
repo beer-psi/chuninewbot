@@ -11,11 +11,11 @@ from .pagination import PaginationView
 class B30View(PaginationView):
     def __init__(self, ctx: Context, items: list[MusicRecord], per_page: int = 3):
         super().__init__(ctx, items, per_page)
-        self.average = sum(item.play_rating for item in items) / len(items)
+        self.average = floor_to_ndp(sum(item.play_rating for item in items) / len(items), 2)
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
 
     def format_content(self) -> str:
-        return f"Average: **{self.average:.2f}**" + (
+        return f"Average: **{self.average}**" + (
             "\nPlay ratings marked with asterisks are estimated (due to lack of chart constants)."
             if self.has_estimated_play_rating
             else ""
