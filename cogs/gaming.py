@@ -2,6 +2,7 @@ import asyncio
 import io
 from asyncio import TimeoutError, CancelledError
 from random import randrange
+from threading import Lock
 
 import discord
 from aiohttp import ClientSession
@@ -22,6 +23,7 @@ class GamingCog(commands.Cog, name="Games"):
 
         self.session = ClientSession()
 
+        self.current_sessions_lock = Lock()
         self.current_sessions: dict[int, asyncio.Task] = {}
 
     @commands.hybrid_command("guess")
@@ -29,6 +31,9 @@ class GamingCog(commands.Cog, name="Games"):
         if ctx.channel.id in self.current_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
             return
+        
+        with self.current_sessions_lock:
+            self.current_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
 
         async with ctx.typing():
             prefix = await self.utils.guild_prefix(ctx)
@@ -114,7 +119,9 @@ class GamingCog(commands.Cog, name="Games"):
                 file=discord.File(io.BytesIO(jacket_bytes), "image.png"),
                 mention_author=False,
             )
-            del self.current_sessions[ctx.channel.id]
+
+            with self.current_sessions_lock:
+                del self.current_sessions[ctx.channel.id]
             return
     
     @commands.hybrid_command("skip")
