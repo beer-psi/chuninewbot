@@ -50,7 +50,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             "https://cdn.discordapp.com/attachments/1041530799704526961/1110813221008441375/uohhhroll.gif",
             mention_author=False,
         )
-    
+
     @commands.command("bu")
     async def bu(self, ctx: Context):
         """🛐"""

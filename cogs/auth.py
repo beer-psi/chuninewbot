@@ -45,7 +45,11 @@ class AuthCog(commands.Cog, name="Auth"):
                 except discord.errors.Forbidden:
                     please_delete_message = "Please delete the original command, as people can use the cookie to access your CHUNITHM-NET profile."
 
-            channel = ctx.author.dm_channel if ctx.author.dm_channel else await ctx.author.create_dm()
+            channel = (
+                ctx.author.dm_channel
+                if ctx.author.dm_channel
+                else await ctx.author.create_dm()
+            )
 
             await ctx.send(
                 f"Login instructions have been sent to your DMs. {please_delete_message}"

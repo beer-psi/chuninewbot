@@ -127,19 +127,31 @@ class ChuniNet:
         reborn = chuni_int(reborn_elem.get_text()) if reborn_elem else 0
 
         possession_elem = soup.select_one(".box_playerprofile")
-        possession = Possession.from_str(
-            extract_last_part(possession_elem["style"])  # type: ignore
-        ) if possession_elem and possession_elem.has_attr("style") else Possession.NONE
+        possession = (
+            Possession.from_str(
+                extract_last_part(possession_elem["style"])  # type: ignore
+            )
+            if possession_elem and possession_elem.has_attr("style")
+            else Possession.NONE
+        )
 
         classemblem_base_elem = soup.select_one(".player_classemblem_base img")
-        emblem = SkillClass(
-            chuni_int(extract_last_part(classemblem_base_elem["src"]))  # type: ignore
-        ) if classemblem_base_elem and classemblem_base_elem.has_attr("src") else None
+        emblem = (
+            SkillClass(
+                chuni_int(extract_last_part(classemblem_base_elem["src"]))  # type: ignore
+            )
+            if classemblem_base_elem and classemblem_base_elem.has_attr("src")
+            else None
+        )
 
         classemblem_top_elem = soup.select_one(".player_classemblem_top img")
-        medal = SkillClass(
-            chuni_int(extract_last_part(classemblem_top_elem["src"]))  # type: ignore
-        ) if classemblem_top_elem and classemblem_top_elem.has_attr("src") else None
+        medal = (
+            SkillClass(
+                chuni_int(extract_last_part(classemblem_top_elem["src"]))  # type: ignore
+            )
+            if classemblem_top_elem and classemblem_top_elem.has_attr("src")
+            else None
+        )
 
         return PlayerData(
             avatar=avatar,
@@ -206,15 +218,15 @@ class ChuniNet:
                 rank, clear = get_rank_and_cleartype(musicdata)
             difficulty_class = block.select_one(".musicdata_detail_difficulty")
             if difficulty_class is None:
-                difficulty_class = block.select_one(".musicdata_detail_difficulty_ultima")
+                difficulty_class = block.select_one(
+                    ".musicdata_detail_difficulty_ultima"
+                )
             records.append(
                 MusicRecord(
                     title=title,
                     jacket=jacket,
                     difficulty=difficulty_from_imgurl(
-                        " ".join(
-                            difficulty_class["class"]
-                        )
+                        " ".join(difficulty_class["class"])
                     ),
                     score=chuni_int(
                         block.select_one(".musicdata_score_num .text_b").get_text()

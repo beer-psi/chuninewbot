@@ -48,7 +48,11 @@ class ProfileCog(commands.Cog, name="Profile"):
                 )
 
                 embed = (
-                    discord.Embed(title=player_data.name, description=description, color=player_data.possession.color())
+                    discord.Embed(
+                        title=player_data.name,
+                        description=description,
+                        color=player_data.possession.color(),
+                    )
                     .set_author(name=player_data.nameplate.content)
                     .set_thumbnail(url=player_data.avatar)
                     .set_footer(

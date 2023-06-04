@@ -32,7 +32,7 @@ class Overpower:
 @dataclass(kw_only=True)
 class PlayerData:
     possession: Possession = Possession.NONE
-    
+
     avatar: str
 
     name: str

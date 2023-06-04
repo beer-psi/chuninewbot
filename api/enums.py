@@ -151,20 +151,20 @@ class Possession(Enum):
         elif s == "rainbow":
             return cls.RAINBOW
         else:
-            return cls.NONE   
+            return cls.NONE
 
     def color(self):
         match self.value:
             case 0:
-                return 0xcecece
+                return 0xCECECE
             case 1:
-                return 0x6baac7
+                return 0x6BAAC7
             case 2:
-                return 0xfce620
+                return 0xFCE620
             case 3:
-                return 0xfff6c5
+                return 0xFFF6C5
             case 4:
-                return 0x0B6FF3 
+                return 0x0B6FF3
 
 
 class SkillClass(Enum):
