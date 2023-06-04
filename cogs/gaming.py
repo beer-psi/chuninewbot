@@ -3,6 +3,7 @@ import io
 from asyncio import CancelledError, TimeoutError
 from random import randrange
 from threading import Lock
+from typing import Optional
 
 import discord
 from aiohttp import ClientSession
@@ -27,7 +28,7 @@ class GamingCog(commands.Cog, name="Games"):
         self.current_sessions: dict[int, asyncio.Task] = {}
 
     @commands.hybrid_group("guess", invoke_without_command=True)
-    async def guess(self, ctx: Context):
+    async def guess(self, ctx: Context, mode: str = "lenient"):
         if ctx.channel.id in self.current_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
             return
@@ -90,16 +91,22 @@ class GamingCog(commands.Cog, name="Games"):
         answer_embed.set_image(url=jacket_url)
 
         def check(m: discord.Message):
-            return (
-                m.channel == ctx.channel
-                and max(
-                    [
-                        jarowinkler_similarity(m.content.lower(), alias.lower())
-                        for alias in aliases
-                    ]
+            if mode == "strict":
+                return (
+                    m.channel == ctx.channel
+                    and m.content in aliases
                 )
-                >= 0.9
-            )
+            else:
+                return (
+                    m.channel == ctx.channel
+                    and max(
+                        [
+                            jarowinkler_similarity(m.content.lower(), alias.lower())
+                            for alias in aliases
+                        ]
+                    )
+                    >= 0.9
+                )
 
         content = ""
         try:
