@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import floor
 from urllib.parse import quote
 
 from discord.utils import escape_markdown
@@ -8,6 +9,12 @@ from .types import SongSearchResult
 
 def format_level(level: float) -> str:
     return str(level).replace(".0", "").replace(".5", "+")
+
+
+def floor_to_ndp(number: float, ndp: int) -> float:
+    mul = 10**ndp
+
+    return floor(number * mul) / mul
 
 
 def did_you_mean_text(result: SongSearchResult) -> str:

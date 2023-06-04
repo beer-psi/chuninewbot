@@ -20,7 +20,7 @@ class UtilsCog(commands.Cog, name="Utils"):
     async def guild_prefix(self, ctx: Context) -> str:
         if ctx.guild is None:
             return self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
-        
+
         async with self.bot.db.execute(
             "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
         ) as cursor:

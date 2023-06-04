@@ -73,7 +73,7 @@ class SearchCog(commands.Cog, name="Search"):
         if alias is not None:
             await ctx.reply(f"**{added_alias}** already exists.", mention_author=False)
             return
-        
+
         async with self.bot.db.execute(
             "SELECT id FROM chunirec_songs WHERE lower(title) = ?",
             (added_alias.lower(),),

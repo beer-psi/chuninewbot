@@ -1,6 +1,6 @@
 import asyncio
 import io
-from asyncio import TimeoutError, CancelledError
+from asyncio import CancelledError, TimeoutError
 from random import randrange
 from threading import Lock
 
@@ -31,9 +31,11 @@ class GamingCog(commands.Cog, name="Games"):
         if ctx.channel.id in self.current_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
             return
-        
+
         with self.current_sessions_lock:
-            self.current_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
+            self.current_sessions[ctx.channel.id] = asyncio.create_task(
+                asyncio.sleep(0)
+            )
 
         async with ctx.typing():
             prefix = await self.utils.guild_prefix(ctx)
@@ -85,7 +87,7 @@ class GamingCog(commands.Cog, name="Games"):
                 f"**Category**: {genre}"
             )
         )
-        answer_embed.set_image(url="attachment://image.png")
+        answer_embed.set_image(url=jacket_url)
 
         def check(m: discord.Message):
             return (
@@ -101,9 +103,9 @@ class GamingCog(commands.Cog, name="Games"):
 
         content = ""
         try:
-            self.current_sessions[ctx.channel.id] = asyncio.create_task(self.bot.wait_for(
-                "message", check=check, timeout=20
-            ))
+            self.current_sessions[ctx.channel.id] = asyncio.create_task(
+                self.bot.wait_for("message", check=check, timeout=20)
+            )
             msg = await self.current_sessions[ctx.channel.id]
             await msg.add_reaction("✅")
 
@@ -116,14 +118,13 @@ class GamingCog(commands.Cog, name="Games"):
             await ctx.send(
                 content=content,
                 embed=answer_embed,
-                file=discord.File(io.BytesIO(jacket_bytes), "image.png"),
                 mention_author=False,
             )
 
             with self.current_sessions_lock:
                 del self.current_sessions[ctx.channel.id]
             return
-    
+
     @commands.hybrid_command("skip")
     async def skip(self, ctx: Context):
         if ctx.channel.id not in self.current_sessions:

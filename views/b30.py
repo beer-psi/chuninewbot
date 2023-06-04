@@ -3,6 +3,7 @@ import discord.ui
 from discord.ext.commands import Context
 
 from api import MusicRecord
+from utils import floor_to_ndp
 
 from .pagination import PaginationView
 
@@ -27,7 +28,7 @@ class B30View(PaginationView):
         for idx, item in enumerate(items):
             embeds.append(
                 discord.Embed(
-                    description=f"▸ {item.rank} ▸ {item.score} ▸ **{item.play_rating:.2f}{'' if not item.unknown_const else '*'}**\n",
+                    description=f"▸ {item.rank} ▸ {item.score} ▸ **{floor_to_ndp(item.play_rating, 2)}{'' if not item.unknown_const else '*'}**\n",
                     color=item.difficulty.color(),
                 )
                 .set_author(
