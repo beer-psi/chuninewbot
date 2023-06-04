@@ -18,15 +18,13 @@ class GamingCog(commands.Cog, name="Games"):
         self.bot = bot
         self.session = ClientSession()
 
-        self.current_sessions = []
+        self.current_sessions = {}
 
     @commands.hybrid_command("guess")
     async def guess(self, ctx: Context):
         if ctx.channel.id in self.current_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
             return
-
-        self.current_sessions += [ctx.channel.id]
 
         async with ctx.typing():
             async with self.bot.db.execute(
@@ -35,7 +33,7 @@ class GamingCog(commands.Cog, name="Games"):
                 (id, title, genre, artist, jacket) = await cursor.fetchone()  # type: ignore
 
             async with self.bot.db.execute(
-                f"SELECT alias FROM aliases WHERE song_id = :id AND guild_id = :guild_id",
+                f"SELECT alias FROM aliases WHERE song_id = :id AND guild_id = -1 OR guild_id = :guild_id",
                 {"id": id, "guild_id": ctx.guild.id if ctx.guild is not None else -1},
             ) as cursor:
                 aliases = [alias for (alias,) in await cursor.fetchall()]
@@ -91,9 +89,10 @@ class GamingCog(commands.Cog, name="Games"):
             )
 
         try:
-            msg: discord.Message = await self.bot.wait_for(
+            self.current_sessions[ctx.channel.id] = self.bot.wait_for(
                 "message", check=check, timeout=20
             )
+            msg = await self.current_sessions[ctx.channel.id]
             await msg.add_reaction("✅")
 
             await ctx.reply(
@@ -110,7 +109,7 @@ class GamingCog(commands.Cog, name="Games"):
                 mention_author=False,
             )
         finally:
-            self.current_sessions.remove(ctx.channel.id)
+            del self.current_sessions[ctx.channel.id]
             return
 
 
