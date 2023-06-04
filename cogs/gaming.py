@@ -33,7 +33,7 @@ class GamingCog(commands.Cog, name="Games"):
                 (id, title, genre, artist, jacket) = await cursor.fetchone()  # type: ignore
 
             async with self.bot.db.execute(
-                f"SELECT alias FROM aliases WHERE song_id = :id AND guild_id = -1 OR guild_id = :guild_id",
+                f"SELECT alias FROM aliases WHERE song_id = :id AND (guild_id = -1 OR guild_id = :guild_id)",
                 {"id": id, "guild_id": ctx.guild.id if ctx.guild is not None else -1},
             ) as cursor:
                 aliases = [alias for (alias,) in await cursor.fetchall()]
