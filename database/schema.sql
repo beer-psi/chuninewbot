@@ -48,4 +48,9 @@ CREATE TABLE IF NOT EXISTS sdvxin(
     difficulty TEXT,
     FOREIGN KEY(song_id) REFERENCES chunirec_songs(id),
     UNIQUE(id, difficulty)
-)
+);
+
+CREATE TABLE IF NOT EXISTS guess_leaderboard(
+    discord_id INTEGER PRIMARY KEY,
+    score INTEGER
+);

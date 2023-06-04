@@ -26,7 +26,7 @@ class GamingCog(commands.Cog, name="Games"):
         self.current_sessions_lock = Lock()
         self.current_sessions: dict[int, asyncio.Task] = {}
 
-    @commands.hybrid_command("guess")
+    @commands.hybrid_group("guess", invoke_without_command=True)
     async def guess(self, ctx: Context):
         if ctx.channel.id in self.current_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
@@ -107,6 +107,7 @@ class GamingCog(commands.Cog, name="Games"):
                 self.bot.wait_for("message", check=check, timeout=20)
             )
             msg = await self.current_sessions[ctx.channel.id]
+            await self._increment_score(msg.author.id)
             await msg.add_reaction("✅")
 
             content = f"{msg.author.mention} has the correct answer!"
@@ -133,6 +134,36 @@ class GamingCog(commands.Cog, name="Games"):
 
         self.current_sessions[ctx.channel.id].cancel()
         return
+    
+    @guess.command("leaderboard")
+    async def guess_leaderboard(self, ctx: Context):
+        async with self.bot.db.execute("SELECT * FROM guess_leaderboard ORDER BY score DESC LIMIT 10") as cursor:
+            rows = await cursor.fetchall()
+        
+        embed = discord.Embed(title="Guess Leaderboard")
+        description = ""
+        for idx, row in enumerate(rows):
+            description += f"\u200B{idx + 1}. <@{row[0]}>: {row[1]}\n"
+        embed.description = description
+        await ctx.reply(embed=embed, mention_author=False)
+    
+    @guess.command("reset", hidden=True)
+    @commands.is_owner()
+    async def guess_reset(self, ctx: Context):
+        """Resets the c>guess leaderboard"""
+
+        await self.bot.db.execute("DELETE FROM guess_leaderboard")
+
+        await ctx.message.add_reaction("✅")
+    
+    async def _increment_score(self, discord_id: int):
+        async with self.bot.db.execute("SELECT score FROM guess_leaderboard WHERE discord_id = ?", (discord_id,)) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            await self.bot.db.execute("INSERT INTO guess_leaderboard VALUES (?, 1)", (discord_id,))
+        else:
+            await self.bot.db.execute("UPDATE guess_leaderboard SET score = score + 1 WHERE discord_id = ?", (discord_id,))
+        await self.bot.db.commit()
 
 
 async def setup(bot: ChuniBot) -> None:
