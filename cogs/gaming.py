@@ -39,7 +39,7 @@ class GamingCog(commands.Cog, name="Games"):
                 {"id": id, "guild_id": ctx.guild.id if ctx.guild is not None else -1},
             ) as cursor:
                 aliases = [alias for (alias,) in await cursor.fetchall()]
-            aliases += [title]
+            aliases = [title] + aliases
 
             jacket_url = f"{JACKET_BASE}/{jacket}"
             async with self.session.get(jacket_url) as resp:
@@ -67,9 +67,10 @@ class GamingCog(commands.Cog, name="Games"):
                 mention_author=False,
             )
 
+        answers = "\n".join(aliases)
         answer_embed = discord.Embed(
             description=(
-                f"**Answer**: {title}\n"
+                f"**Answer**: {answers}\n"
                 "\n"
                 f"**Artist**: {artist}\n"
                 f"**Category**: {genre}"
@@ -96,7 +97,7 @@ class GamingCog(commands.Cog, name="Games"):
             await msg.add_reaction("✅")
 
             await ctx.reply(
-                f"{msg.author} has the correct answer!",
+                f"{msg.author.mention} has the correct answer!",
                 embed=answer_embed,
                 file=discord.File(io.BytesIO(jacket_bytes), "image.png"),
                 mention_author=False,
