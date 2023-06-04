@@ -1,5 +1,6 @@
+import asyncio
 import io
-from asyncio import TimeoutError
+from asyncio import TimeoutError, CancelledError
 from random import randrange
 
 import discord
@@ -11,14 +12,17 @@ from PIL import Image
 
 from api.consts import JACKET_BASE
 from bot import ChuniBot
+from cogs.botutils import UtilsCog
 
 
 class GamingCog(commands.Cog, name="Games"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
+        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+
         self.session = ClientSession()
 
-        self.current_sessions = {}
+        self.current_sessions: dict[int, asyncio.Task] = {}
 
     @commands.hybrid_command("guess")
     async def guess(self, ctx: Context):
@@ -27,6 +31,8 @@ class GamingCog(commands.Cog, name="Games"):
             return
 
         async with ctx.typing():
+            prefix = await self.utils.guild_prefix(ctx)
+
             async with self.bot.db.execute(
                 'SELECT id, title, genre, artist, jacket FROM chunirec_songs WHERE genre != "WORLD\'S END" ORDER BY RANDOM() LIMIT 1'
             ) as cursor:
@@ -55,7 +61,7 @@ class GamingCog(commands.Cog, name="Games"):
 
             question_embed = discord.Embed(
                 title="Guess the song!",
-                description="You have 20 seconds to guess the song.",
+                description=f"You have 20 seconds to guess the song.\nUse `{prefix}skip` to skip.",
             )
             question_embed.set_image(url="attachment://image.png")
 
@@ -88,29 +94,37 @@ class GamingCog(commands.Cog, name="Games"):
                 >= 0.9
             )
 
+        content = ""
         try:
-            self.current_sessions[ctx.channel.id] = self.bot.wait_for(
+            self.current_sessions[ctx.channel.id] = asyncio.create_task(self.bot.wait_for(
                 "message", check=check, timeout=20
-            )
+            ))
             msg = await self.current_sessions[ctx.channel.id]
             await msg.add_reaction("✅")
 
-            await ctx.reply(
-                f"{msg.author.mention} has the correct answer!",
-                embed=answer_embed,
-                file=discord.File(io.BytesIO(jacket_bytes), "image.png"),
-                mention_author=False,
-            )
+            content = f"{msg.author.mention} has the correct answer!"
+        except CancelledError:
+            content = "Skipped!"
         except TimeoutError:
-            await ctx.reply(
-                "Time's up!",
+            content = "Time's up!"
+        finally:
+            await ctx.send(
+                content=content,
                 embed=answer_embed,
                 file=discord.File(io.BytesIO(jacket_bytes), "image.png"),
                 mention_author=False,
             )
-        finally:
             del self.current_sessions[ctx.channel.id]
             return
+    
+    @commands.hybrid_command("skip")
+    async def skip(self, ctx: Context):
+        if ctx.channel.id not in self.current_sessions:
+            await ctx.reply("There is no ongoing session in this channel!")
+            return
+
+        self.current_sessions[ctx.channel.id].cancel()
+        return
 
 
 async def setup(bot: ChuniBot) -> None:

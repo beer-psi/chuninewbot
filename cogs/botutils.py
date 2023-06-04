@@ -17,6 +17,16 @@ class UtilsCog(commands.Cog, name="Utils"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
 
+    async def guild_prefix(self, ctx: Context) -> str:
+        if ctx.guild is None:
+            return self.bot.cfg["DEFAULT_PREFIX"]  # type: ignore
+        
+        async with self.bot.db.execute(
+            "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
+        ) as cursor:
+            prefix = await cursor.fetchone()
+        return prefix[0] if prefix is not None else self.bot.cfg["DEFAULT_PREFIX"]  # type: ignore
+
     async def login_check(self, ctx_or_id: Context | int) -> str:
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
         clal = await self.fetch_cookie(id)
