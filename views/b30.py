@@ -3,7 +3,6 @@ import discord.ui
 from discord.ext.commands import Context
 
 from api import MusicRecord
-from utils import floor_to_ndp
 
 from .pagination import PaginationView
 
@@ -11,7 +10,7 @@ from .pagination import PaginationView
 class B30View(PaginationView):
     def __init__(self, ctx: Context, items: list[MusicRecord], per_page: int = 3):
         super().__init__(ctx, items, per_page)
-        self.average = floor_to_ndp(sum(item.play_rating for item in items) / len(items), 2)
+        self.average = sum(item.play_rating for item in items) / len(items)
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
 
     def format_content(self) -> str:
@@ -28,7 +27,7 @@ class B30View(PaginationView):
         for idx, item in enumerate(items):
             embeds.append(
                 discord.Embed(
-                    description=f"▸ {item.rank} ▸ {item.score} ▸ **{floor_to_ndp(item.play_rating, 2)}{'' if not item.unknown_const else '*'}**\n",
+                    description=f"▸ {item.rank} ▸ {item.score} ▸ **{item.play_rating}{'' if not item.unknown_const else '*'}**\n",
                     color=item.difficulty.color(),
                 )
                 .set_author(
