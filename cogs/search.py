@@ -3,7 +3,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.utils import escape_markdown
+from discord.utils import escape_markdown as emd
 
 from api.consts import JACKET_BASE
 from bot import ChuniBot
@@ -81,7 +81,7 @@ class SearchCog(commands.Cog, name="Search"):
             song = await cursor.fetchone()
         if song is not None:
             await ctx.reply(
-                f"**{added_alias}** is already a song title.", mention_author=False
+                f"**{emd(added_alias)}** is already a song title.", mention_author=False
             )
             return
 
@@ -91,7 +91,7 @@ class SearchCog(commands.Cog, name="Search"):
         )
         await self.bot.db.commit()
         await ctx.reply(
-            f"Added **{added_alias}** as an alias for **{song_title_or_alias}**.",
+            f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
             mention_author=False,
         )
 
@@ -125,7 +125,7 @@ class SearchCog(commands.Cog, name="Search"):
             (removed_alias.lower(), ctx.guild.id),
         )
         await self.bot.db.commit()
-        await ctx.reply(f"Removed **{removed_alias}**.", mention_author=False)
+        await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
 
     @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
@@ -148,7 +148,7 @@ class SearchCog(commands.Cog, name="Search"):
         embed = discord.Embed(
             title=result.title,
             description=(
-                f"**Artist**: {escape_markdown(result.artist)}\n"
+                f"**Artist**: {emd(result.artist)}\n"
                 f"**Category**: {result.genre}\n"
                 f"**Version**: {version} ({result.release.date()})\n"
                 f"**BPM**: {result.bpm if result.bpm != 0 else 'Unknown'}\n"
