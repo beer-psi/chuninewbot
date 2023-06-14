@@ -4,6 +4,7 @@ from discord.utils import escape_markdown
 
 from api.player_data import PlayerData
 from api.record import MusicRecord
+from utils.ranks import rank_icon
 
 from .pagination import PaginationView
 
@@ -24,7 +25,7 @@ class CompareView(PaginationView):
             discord.Embed(
                 description=(
                     f"**{escape_markdown(score.title)}** [{score.displayed_difficulty}]\n\n"
-                    f"▸ {score.rank} ▸ {score.clear} ▸ {score.score}"
+                    f"▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score}"
                 ),
                 color=score.difficulty.color(),
             )

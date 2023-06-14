@@ -6,6 +6,7 @@ from api import ChuniNet
 from api.player_data import PlayerData
 from api.record import DetailedRecentRecord, RecentRecord
 from bot import ChuniBot
+from utils.ranks import rank_icon
 
 from .pagination import PaginationView
 
@@ -53,7 +54,7 @@ class RecentRecordsView(PaginationView):
         for score in scores:
             embed = (
                 discord.Embed(
-                    description=f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n\n▸ **{score.rank}** ▸ {score.clear} ▸ {score.score}",
+                    description=f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n\n▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score}",
                     timestamp=score.date,
                     color=score.difficulty.color(),
                 )
@@ -76,7 +77,7 @@ class RecentRecordsView(PaginationView):
             discord.Embed(
                 description=(
                     f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n\n"
-                    f"▸ **{score.rank}** ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}\n"
+                    f"▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}\n"
                     f"▸ CRITICAL {score.judgements.jcrit}/JUSTICE {score.judgements.justice}/ATTACK {score.judgements.attack}/MISS {score.judgements.miss}\n"
                     f"▸ TAP {score.note_type.tap * 100:.2f}%/HOLD {score.note_type.hold * 100:.2f}%/SLIDE {score.note_type.slide * 100:.2f}%/AIR {score.note_type.air * 100:.2f}%/FLICK {score.note_type.flick * 100:.2f}%"
                 ),
