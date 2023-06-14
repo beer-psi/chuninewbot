@@ -21,6 +21,7 @@ class ProfileView(discord.ui.View):
         for item in self.children:
             if hasattr(item, "disabled"):
                 item.disabled = True  # type: ignore
+        self.clear_items()
         await self.message.edit(view=self)
 
     async def interaction_check(self, interaction: Interaction, /) -> bool:
