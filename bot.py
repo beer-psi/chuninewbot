@@ -13,10 +13,12 @@ import sys
 
 import aiosqlite
 import discord
+from aiohttp import web
 from discord.ext import commands
 from discord.ext.commands import Bot
 
 from utils.help import HelpCommand
+from web import init_app
 
 
 class ChuniBot(Bot):
@@ -100,6 +102,7 @@ async def startup():
             )
 
         try:
+            asyncio.ensure_future(web._run_app(init_app(bot), port=int(cfg.get("LOGIN_ENDPOINT_PORT", "573")), host="127.0.0.1"))
             await bot.start(token)
         except discord.LoginFailure:
             sys.exit(
