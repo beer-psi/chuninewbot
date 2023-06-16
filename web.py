@@ -38,7 +38,7 @@ async def login(request: web.Request) -> web.Response:
     if not otp.isdigit() and len(otp) != 6:
         raise web.HTTPBadRequest(reason="Invalid passcode provided")
 
-    request.config_dict["bot"].dispatch("chunithm_login", otp, clal)
+    request.config_dict["bot"].dispatch(f"chunithm_login_{otp}", clal)
     return web.Response(
         text=f"""<h1>Success!</h1>
 <p>Check the bot's DMs to see if the account has been successfully linked.</p>

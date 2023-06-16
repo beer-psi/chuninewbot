@@ -88,15 +88,13 @@ class AuthCog(commands.Cog, name="Auth"):
         if ctx.channel == channel:
             msg = view.message = await ctx.reply(embed=embed, view=view, mention_author=False)
         else:
-            msg = view.message = await channel.send(embed=embed, view=view)
-
-        def check(otp: str, _: str):
-            return otp == passcode
+            try:
+                msg = view.message = await channel.send(embed=embed, view=view)
+            except discord.errors.Forbidden:
+                return
 
         try:
-            _, clal = await self.bot.wait_for(
-                "chunithm_login", check=check, timeout=300
-            )
+            clal = await self.bot.wait_for(f"chunithm_login_{passcode}", timeout=300)
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore
                 await msg.edit(
                     content=None,
