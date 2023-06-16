@@ -102,7 +102,7 @@ async def startup():
             )
 
         try:
-            asyncio.ensure_future(web._run_app(init_app(bot), port=int(cfg.get("LOGIN_ENDPOINT_PORT", "573")), host="127.0.0.1"))
+            asyncio.ensure_future(web._run_app(init_app(bot), port=int(cfg.get("LOGIN_ENDPOINT_PORT", "5730")), host="127.0.0.1"))
             await bot.start(token)
         except discord.LoginFailure:
             sys.exit(
