@@ -23,29 +23,34 @@ async def login(request: web.Request) -> web.Response:
 
     if "otp" not in params or "clal" not in params:
         raise web.HTTPBadRequest(reason="Missing parameters")
-    
-    if params["clal"].startswith("clal="):
-        params["clal"] = params["clal"][5:]
 
-    if len(params["clal"]) != 64:
+    otp = params["otp"]
+    clal = params["clal"]
+    if not isinstance(otp, str) or not isinstance(clal, str):
+        raise web.HTTPBadRequest(reason="Invalid parameters")
+
+    if clal.startswith("clal="):
+        clal = clal[5:]
+
+    if len(clal) != 64:
         raise web.HTTPBadRequest(reason="Invalid cookie provided")
 
-    if not params["otp"].isdigit() and len(params["otp"]) != 6:
+    if not otp.isdigit() and len(otp) != 6:
         raise web.HTTPBadRequest(reason="Invalid passcode provided")
 
-    request.config_dict["bot"].dispatch("chunithm_login", params["otp"], params["clal"])
+    request.config_dict["bot"].dispatch("chunithm_login", otp, clal)
     return web.Response(
         text=f"""<h1>Success!</h1>
 <p>Check the bot's DMs to see if the account has been successfully linked.</p>
 
 <div>
     <p>full sync dx plus users can use this command to log in:</p>
-    <code>m!login {escape(params["clal"])}</code>
+    <code>m!login {escape(clal)}</code>
 </div>
 
 <div>
     <p>mimi xd bot users can use this command to log in:</p>
-    <code>m>login clal={escape(params["clal"])}</code>
+    <code>m>login clal={escape(clal)}</code>
 </div>
 
 
