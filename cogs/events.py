@@ -57,7 +57,7 @@ class EventsCog(commands.Cog, name="Events"):
             or isinstance(exc, commands.NoPrivateMessage)
             or isinstance(exc, commands.PrivateMessageOnly)
         ):
-            await ctx.reply(str(error), mention_author=False, delete_after=5)
+            await ctx.reply(str(error), mention_author=False)
         else:
             await ctx.reply(
                 f"An error occurred while executing the command.",

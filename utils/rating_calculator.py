@@ -21,8 +21,10 @@ def calculate_rating(score: int, internal_level: float) -> float:
     elif score >= 900_000:
         rating100 = level_base - 500 + ((score - 900_000) * 4) / 500
     elif score >= 800_000:
-        rating100 = (level_base - 500) / 2 + ((score - 800_000) * ((level_base - 500) / 2)) / 100_000
+        rating100 = (level_base - 500) / 2 + (
+            (score - 800_000) * ((level_base - 500) / 2)
+        ) / 100_000
     elif score >= 500_000:
         rating100 = (((level_base - 500) / 2) * (score - 500_000)) / 300_000
-    
+
     return max(floor(rating100) / 100, 0)

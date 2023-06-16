@@ -62,9 +62,7 @@ class RecentRecordsView(PaginationView):
                 .set_thumbnail(url=score.full_jacket_url())
             )
             if not score.unknown_const:
-                embed.set_footer(
-                    text=f"Play rating {score.play_rating}"
-                )
+                embed.set_footer(text=f"Play rating {score.play_rating}")
             embeds.append(embed)
 
         embeds.append(

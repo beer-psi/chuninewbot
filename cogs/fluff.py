@@ -7,7 +7,7 @@ from bot import ChuniBot
 class FluffCog(commands.Cog, name="Fluff"):
     def __init__(self) -> None:
         super().__init__()
-    
+
     @commands.command("unny")
     async def cunny(self, ctx: Context):
         """😭"""
@@ -45,7 +45,7 @@ class FluffCog(commands.Cog, name="Fluff"):
             "https://cdn.discordapp.com/emojis/1093540495818502164.gif",
             mention_author=False,
         )
-    
+
 
 async def setup(bot: ChuniBot):
     await bot.add_cog(FluffCog())

@@ -28,6 +28,7 @@ class SelectToCompareView(discord.ui.View):
 
     async def on_timeout(self) -> None:
         self.select.disabled = True
+        self.clear_items()
         self.stop()
 
     @discord.ui.select(placeholder="Select a score...")

@@ -8,7 +8,7 @@ from .types import SongSearchResult
 
 
 def trunc_to_ndp(number: float, dp: int) -> float:
-    mul = 10 ** dp
+    mul = 10**dp
     val = number * mul
 
     # Handle really dumb cases like 16.15 * 100 = 1614.9999999999998

@@ -92,10 +92,7 @@ class GamingCog(commands.Cog, name="Games"):
 
         def check(m: discord.Message):
             if mode == "strict":
-                return (
-                    m.channel == ctx.channel
-                    and m.content in aliases
-                )
+                return m.channel == ctx.channel and m.content in aliases
             else:
                 return (
                     m.channel == ctx.channel
@@ -141,19 +138,21 @@ class GamingCog(commands.Cog, name="Games"):
 
         self.current_sessions[ctx.channel.id].cancel()
         return
-    
+
     @guess.command("leaderboard")
     async def guess_leaderboard(self, ctx: Context):
-        async with self.bot.db.execute("SELECT * FROM guess_leaderboard ORDER BY score DESC LIMIT 10") as cursor:
+        async with self.bot.db.execute(
+            "SELECT * FROM guess_leaderboard ORDER BY score DESC LIMIT 10"
+        ) as cursor:
             rows = await cursor.fetchall()
-        
+
         embed = discord.Embed(title="Guess Leaderboard")
         description = ""
         for idx, row in enumerate(rows):
             description += f"\u200B{idx + 1}. <@{row[0]}>: {row[1]}\n"
         embed.description = description
         await ctx.reply(embed=embed, mention_author=False)
-    
+
     @guess.command("reset", hidden=True)
     @commands.is_owner()
     async def guess_reset(self, ctx: Context):
@@ -162,14 +161,21 @@ class GamingCog(commands.Cog, name="Games"):
         await self.bot.db.execute("DELETE FROM guess_leaderboard")
 
         await ctx.message.add_reaction("✅")
-    
+
     async def _increment_score(self, discord_id: int):
-        async with self.bot.db.execute("SELECT score FROM guess_leaderboard WHERE discord_id = ?", (discord_id,)) as cursor:
+        async with self.bot.db.execute(
+            "SELECT score FROM guess_leaderboard WHERE discord_id = ?", (discord_id,)
+        ) as cursor:
             row = await cursor.fetchone()
         if row is None:
-            await self.bot.db.execute("INSERT INTO guess_leaderboard VALUES (?, 1)", (discord_id,))
+            await self.bot.db.execute(
+                "INSERT INTO guess_leaderboard VALUES (?, 1)", (discord_id,)
+            )
         else:
-            await self.bot.db.execute("UPDATE guess_leaderboard SET score = score + 1 WHERE discord_id = ?", (discord_id,))
+            await self.bot.db.execute(
+                "UPDATE guess_leaderboard SET score = score + 1 WHERE discord_id = ?",
+                (discord_id,),
+            )
         await self.bot.db.commit()
 
 

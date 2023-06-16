@@ -12,7 +12,9 @@ from .pagination import PaginationView
 class B30View(PaginationView):
     def __init__(self, ctx: Context, items: list[MusicRecord], per_page: int = 3):
         super().__init__(ctx, items, per_page)
-        self.average = trunc_to_ndp(sum(item.play_rating for item in items) / len(items), 2)
+        self.average = trunc_to_ndp(
+            sum(item.play_rating for item in items) / len(items), 2
+        )
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
 
     def format_content(self) -> str:
