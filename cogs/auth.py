@@ -99,6 +99,7 @@ class AuthCog(commands.Cog, name="Auth"):
             )
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore
                 await msg.edit(
+                    content=None,
                     embed=discord.Embed(
                         title="Successfully logged in",
                         description="You can now use the bot's CHUNITHM-NET commands.",
@@ -106,6 +107,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 )
             else:
                 await msg.edit(
+                    content=None,
                     embed=discord.Embed(
                         title="Failed to login",
                         description=f"Invalid cookie: {e}",
@@ -113,6 +115,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 )
         except TimeoutError:
             await msg.edit(
+                content=None,
                 embed=discord.Embed(
                     title="Login session timed out",
                     description="Please use `c>login` to restart the login process.",
