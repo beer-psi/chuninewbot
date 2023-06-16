@@ -29,7 +29,8 @@ async def login(request: web.Request) -> web.Response:
 <h5>Check the bot's DMs to see if the account has been successfully linked.</h5>
 
 <img src="https://chunithm-net-eng.com/mobile/images/pen_sleep_apng.png">
-"""
+""",
+        content_type="text/html",
     )
 
 
