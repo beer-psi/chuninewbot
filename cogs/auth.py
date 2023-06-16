@@ -91,10 +91,10 @@ class AuthCog(commands.Cog, name="Auth"):
                 f"Then enter [this webpage](https://lng-tgk-aime-gw.am-all.net/common_auth/?otp={passcode}). You should see a `Not Found` error.\n"
                 "Open developer tools (Ctrl + Shift + I or F12) and paste this into the console:\n"
                 "```js\n"
-                "(function(d){c=(n)=>Object.fromEntries(d.cookie.split(';').map(c=>c.split('=')))[n];confirm(`Paste this in the bot's DMs:\\nc>login ${c('clal')}\\nPress OK to copy.`)&&navigator.clipboard.writeText(`c>login ${c('clal')}`)})(document)\n"
+                "!function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/1d1ca5c7b8322d44fea7c1406e37de0675514460/login.js?t='+Math.floor(Date.now()/60000);d.body.append(s)}(document)\n"
                 "```\n"
                 "(This cookie cannot access your Aime account! It can only be used to login to CHUNITHM-NET.)\n"
-                f"In case the website asks for a passcode, type {passcode} and select OK.\n"
+                f"In case the website asks for a passcode, type **{passcode}** and select OK.\n"
             ),
         )
         if ctx.channel == channel:
