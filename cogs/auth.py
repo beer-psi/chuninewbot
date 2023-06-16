@@ -95,7 +95,7 @@ class AuthCog(commands.Cog, name="Auth"):
 
         try:
             _, clal = await self.bot.wait_for(
-                "chunithm_login", check=check, timeout=120
+                "chunithm_login", check=check, timeout=300
             )
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore
                 await msg.edit(
