@@ -9,6 +9,7 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from views.login import LoginFlowView
 
 
 class AuthCog(commands.Cog, name="Auth"):
@@ -82,26 +83,12 @@ class AuthCog(commands.Cog, name="Auth"):
                 raise commands.BadArgument(f"Invalid cookie: {e}")
 
         passcode = str(self.random.randrange(10**5, 10**6))
-        embed = discord.Embed(
-            title="How to login",
-            description=(
-                "Log in to your account on [CHUNITHM-NET](https://chunthm-net-eng.com).\n"
-                "**Please do so in an incognito window!** Not doing so may cause the account to be logged out unexpectedly.\n"
-                "\n"
-                f"Then enter [this webpage](https://lng-tgk-aime-gw.am-all.net/common_auth/?otp={passcode}). You should see a `Not Found` error.\n"
-                "Open developer tools (Ctrl + Shift + I or F12) and paste this into the console:\n"
-                "(if you are on mobile, create a bookmark and paste this into the URL field, then run the bookmark)\n"
-                "```js\n"
-                "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/1d1ca5c7b8322d44fea7c1406e37de0675514460/login.js?t='+Math.floor(Date.now()/60000);d.body.append(s)}(document))\n"
-                "```\n"
-                "(This cookie cannot access your Aime account! It can only be used to login to CHUNITHM-NET.)\n"
-                f"In case the website asks for a passcode, type **{passcode}** and select OK.\n"
-            ),
-        )
+        view = LoginFlowView(ctx, passcode)
+        embed = view.format_embed(view.items[0])
         if ctx.channel == channel:
-            msg = await ctx.reply(embed=embed, mention_author=False)
+            msg = view.message = await ctx.reply(embed=embed, view=view, mention_author=False)
         else:
-            msg = await channel.send(embed=embed)
+            msg = view.message = await channel.send(embed=embed, view=view)
 
         def check(otp: str, _: str):
             return otp == passcode
