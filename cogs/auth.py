@@ -81,7 +81,7 @@ class AuthCog(commands.Cog, name="Auth"):
             else:
                 raise commands.BadArgument(f"Invalid cookie: {e}")
 
-        passcode = str(self.random.randrange(1000, 10000))
+        passcode = str(self.random.randrange(10**5, 10**6))
         embed = discord.Embed(
             title="How to login",
             description=(

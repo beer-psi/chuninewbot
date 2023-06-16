@@ -1,3 +1,4 @@
+from html import escape
 from typing import TYPE_CHECKING
 
 from aiohttp import web
@@ -22,11 +23,31 @@ async def login(request: web.Request) -> web.Response:
 
     if "otp" not in params or "clal" not in params:
         raise web.HTTPBadRequest(reason="Missing parameters")
+    
+    if params["clal"].startswith("clal="):
+        params["clal"] = params["clal"][5:]
+
+    if len(params["clal"]) != 64:
+        raise web.HTTPBadRequest(reason="Invalid cookie provided")
+
+    if not params["otp"].isdigit() and len(params["otp"]) != 6:
+        raise web.HTTPBadRequest(reason="Invalid passcode provided")
 
     request.config_dict["bot"].dispatch("chunithm_login", params["otp"], params["clal"])
     return web.Response(
-        text="""<h1>Success!</h1>
-<h5>Check the bot's DMs to see if the account has been successfully linked.</h5>
+        text=f"""<h1>Success!</h1>
+<p>Check the bot's DMs to see if the account has been successfully linked.</p>
+
+<div>
+    <p>full sync dx plus users can use this command to log in:</p>
+    <code>m!login {escape(params["clal"])}</code>
+</div>
+
+<div>
+    <p>mimi xd bot users can use this command to log in:</p>
+    <code>m>login clal={escape(params["clal"])}</code>
+</div>
+
 
 <img src="https://chunithm-net-eng.com/mobile/images/pen_sleep_apng.png">
 """,
