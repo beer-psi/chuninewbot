@@ -13,7 +13,7 @@ from api.consts import JACKET_BASE
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
-from utils import format_level, sdvxin_link, yt_search_link
+from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
 
@@ -124,7 +124,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             return
 
         rating = calculate_rating(score, chart_constant)
-        await ctx.reply(f"Calculation result: {rating}", mention_author=False)
+        await ctx.reply(f"Calculation result: {floor_to_ndp(rating, 2)}", mention_author=False)
 
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, query: float):

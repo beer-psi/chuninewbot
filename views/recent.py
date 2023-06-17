@@ -6,6 +6,7 @@ from api import ChuniNet
 from api.player_data import PlayerData
 from api.record import DetailedRecentRecord, RecentRecord
 from bot import ChuniBot
+from utils import floor_to_ndp
 from utils.ranks import rank_icon
 
 from .pagination import PaginationView
@@ -62,7 +63,7 @@ class RecentRecordsView(PaginationView):
                 .set_thumbnail(url=score.full_jacket_url())
             )
             if not score.unknown_const:
-                embed.set_footer(text=f"Play rating {score.play_rating}")
+                embed.set_footer(text=f"Play rating {floor_to_ndp(score.play_rating, 2)}")
             embeds.append(embed)
 
         embeds.append(
@@ -86,7 +87,7 @@ class RecentRecordsView(PaginationView):
             .set_thumbnail(url=score.full_jacket_url())
         )
         if not score.unknown_const:
-            embed.set_footer(text=f"Play rating {score.play_rating}")
+            embed.set_footer(text=f"Play rating {floor_to_ndp(score.play_rating, 2)}")
         return embed
 
     async def callback(self, interaction: discord.Interaction):

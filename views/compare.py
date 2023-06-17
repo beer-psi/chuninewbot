@@ -4,6 +4,7 @@ from discord.utils import escape_markdown
 
 from api.player_data import PlayerData
 from api.record import MusicRecord
+from utils import floor_to_ndp
 from utils.ranks import rank_icon
 
 from .pagination import PaginationView
@@ -37,7 +38,7 @@ class CompareView(PaginationView):
         )
         if score.play_rating is not None:
             embed.set_footer(
-                text=f"Play rating {score.play_rating}  •  {score.play_count} attempts"
+                text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  {score.play_count} attempts"
             )
         return embed
 
