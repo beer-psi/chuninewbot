@@ -26,5 +26,5 @@ jobs:
 
             git pull
 
-            /home/beerpsi/.local/bin/poetry install --all-extras
+            /home/beerpsi/.local/bin/poetry install
             systemctl --user restart chunibot

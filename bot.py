@@ -7,7 +7,6 @@ cfg = dotenv_values(BOT_DIR / ".env")
 
 
 import asyncio
-import importlib.util
 import logging
 import logging.handlers
 import sys
@@ -134,16 +133,4 @@ async def startup():
 
 
 if __name__ == "__main__":
-    UVLOOP_EXISTS = importlib.util.find_spec("uvloop") is not None
-
-    if sys.platform not in ("win32", "cygwin", "cli") and UVLOOP_EXISTS:
-        import uvloop  # type: ignore
-    
-    if sys.version_info >= (3, 11) and UVLOOP_EXISTS:
-        with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:  # type: ignore
-            runner.run(startup())
-    elif UVLOOP_EXISTS:
-        uvloop.install()  # type: ignore
-        asyncio.run(startup())
-    else:
-        asyncio.run(startup())
+    asyncio.run(startup())
