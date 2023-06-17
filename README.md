@@ -21,6 +21,8 @@ Discord bot for CHUNITHM International version.
 1. Copy `.env.example` to `.env` and fill in:
 - `TOKEN` with the bot's token
 - `CHUNIREC_TOKEN` with a token obtained from [Chunirec Developer Portal](https://developer.chunirec.net/)
+- `LOGIN_ENDPOINT_PORT` with an unprivileged, available port (>1024). This will be used by the web server to handle logins.
+Set to `-1` to disable.
 2. `poetry install`
 3. Run `update_db.py` to populate the song database
 4. Build [distlib](https://github.com/schiffma/distlib) and place it in `database/`

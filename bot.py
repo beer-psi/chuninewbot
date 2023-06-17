@@ -10,6 +10,7 @@ import asyncio
 import logging
 import logging.handlers
 import sys
+from typing import TYPE_CHECKING, Optional
 
 import aiosqlite
 import discord
@@ -20,10 +21,15 @@ from discord.ext.commands import Bot
 from utils.help import HelpCommand
 from web import init_app
 
+if TYPE_CHECKING:
+    from aiohttp.web import Application
+
 
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
     db: aiosqlite.Connection
+    app: Optional["Application"] = None
+    
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,6 +52,11 @@ def guild_specific_prefix(default: str):
 
 
 async def startup():
+    if (token := cfg.get("TOKEN")) is None:
+        sys.exit(
+            "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
+        )
+
     logger = logging.getLogger("discord")
     logger.setLevel(logging.DEBUG)
 
@@ -96,19 +107,18 @@ async def startup():
         bot.db = db
         bot.cfg = cfg
 
-        if (token := cfg.get("TOKEN")) is None:
-            sys.exit(
-                "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
-            )
-
-        try:
+        port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
+        if port is not None and port.isdigit() and int(port) > 0:
+            bot.app = init_app(bot)
             asyncio.ensure_future(
                 web._run_app(
-                    init_app(bot),
-                    port=int(cfg.get("LOGIN_ENDPOINT_PORT", "5730")),
+                    bot.app,
+                    port=int(port),
                     host="127.0.0.1",
                 )
             )
+
+        try:
             await bot.start(token)
         except discord.LoginFailure:
             sys.exit(

@@ -82,7 +82,7 @@ class AuthCog(commands.Cog, name="Auth"):
             else:
                 raise commands.BadArgument(f"Invalid cookie: {e}")
 
-        passcode = str(self.random.randrange(10**5, 10**6))
+        passcode = str(self.random.randrange(10**5, 10**6)) if self.bot.app is not None else None
         view = LoginFlowView(ctx, passcode)
         embed = view.format_embed(view.items[0])
         if ctx.channel == channel:
@@ -92,6 +92,9 @@ class AuthCog(commands.Cog, name="Auth"):
                 msg = view.message = await channel.send(embed=embed, view=view)
             except discord.errors.Forbidden:
                 return
+        
+        if self.bot.app is None:
+            return
 
         try:
             clal = await self.bot.wait_for(f"chunithm_login_{passcode}", timeout=300)
