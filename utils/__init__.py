@@ -7,10 +7,10 @@ from discord.utils import escape_markdown
 from .types import SongSearchResult
 
 
-def floor_to_ndp(number: float, dp: int) -> float:
-    with decimal.localcontext() as ctx:
-        ctx.rounding = decimal.ROUND_FLOOR
-        return float(round(decimal.Decimal(str(number)), dp))  # type: ignore
+def floor_to_ndp(number: decimal.Decimal | float, dp: int) -> decimal.Decimal:
+    return decimal.Decimal(str(number)).quantize(
+        decimal.Decimal("1") / (10 ** dp), rounding=decimal.ROUND_FLOOR
+    )
 
 
 def format_level(level: float) -> str:

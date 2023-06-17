@@ -1,10 +1,10 @@
-from math import floor
+from decimal import Decimal
 
 
-def calculate_rating(score: int, internal_level: float) -> float:
-    level_base = floor(internal_level * 10000)
+def calculate_rating(score: int, internal_level: float) -> Decimal:
+    level_base = Decimal(str(internal_level)) * 10000
 
-    rating100 = 0
+    rating100 = Decimal(0)
 
     if score >= 1_009_000:
         rating100 = level_base + 21_500
@@ -15,9 +15,9 @@ def calculate_rating(score: int, internal_level: float) -> float:
     elif score >= 1_000_000:
         rating100 = level_base + 10_000 + (score - 1_000_000)
     elif score >= 975_000:
-        rating100 = level_base + (score - 975_000) * 2 / 5
+        rating100 = level_base + Decimal(score - 975_000) * 2 / 5
     elif score >= 900_000:
-        rating100 = level_base - 50_000 + (score - 900_000) * 2 / 3
+        rating100 = level_base - 50_000 + Decimal(score - 900_000) * 2 / 3
     elif score >= 800_000:
         rating100 = (level_base - 50_000) / 2 + (
             (score - 800_000) * ((level_base - 50_000) / 2)
