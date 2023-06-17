@@ -1,5 +1,5 @@
+import decimal
 from datetime import datetime
-from math import ceil, floor
 from urllib.parse import quote
 
 from discord.utils import escape_markdown
@@ -8,14 +8,9 @@ from .types import SongSearchResult
 
 
 def floor_to_ndp(number: float, dp: int) -> float:
-    mul = 10**dp
-    val = number * mul
-
-    # Handle really dumb cases like 16.15 * 100 = 1614.9999999999998
-    if ceil(val) - val < 2 ** -32:
-        return ceil(val) / mul
-
-    return floor(val) / mul
+    with decimal.localcontext() as ctx:
+        ctx.rounding = decimal.ROUND_FLOOR
+        return float(round(decimal.Decimal(str(number)), dp))  # type: ignore
 
 
 def format_level(level: float) -> str:
