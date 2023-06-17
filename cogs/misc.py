@@ -66,7 +66,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         revision = (
             subprocess.run(
-                "git rev-parse --short HEAD",
+                ["git", "rev-parse", "--short", "HEAD"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
