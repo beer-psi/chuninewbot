@@ -1,6 +1,8 @@
+import subprocess
+import sys
+import time
 from random import random
 from typing import Optional
-from urllib.parse import quote
 
 import discord
 from discord.ext import commands
@@ -57,6 +59,48 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
         await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore
+
+    @commands.hybrid_command("status")
+    async def status(self, ctx: Context):
+        """View the bot's status."""
+
+        revision = (
+            subprocess.run(
+                "git rev-parse --short HEAD",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            .stdout.decode("utf-8")
+            .replace("\n", "")
+        )
+        if not revision:
+            revision = "unknown"
+
+        summary = [
+            f"chuninewbot revision `{revision}`",
+            f"discord.py `{discord.__version__}`",
+            f"Python `{sys.version}` on `{sys.platform}`",
+            "",
+            f"Online since <t:{int(self.bot.launch_time)}:R>",
+            "",
+            f"This bot can see {len(self.bot.guilds)} guild(s) and {len(self.bot.users)} user(s).",
+            f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms",
+        ]
+
+        await ctx.reply("\n".join(summary), mention_author=False)
+
+    @commands.hybrid_command("ping")
+    async def ping(self, ctx: Context):
+        start = time.perf_counter()
+        message = await ctx.send("Ping...")
+        end = time.perf_counter()
+        duration = (end - start) * 1000
+        await message.edit(
+            content=(
+                f"Pong! Took {duration:.2f}ms\n"
+                f"Websocket latency: {round(self.bot.latency * 1000, 2)}ms"
+            )
+        )
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calc(self, ctx: Context, score: int, chart_constant: float):

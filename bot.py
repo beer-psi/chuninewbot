@@ -10,6 +10,7 @@ import asyncio
 import logging
 import logging.handlers
 import sys
+from time import time
 from typing import TYPE_CHECKING, Optional
 
 import aiosqlite
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
     db: aiosqlite.Connection
+    launch_time: float
     app: Optional["Application"] = None
-    
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,6 +120,7 @@ async def startup():
             )
 
         try:
+            bot.launch_time = time()
             await bot.start(token)
         except discord.LoginFailure:
             sys.exit(
