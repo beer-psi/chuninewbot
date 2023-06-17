@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from .consts import JACKET_BASE
 from .enums import ClearType, Difficulty, Rank
+
+if TYPE_CHECKING:
+    from decimal import Decimal
 
 
 @dataclass
@@ -57,7 +60,7 @@ class MusicRecord(Record):
     level: Optional[str] = None
     internal_level: Optional[float] = None
     unknown_const: bool = True
-    play_rating: float = 0.0
+    play_rating: "float | Decimal" = 0.0
 
     def full_jacket_url(self) -> str:
         return f"{JACKET_BASE}/{self.jacket}"
