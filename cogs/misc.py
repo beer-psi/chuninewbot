@@ -64,15 +64,18 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def status(self, ctx: Context):
         """View the bot's status."""
 
-        revision = (
-            subprocess.run(
-                ["git", "rev-parse", "--short", "HEAD"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+        try: 
+            revision = (
+                subprocess.run(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                .stdout.decode("utf-8")
+                .replace("\n", "")
             )
-            .stdout.decode("utf-8")
-            .replace("\n", "")
-        )
+        except FileNotFoundError:
+            revision = "unknown"
         if not revision:
             revision = "unknown"
 
