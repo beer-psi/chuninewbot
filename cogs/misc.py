@@ -64,7 +64,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def status(self, ctx: Context):
         """View the bot's status."""
 
-        try: 
+        try:
             revision = (
                 subprocess.run(
                     ["git", "rev-parse", "--short", "HEAD"],

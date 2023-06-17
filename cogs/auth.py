@@ -82,17 +82,23 @@ class AuthCog(commands.Cog, name="Auth"):
             else:
                 raise commands.BadArgument(f"Invalid cookie: {e}")
 
-        passcode = str(self.random.randrange(10**5, 10**6)) if self.bot.app is not None else None
+        passcode = (
+            str(self.random.randrange(10**5, 10**6))
+            if self.bot.app is not None
+            else None
+        )
         view = LoginFlowView(ctx, passcode)
         embed = view.format_embed(view.items[0])
         if ctx.channel == channel:
-            msg = view.message = await ctx.reply(embed=embed, view=view, mention_author=False)
+            msg = view.message = await ctx.reply(
+                embed=embed, view=view, mention_author=False
+            )
         else:
             try:
                 msg = view.message = await channel.send(embed=embed, view=view)
             except discord.errors.Forbidden:
                 return
-        
+
         if self.bot.app is None:
             return
 
@@ -104,7 +110,7 @@ class AuthCog(commands.Cog, name="Auth"):
                     embed=discord.Embed(
                         title="Successfully logged in",
                         description="You can now use the bot's CHUNITHM-NET commands.",
-                    )
+                    ),
                 )
             else:
                 await msg.edit(
@@ -112,7 +118,7 @@ class AuthCog(commands.Cog, name="Auth"):
                     embed=discord.Embed(
                         title="Failed to login",
                         description=f"Invalid cookie: {e}",
-                    )
+                    ),
                 )
         except TimeoutError:
             await msg.edit(
@@ -120,7 +126,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 embed=discord.Embed(
                     title="Login session timed out",
                     description="Please use `c>login` to restart the login process.",
-                )
+                ),
             )
 
 
