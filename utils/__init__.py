@@ -1,16 +1,22 @@
 import decimal
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 from discord.utils import escape_markdown
 
 from .types import SongSearchResult
 
+if TYPE_CHECKING:
+    from typing import TypeVar
 
-def floor_to_ndp(number: decimal.Decimal | float, dp: int) -> decimal.Decimal:
-    return decimal.Decimal(str(number)).quantize(
-        decimal.Decimal("1") / (10 ** dp), rounding=decimal.ROUND_FLOOR
-    )
+    T = TypeVar("T")
+
+
+def floor_to_ndp(number: "T", dp: int) -> "T":
+    with decimal.localcontext() as ctx:
+        ctx.rounding = decimal.ROUND_FLOOR
+        return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore
 
 
 def format_level(level: float) -> str:
