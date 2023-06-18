@@ -68,8 +68,11 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
 
 
 def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
-    rank_img_url = cast(str, soup.select_one("img[src*=_rank_]")["src"])
-    rank = Rank(int(rank_img_url.split("_")[-1].split(".")[0]))
+    if (rank_img_elem := soup.select_one("img[src*=_rank_]")) is not None:
+        rank_img_url = cast(str, rank_img_elem["src"])
+        rank = Rank(int(rank_img_url.split("_")[-1].split(".")[0]))
+    else:
+        rank = Rank.D
 
     clear_type = (
         ClearType.CLEAR
@@ -83,44 +86,3 @@ def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
             clear_type = ClearType.ALL_JUSTICE
 
     return rank, clear_type
-
-
-def parse_basic_recent_record(record: Tag) -> RecentRecord:
-    idx_elem = record.select_one("form input[name=idx]")
-    if idx_elem is None:
-        detailed = None
-    else:
-        idx = int(cast(str, idx_elem["value"]))
-        token = cast(str, record.select_one("form input[name=token]")["value"])
-        detailed = DetailedParams(idx, token)
-
-    date = parse_time(
-        (record.select_one(".play_datalist_date, .box_inner01")).get_text()
-    )
-    jacket_elem = record.select_one(".play_jacket_img img")
-    if (jacket := cast(str | None, jacket_elem.get("data-original"))) is None:
-        jacket = cast(str, jacket_elem["src"])
-    jacket = jacket.split("/")[-1]
-    track = int(record.select_one(".play_track_text").get_text().split(" ")[1])
-    title = record.select_one(".play_musicdata_title").get_text()
-
-    score = int(
-        record.select_one(".play_musicdata_score_text").get_text().replace(",", "")
-    )
-    new_record = record.select_one(".play_musicdata_score_img") is not None
-    rank, clear = get_rank_and_cleartype(record.select_one(".play_musicdata_icon"))
-
-    return RecentRecord(
-        detailed=detailed,
-        track=track,
-        date=date,
-        title=title,
-        jacket=jacket,
-        difficulty=difficulty_from_imgurl(
-            cast(str, record.select_one(".play_track_result img")["src"])
-        ),
-        score=score,
-        rank=rank,
-        clear=clear,
-        new_record=new_record,
-    )

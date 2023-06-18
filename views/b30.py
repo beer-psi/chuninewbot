@@ -15,15 +15,22 @@ if TYPE_CHECKING:
 
 
 class B30View(PaginationView):
-    def __init__(self, ctx: Context, items: Sequence["MusicRecord"], per_page: int = 3):
+    def __init__(
+        self,
+        ctx: Context,
+        items: Sequence["MusicRecord"],
+        per_page: int = 3,
+        show_average: bool = True,
+    ):
         super().__init__(ctx, items, per_page)
         self.average = floor_to_ndp(
             sum(item.play_rating for item in items) / len(items), 2
         )
         self.has_estimated_play_rating = any(item.unknown_const for item in items)
+        self.show_average = show_average
 
     def format_content(self) -> str:
-        return f"Average: **{self.average}**" + (
+        return (f"Average: **{self.average}**" if self.show_average else "") + (
             "\nPlay ratings marked with asterisks are estimated (due to lack of chart constants)."
             if self.has_estimated_play_rating
             else ""

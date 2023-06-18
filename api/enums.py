@@ -180,3 +180,32 @@ class SkillClass(Enum):
             return "∞"
         else:
             return self.name
+
+
+class Genres(Enum):
+    ALL = 99
+    POPS_AND_ANIME = 0
+    NICONICO = 2
+    TOUHOU_PROJECT = 3
+    ORIGINAL = 5
+    VARIETY = 6
+    IRODORIMIDORI = 7
+    GEKIMAI = 9
+
+    def __str__(self):
+        if self.value == 99:
+            return "All genres"
+        if self.value == 0:
+            return "POPS & ANIME"
+        if self.value == 2:
+            return "niconico"
+        if self.value == 3:
+            return "東方Project"
+        if self.value == 5:
+            return "ORIGINAL"
+        if self.value == 6:
+            return "VARIETY"
+        if self.value == 7:
+            return "イロドリミドリ"
+        if self.value == 9:
+            return "ゲキマイ"

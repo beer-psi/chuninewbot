@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .consts import JACKET_BASE
 from .enums import ClearType, Difficulty, Rank
@@ -46,13 +46,13 @@ class Record:
     difficulty: Difficulty
     score: int
 
+    rank: Rank = Rank.D
+    clear: ClearType = ClearType.FAILED
+
 
 @dataclass(kw_only=True)
 class MusicRecord(Record):
     jacket: str
-
-    rank: Rank
-    clear: ClearType
 
     play_count: Optional[int] = None
 

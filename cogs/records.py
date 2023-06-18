@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
@@ -16,6 +17,9 @@ from views.recent import RecentRecordsView
 if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
+
+
+logger = logging.getLogger("chuninewbot")
 
 
 class SelectToCompareView(discord.ui.View):
@@ -303,6 +307,45 @@ class RecordsCog(commands.Cog, name="Records"):
             recent10 = await asyncio.gather(*tasks)
 
             view = B30View(ctx, recent10)
+            view.message = await ctx.reply(
+                content=view.format_content(),
+                embeds=view.format_page(view.items[: view.per_page]),
+                view=view,
+                mention_author=False,
+            )
+
+    @commands.hybrid_command("top")
+    async def top(
+        self,
+        ctx: Context,
+        level: str,
+        user: Optional[discord.User | discord.Member] = None,
+    ):
+        """View your best scores for a level."""
+
+        if level[-1] == "+" and int(level[:-1]) not in range(7, 16):
+            raise commands.BadArgument("Invalid level.")
+        if int(level[0:2]) not in range(1, 16):
+            raise commands.BadArgument("Invalid level.")
+
+        async with ctx.typing():
+            clal = await self.utils.login_check(ctx if user is None else user.id)
+
+            async with ChuniNet(clal) as client:
+                await client.authenticate()
+                records = await client.music_record_by_folder(level=level)
+                assert records is not None
+
+            if len(records) == 0:
+                return await ctx.reply(
+                    f"No scores found for level {level}.", mention_author=False
+                )
+
+            tasks = [self.utils.annotate_song(score) for score in records]
+            records = await asyncio.gather(*tasks)
+            records.sort(key=lambda x: x.score, reverse=True)
+
+            view = B30View(ctx, records, show_average=False)
             view.message = await ctx.reply(
                 content=view.format_content(),
                 embeds=view.format_page(view.items[: view.per_page]),
