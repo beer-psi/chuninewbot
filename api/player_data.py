@@ -30,10 +30,28 @@ class Overpower:
 
 
 @dataclass(kw_only=True)
+class UserAvatar:
+    base: str
+    back: str
+    skinfoot_r: str
+    skinfoot_l: str
+    skin: str
+    wear: str
+    face: str
+    face_cover: str
+    head: str
+    hand_r: str
+    hand_l: str
+    item_r: str
+    item_l: str
+
+
+@dataclass(kw_only=True)
 class PlayerData:
     possession: Possession = Possession.NONE
 
-    avatar: str
+    character: str
+    avatar: UserAvatar
 
     name: str
 

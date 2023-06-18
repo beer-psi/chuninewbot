@@ -1,14 +1,13 @@
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import aiohttp
 from bs4 import BeautifulSoup
-from bs4.element import Tag
 from yarl import URL
 
-from .enums import Possession, SkillClass
-from .exceptions import ChuniNetException, InvalidTokenException, MaintenanceException
-from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating
+from .enums import Possession, SkillClass, Rank, ClearType
+from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
+from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating, UserAvatar
 from .record import (
     DetailedParams,
     DetailedRecentRecord,
@@ -28,6 +27,9 @@ from .utils import (
     parse_player_rating,
     parse_time,
 )
+
+if TYPE_CHECKING:
+    from bs4.element import Tag
 
 
 class ChuniNet:
@@ -61,11 +63,17 @@ class ChuniNet:
 
     @property
     def user_id(self):
-        return self.session.cookie_jar.filter_cookies(self.base).get("userId").value
+        cookie = self.session.cookie_jar.filter_cookies(self.base).get("userId")
+        if cookie is None:
+            return None
+        return cookie.value
 
     @property
     def token(self):
-        return self.session.cookie_jar.filter_cookies(self.base).get("_t").value
+        cookie = self.session.cookie_jar.filter_cookies(self.base).get("_t")
+        if cookie is None:
+            return None
+        return cookie.value
 
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
@@ -83,23 +91,24 @@ class ChuniNet:
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
                 raise InvalidTokenException("Invalid cookie: No userId cookie found")
 
-            return self._parse_player_card(BeautifulSoup(await req.text(), "lxml"))
+            return self._parse_player_card_and_avatar(BeautifulSoup(await req.text(), "lxml"))
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
             await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
-        if response.cookies.get("_t") is None:
+        if response.url.path == "/mobile/error/":
             soup = BeautifulSoup(await response.text(), "lxml")
             err = soup.select(".block.text_l .font_small")
-            raise ChuniNetException(
-                f"The server returned an error: {err[1].get_text() if err else ''}"
-            )
+
+            errcode = int(err[0].get_text().split(":")[1])
+            description = err[1].get_text() if len(err) > 1 else ""
+            raise ChuniNetError(errcode, description)
         return response
 
-    def _parse_player_card(self, soup: BeautifulSoup):
-        avatar = cast(str, soup.select_one(".player_chara_info img")["src"])
+    def _parse_player_card_and_avatar(self, soup: BeautifulSoup):
+        character = cast(str, soup.select_one(".player_chara_info img")["src"])
 
         name = soup.select_one(".player_name_in").get_text()
         lv = chuni_int(soup.select_one(".player_lv").get_text())
@@ -153,7 +162,25 @@ class ChuniNet:
             else None
         )
 
+        avatar_group = soup.select_one(".avatar_group")
+        avatar = UserAvatar(
+            base="https://new.chunithm-net.com/chuni-mobile/html/mobile/images/avatar_base.png",
+            back=avatar_group.select_one(".avatar_back img")["src"],
+            skinfoot_r=avatar_group.select_one(".avatar_skinfoot_r img")["src"],
+            skinfoot_l=avatar_group.select_one(".avatar_skinfoot_l img")["src"],
+            skin=avatar_group.select_one(".avatar_skin img")["src"],
+            wear=avatar_group.select_one(".avatar_wear img")["src"],
+            face=avatar_group.select_one(".avatar_face img")["src"],
+            face_cover=avatar_group.select_one(".avatar_faceCover img")["src"],
+            head=avatar_group.select_one(".avatar_head img")["src"],
+            hand_r=avatar_group.select_one(".avatar_hand_r img")["src"],
+            hand_l=avatar_group.select_one(".avatar_hand_l img")["src"],
+            item_r=avatar_group.select_one(".avatar_item_r img")["src"],
+            item_l=avatar_group.select_one(".avatar_item_l img")["src"],
+        )
+
         return PlayerData(
+            character=character,
             avatar=avatar,
             name=name,
             lv=lv,
@@ -171,7 +198,7 @@ class ChuniNet:
         resp = await self._request("mobile/home/playerData")
         soup = BeautifulSoup(await resp.text(), "lxml")
 
-        data = self._parse_player_card(soup)
+        data = self._parse_player_card_and_avatar(soup)
 
         owned_currency = chuni_int(
             soup.select_one(".user_data_point .user_data_text").get_text()
@@ -210,35 +237,44 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
 
-        jacket = str(soup.select_one(".play_jacket_img img")["src"]).split("/")[-1]
-        title = soup.select_one(".play_musicdata_title").get_text()
+        jacket = (
+            str(elem["src"]).split("/")[-1]
+            if (elem := soup.select_one(".play_jacket_img img"))
+            else ""
+        )
+        title = (
+            elem.get_text()
+            if (elem := soup.select_one(".play_musicdata_title"))
+            else ""
+        )
         records = []
         for block in soup.select(".music_box"):
             if (musicdata := block.select_one(".play_musicdata_icon")) is not None:
                 rank, clear = get_rank_and_cleartype(musicdata)
-            difficulty_class = block.select_one(".musicdata_detail_difficulty")
-            if difficulty_class is None:
-                difficulty_class = block.select_one(
-                    ".musicdata_detail_difficulty_ultima"
-                )
+            else:
+                rank, clear = Rank.D, ClearType.FAILED
             records.append(
                 MusicRecord(
                     title=title,
                     jacket=jacket,
-                    difficulty=difficulty_from_imgurl(
-                        " ".join(difficulty_class["class"])
-                    ),
+                    difficulty=difficulty_from_imgurl(" ".join(block["class"])),
                     score=chuni_int(
-                        block.select_one(".musicdata_score_num .text_b").get_text()
+                        elem.get_text()
+                        if (elem := block.select_one(".musicdata_score_num .text_b"))
+                        is not None
+                        else "0"
                     ),
                     rank=rank,
                     clear=clear,
-                    play_count=int(
-                        block.select_one(
-                            ".musicdata_score_num .text_b:-soup-contains(times)"
+                    play_count=chuni_int(
+                        elem.get_text().replace("times", "")
+                        if (
+                            elem := block.select_one(
+                                ".musicdata_score_num .text_b:-soup-contains(times)"
+                            )
                         )
-                        .get_text()
-                        .replace("times", "")
+                        is not None
+                        else "0"
                     ),
                 )
             )
@@ -289,7 +325,7 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
         record = DetailedRecentRecord.from_basic(
-            parse_basic_recent_record(cast(Tag, soup.select_one(".frame01_inside")))
+            parse_basic_recent_record(cast("Tag", soup.select_one(".frame01_inside")))
         )
         record.idx = idx
 
