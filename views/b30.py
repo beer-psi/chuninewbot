@@ -1,16 +1,21 @@
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
 import discord
 import discord.ui
 from discord.ext.commands import Context
 
-from api import MusicRecord
 from utils import floor_to_ndp
 from utils.ranks import rank_icon
 
 from .pagination import PaginationView
 
+if TYPE_CHECKING:
+    from api import MusicRecord
+
 
 class B30View(PaginationView):
-    def __init__(self, ctx: Context, items: list[MusicRecord], per_page: int = 3):
+    def __init__(self, ctx: Context, items: Sequence["MusicRecord"], per_page: int = 3):
         super().__init__(ctx, items, per_page)
         self.average = floor_to_ndp(
             sum(item.play_rating for item in items) / len(items), 2
@@ -25,8 +30,8 @@ class B30View(PaginationView):
         )
 
     def format_page(
-        self, items: list[MusicRecord], start_index: int = 0
-    ) -> list[discord.Embed]:
+        self, items: Sequence["MusicRecord"], start_index: int = 0
+    ) -> Sequence[discord.Embed]:
         embeds = []
         for idx, item in enumerate(items):
             embeds.append(

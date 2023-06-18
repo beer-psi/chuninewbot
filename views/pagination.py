@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 from math import ceil
 
 import discord.ui
@@ -9,7 +10,7 @@ from discord.ext.commands import Context
 class PaginationView(discord.ui.View):
     message: discord.Message
 
-    def __init__(self, ctx: Context, items: list, per_page: int = 5):
+    def __init__(self, ctx: Context, items: Sequence, per_page: int = 5):
         super().__init__(timeout=120)
         self.ctx = ctx
         self.items = items

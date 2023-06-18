@@ -1,20 +1,22 @@
-from datetime import datetime, time, timezone
+from datetime import datetime
 from math import floor
-from typing import Optional, overload
+from typing import TYPE_CHECKING, Optional, overload
 
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord.ext.commands import Context
 
 from api.enums import Rank
 from api.record import DetailedRecentRecord, MusicRecord, Record
-from bot import ChuniBot
 from update_db import update_db
 from utils.rating_calculator import calculate_rating
 from utils.types import SongSearchResult
 
+if TYPE_CHECKING:
+    from bot import ChuniBot
+
 
 class UtilsCog(commands.Cog, name="Utils"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
@@ -189,5 +191,5 @@ class UtilsCog(commands.Cog, name="Utils"):
             cmd.enabled = True
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(UtilsCog(bot))

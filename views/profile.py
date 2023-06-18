@@ -1,17 +1,18 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord.ui
 from discord import Interaction
 from discord.ext.commands import Context
 
-from api.player_data import PlayerData
+if TYPE_CHECKING:
+    from api.player_data import PlayerData
 
 
 class ProfileView(discord.ui.View):
     message: discord.Message
 
     def __init__(
-        self, ctx: Context, profile: PlayerData, *, timeout: Optional[float] = 120
+        self, ctx: Context, profile: "PlayerData", *, timeout: Optional[float] = 120
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx

@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import discord
 from discord.ext import commands
@@ -8,12 +8,14 @@ from discord.ext.commands import Context
 from api import ChuniNet
 from api.consts import JACKET_BASE
 from api.enums import Difficulty
-from bot import ChuniBot
-from cogs.botutils import UtilsCog
 from utils import did_you_mean_text
 from views.b30 import B30View
 from views.compare import CompareView
 from views.recent import RecentRecordsView
+
+if TYPE_CHECKING:
+    from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class SelectToCompareView(discord.ui.View):
@@ -39,9 +41,9 @@ class SelectToCompareView(discord.ui.View):
 
 
 class RecordsCog(commands.Cog, name="Records"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(
@@ -309,5 +311,5 @@ class RecordsCog(commands.Cog, name="Records"):
             )
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(RecordsCog(bot))

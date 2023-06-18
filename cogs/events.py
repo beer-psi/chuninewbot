@@ -1,28 +1,31 @@
 import logging
 import traceback
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import aiohttp
 import discord
 from discord import Webhook
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.ext.commands.errors import CommandInvokeError
 
 from api.exceptions import (
     ChuniNetException,
     InvalidTokenException,
     MaintenanceException,
 )
-from bot import ChuniBot, cfg
+
+if TYPE_CHECKING:
+    from discord.ext.commands.errors import CommandInvokeError
+
+    from bot import ChuniBot
 
 
 class EventsCog(commands.Cog, name="Events"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error: CommandInvokeError):
+    async def on_command_error(self, ctx: Context, error: "CommandInvokeError"):
         if isinstance(error, commands.CommandNotFound):
             return
 
@@ -66,7 +69,7 @@ class EventsCog(commands.Cog, name="Events"):
             logging.getLogger("discord").error(
                 "Exception in command %s", ctx.command, exc_info=exc
             )
-            if webhook_url := cfg.get("ERROR_REPORTING_WEBHOOK"):
+            if webhook_url := self.bot.cfg.get("ERROR_REPORTING_WEBHOOK"):
                 async with aiohttp.ClientSession() as session:
                     webhook = Webhook.from_url(webhook_url, session=session)
 
@@ -86,5 +89,5 @@ class EventsCog(commands.Cog, name="Events"):
                     )
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(EventsCog(bot))

@@ -1,7 +1,10 @@
+from typing import TYPE_CHECKING
+
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from bot import ChuniBot
+if TYPE_CHECKING:
+    from bot import ChuniBot
 
 
 class FluffCog(commands.Cog, name="Fluff"):
@@ -47,5 +50,5 @@ class FluffCog(commands.Cog, name="Fluff"):
         )
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(FluffCog())

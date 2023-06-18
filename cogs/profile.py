@@ -1,19 +1,21 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from api import ChuniNet
-from bot import ChuniBot
-from cogs.botutils import UtilsCog
 from views.profile import ProfileView
+
+if TYPE_CHECKING:
+    from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class ProfileCog(commands.Cog, name="Profile"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command(name="chunithm", aliases=["chuni", "profile"])
     async def chunithm(
@@ -63,10 +65,10 @@ class ProfileCog(commands.Cog, name="Profile"):
                 view = ProfileView(ctx, player_data)
                 view.message = await ctx.reply(
                     embed=embed,
-                    view=view if user is None else None,
+                    view=view if user is None else None,  # type: ignore
                     mention_author=False,
                 )
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(ProfileCog(bot))

@@ -124,7 +124,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             return
 
         rating = calculate_rating(score, chart_constant)
-        await ctx.reply(f"Calculation result: {floor_to_ndp(rating, 2)}", mention_author=False)
+        await ctx.reply(
+            f"Calculation result: {floor_to_ndp(rating, 2)}", mention_author=False
+        )
 
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, query: float):

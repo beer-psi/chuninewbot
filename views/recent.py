@@ -1,18 +1,25 @@
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
 import discord.ui
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
-from api import ChuniNet
-from api.player_data import PlayerData
-from api.record import DetailedRecentRecord, RecentRecord
 from bot import ChuniBot
 from utils import floor_to_ndp
 from utils.ranks import rank_icon
 
 from .pagination import PaginationView
 
+if TYPE_CHECKING:
+    from api import ChuniNet
+    from api.player_data import PlayerData
+    from api.record import DetailedRecentRecord, RecentRecord
 
-def split_scores_into_credits(scores: list[RecentRecord]) -> list[list[RecentRecord]]:
+
+def split_scores_into_credits(
+    scores: Sequence["RecentRecord"],
+) -> Sequence[Sequence["RecentRecord"]]:
     credits = []
     current_credit = []
     for score in scores:
@@ -27,10 +34,10 @@ class RecentRecordsView(PaginationView):
     def __init__(
         self,
         ctx: Context,
-        bot: ChuniBot,
-        scores: list[RecentRecord],
-        chuni_client: ChuniNet,
-        userinfo: PlayerData,
+        bot: "ChuniBot",
+        scores: Sequence["RecentRecord"],
+        chuni_client: "ChuniNet",
+        userinfo: "PlayerData",
     ):
         super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
         self.chuni_client = chuni_client
@@ -50,7 +57,9 @@ class RecentRecordsView(PaginationView):
         ]
         self.dropdown.options = self._dropdown_options[:25]
 
-    def format_score_page(self, scores: list[RecentRecord]) -> list[discord.Embed]:
+    def format_score_page(
+        self, scores: Sequence["RecentRecord"]
+    ) -> Sequence[discord.Embed]:
         embeds = []
         for score in scores:
             embed = (
@@ -63,7 +72,9 @@ class RecentRecordsView(PaginationView):
                 .set_thumbnail(url=score.full_jacket_url())
             )
             if not score.unknown_const:
-                embed.set_footer(text=f"Play rating {floor_to_ndp(score.play_rating, 2)}")
+                embed.set_footer(
+                    text=f"Play rating {floor_to_ndp(score.play_rating, 2)}"
+                )
             embeds.append(embed)
 
         embeds.append(
@@ -71,7 +82,9 @@ class RecentRecordsView(PaginationView):
         )
         return embeds
 
-    def format_detailed_score_page(self, score: DetailedRecentRecord) -> discord.Embed:
+    def format_detailed_score_page(
+        self, score: "DetailedRecentRecord"
+    ) -> discord.Embed:
         embed = (
             discord.Embed(
                 description=(

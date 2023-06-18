@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import discord
 import discord.ui
 from discord.ext.commands import Context
@@ -10,11 +12,11 @@ from .pagination import PaginationView
 
 class SonglistView(PaginationView):
     # tuple is (title, difficulty, sdvx.in id)
-    def __init__(self, ctx: Context, songs: list[tuple[str, str, str | None]]):
+    def __init__(self, ctx: Context, songs: Sequence[tuple[str, str, str | None]]):
         super().__init__(ctx, items=songs, per_page=15)
 
     def format_songlist(
-        self, songs: list[tuple[str, str, str | None]], start_index: int = 0
+        self, songs: Sequence[tuple[str, str, str | None]], start_index: int = 0
     ) -> discord.Embed:
         songlist = ""
         for idx, song in enumerate(songs):

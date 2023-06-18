@@ -1,21 +1,23 @@
 from asyncio import TimeoutError
 from secrets import SystemRandom
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from api import ChuniNet
-from bot import ChuniBot
-from cogs.botutils import UtilsCog
 from views.login import LoginFlowView
+
+if TYPE_CHECKING:
+    from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class AuthCog(commands.Cog, name="Auth"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
         self.random = SystemRandom()
 
     @commands.hybrid_command(
@@ -130,5 +132,5 @@ class AuthCog(commands.Cog, name="Auth"):
             )
 
 
-async def setup(bot: ChuniBot) -> None:
+async def setup(bot: "ChuniBot") -> None:
     await bot.add_cog(AuthCog(bot))

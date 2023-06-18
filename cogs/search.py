@@ -1,4 +1,4 @@
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -6,7 +6,6 @@ from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
 
 from api.consts import JACKET_BASE
-from bot import ChuniBot
 from utils import (
     did_you_mean_text,
     format_level,
@@ -15,13 +14,15 @@ from utils import (
     yt_search_link,
 )
 
-from .botutils import UtilsCog
+if TYPE_CHECKING:
+    from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class SearchCog(commands.Cog, name="Search"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore
 
     @commands.hybrid_command("addalias")
     @commands.guild_only()
@@ -186,5 +187,5 @@ class SearchCog(commands.Cog, name="Search"):
         await ctx.reply(embed=embed, mention_author=False)
 
 
-async def setup(bot: ChuniBot):
+async def setup(bot: "ChuniBot"):
     await bot.add_cog(SearchCog(bot))

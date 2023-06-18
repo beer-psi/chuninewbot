@@ -1,27 +1,32 @@
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
-from api.player_data import PlayerData
-from api.record import MusicRecord
 from utils import floor_to_ndp
 from utils.ranks import rank_icon
 
 from .pagination import PaginationView
+
+if TYPE_CHECKING:
+    from api.player_data import PlayerData
+    from api.record import MusicRecord
 
 
 class CompareView(PaginationView):
     def __init__(
         self,
         ctx: Context,
-        player_data: PlayerData,
-        items: list[MusicRecord],
+        player_data: "PlayerData",
+        items: Sequence["MusicRecord"],
         per_page: int = 1,
     ):
         self.player_data = player_data
         super().__init__(ctx, items, per_page)
 
-    def format_embed(self, score: MusicRecord) -> discord.Embed:
+    def format_embed(self, score: "MusicRecord") -> discord.Embed:
         embed = (
             discord.Embed(
                 description=(

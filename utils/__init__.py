@@ -5,10 +5,10 @@ from urllib.parse import quote
 
 from discord.utils import escape_markdown
 
-from .types import SongSearchResult
-
 if TYPE_CHECKING:
     from typing import TypeVar
+
+    from .types import SongSearchResult
 
     T = TypeVar("T")
 
@@ -23,7 +23,7 @@ def format_level(level: float) -> str:
     return str(level).replace(".0", "").replace(".5", "+")
 
 
-def did_you_mean_text(result: SongSearchResult) -> str:
+def did_you_mean_text(result: "SongSearchResult") -> str:
     did_you_mean = f"**{escape_markdown(result.title)}**"
     if result.alias is not None:
         did_you_mean = f"**{escape_markdown(result.alias)}** (for {did_you_mean})"

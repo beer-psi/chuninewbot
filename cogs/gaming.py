@@ -3,7 +3,7 @@ import io
 from asyncio import CancelledError, TimeoutError
 from random import randrange
 from threading import Lock
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession
@@ -13,14 +13,16 @@ from jarowinkler import jarowinkler_similarity
 from PIL import Image
 
 from api.consts import JACKET_BASE
-from bot import ChuniBot
-from cogs.botutils import UtilsCog
+
+if TYPE_CHECKING:
+    from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class GamingCog(commands.Cog, name="Games"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
 
         self.session = ClientSession()
 
@@ -179,5 +181,5 @@ class GamingCog(commands.Cog, name="Games"):
         await self.bot.db.commit()
 
 
-async def setup(bot: ChuniBot) -> None:
+async def setup(bot: "ChuniBot") -> None:
     await bot.add_cog(GamingCog(bot))
