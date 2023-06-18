@@ -343,7 +343,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             tasks = [self.utils.annotate_song(score) for score in records]
             records = await asyncio.gather(*tasks)
-            records.sort(key=lambda x: x.score, reverse=True)
+            records.sort(key=lambda x: x.play_rating, reverse=True)
 
             view = B30View(ctx, records, show_average=False)
             view.message = await ctx.reply(
