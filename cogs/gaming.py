@@ -9,7 +9,7 @@ import discord
 from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
-from jarowinkler import jarowinkler_similarity
+from jarowinkler import jaro_similarity
 from PIL import Image
 
 from api.consts import JACKET_BASE
@@ -100,7 +100,7 @@ class GamingCog(commands.Cog, name="Games"):
                     m.channel == ctx.channel
                     and max(
                         [
-                            jarowinkler_similarity(m.content.lower(), alias.lower())
+                            jaro_similarity(m.content.lower(), alias.lower())
                             for alias in aliases
                         ]
                     )
