@@ -88,16 +88,35 @@ class RecentRecordsView(PaginationView):
         embed = (
             discord.Embed(
                 description=(
-                    f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n\n"
-                    f"▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}\n"
-                    f"▸ CRITICAL {score.judgements.jcrit}/JUSTICE {score.judgements.justice}/ATTACK {score.judgements.attack}/MISS {score.judgements.miss}\n"
-                    f"▸ TAP {score.note_type.tap * 100:.2f}%/HOLD {score.note_type.hold * 100:.2f}%/SLIDE {score.note_type.slide * 100:.2f}%/AIR {score.note_type.air * 100:.2f}%/FLICK {score.note_type.flick * 100:.2f}%"
+                    f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n"
+                    f"▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}"
                 ),
                 color=score.difficulty.color(),
                 timestamp=score.date,
             )
             .set_author(name=f"TRACK {score.track}")
             .set_thumbnail(url=score.full_jacket_url())
+            .add_field(
+                name="\u200B",
+                value=(
+                    f"CRITICAL {score.judgements.jcrit}\n"
+                    f"JUSTICE {score.judgements.justice}\n"
+                    f"ATTACK {score.judgements.attack}\n"
+                    f"MISS {score.judgements.miss}"
+                ),
+                inline=True,
+            )
+            .add_field(
+                name="\u200B",
+                value=(
+                    f"TAP {score.note_type.tap * 100:.2f}%\n"
+                    f"HOLD {score.note_type.hold * 100:.2f}%\n"
+                    f"SLIDE {score.note_type.slide * 100:.2f}%\n"
+                    f"AIR {score.note_type.air * 100:.2f}%\n"
+                    f"FLICK {score.note_type.flick * 100:.2f}%"
+                ),
+                inline=True,
+            )
         )
         if not score.unknown_const:
             embed.set_footer(text=f"Play rating {floor_to_ndp(score.play_rating, 2)}")
