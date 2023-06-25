@@ -88,7 +88,7 @@ class RecentRecordsView(PaginationView):
         embed = (
             discord.Embed(
                 description=(
-                    f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n"
+                    f"**{escape_markdown(score.title)} [{score.displayed_difficulty}]**\n\n"
                     f"▸ {rank_icon(score.rank)} ▸ {score.clear} ▸ {score.score} ▸ x{score.max_combo}{f'/{score.full_combo}' if score.full_combo else ''}"
                 ),
                 color=score.difficulty.color(),
