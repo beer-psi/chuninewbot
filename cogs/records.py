@@ -323,7 +323,7 @@ class RecordsCog(commands.Cog, name="Records"):
     ):
         """View your best scores for a level."""
 
-        if level[-1] == "+" and int(level[:-1]) not in range(7, 16):
+        if level[-1] == "+" and int(level[:-1]) not in range(7, 15):
             raise commands.BadArgument("Invalid level.")
         if int(level[0:2]) not in range(1, 16):
             raise commands.BadArgument("Invalid level.")
