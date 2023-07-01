@@ -322,8 +322,8 @@ class RecordsCog(commands.Cog, name="Records"):
         user: Optional[discord.User | discord.Member] = None,
     ):
         """View your best scores for a level."""
-
-        if level[-1] == "+" and int(level[:-1]) not in range(7, 15):
+        
+        if level[-1] == "+" and int(level.zfill(3)[:-1]) not in range(7, 15):
             raise commands.BadArgument("Invalid level.")
         if int(level[0:2]) not in range(1, 16):
             raise commands.BadArgument("Invalid level.")
