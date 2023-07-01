@@ -34,7 +34,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         clal = await self.fetch_cookie(id)
         if clal is None:
             raise commands.BadArgument(
-                "You are not logged in. Please use `c>login <cookie>` in DMs to log in."
+                "You are not logged in. Please send `c>login` in my DMs to log in."
             )
         return clal
 
