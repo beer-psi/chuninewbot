@@ -127,9 +127,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             rating = calculate_rating(score, 0)
         else:
             rating = calculate_rating(score, chart_constant)
+
+        sign = ""
+        if chart_constant is None and rating > 0:
+            sign = "+"
         
         await ctx.reply(
-            f"Calculation result: {'+' if chart_constant is None else ''}{floor_to_ndp(rating, 2)}", mention_author=False
+            f"Calculation result: {sign}{floor_to_ndp(rating, 2)}", mention_author=False
         )
 
     @commands.hybrid_command("find")
