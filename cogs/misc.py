@@ -106,7 +106,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
     @commands.hybrid_command("calculate", aliases=["calc"])
-    async def calc(self, ctx: Context, score: int, chart_constant: float):
+    async def calc(self, ctx: Context, score: int, chart_constant: Optional[float] = None):
         """Calculate rating from score and chart constant.
 
         Parameters
@@ -122,10 +122,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 "Score must be between 0 and 1010000.", mention_author=False
             )
             return
-
-        rating = calculate_rating(score, chart_constant)
+        
+        if chart_constant is None:
+            rating = calculate_rating(score, 0)
+        else:
+            rating = calculate_rating(score, chart_constant)
+        
         await ctx.reply(
-            f"Calculation result: {floor_to_ndp(rating, 2)}", mention_author=False
+            f"Calculation result: {'+' if chart_constant is None else ''}{floor_to_ndp(rating, 2)}", mention_author=False
         )
 
     @commands.hybrid_command("find")
