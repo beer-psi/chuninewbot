@@ -118,10 +118,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """
 
         if not 0 <= score <= 1010000:
-            await ctx.reply(
-                "Score must be between 0 and 1010000.", mention_author=False
+            raise commands.BadArgument(
+                "Score must be between 0 and 1010000."
             )
-            return
+        
+        if chart_constant is not None and chart_constant <= 0:
+            raise commands.BadArgument(
+                "Chart constant must be greater than 0."
+            )
         
         if chart_constant is None:
             rating = calculate_rating(score, 0)
