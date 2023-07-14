@@ -61,6 +61,8 @@ class EventsCog(commands.Cog, name="Events"):
             or isinstance(exc, commands.PrivateMessageOnly)
         ):
             await ctx.reply(str(error), mention_author=False)
+        elif isinstance(exc, commands.errors.CheckFailure) and ctx.command and ctx.command.name == "bu":
+            await ctx.reply(f"đm {ctx.author.mention}", mention_author=False)
         else:
             await ctx.reply(
                 f"An error occurred while executing the command.",
