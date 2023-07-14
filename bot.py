@@ -19,6 +19,7 @@ from aiohttp import web
 from discord.ext import commands
 from discord.ext.commands import Bot
 
+from cogs.fluff import CbuView
 from utils.help import HelpCommand
 from web import init_app
 
@@ -80,6 +81,8 @@ async def startup():
         intents=intents,
         help_command=HelpCommand(),
     )
+    bot.cfg = cfg
+    bot.add_view(CbuView())
 
     await bot.load_extension("cogs.botutils")
     if cfg["DEV"] == "1":
@@ -106,7 +109,6 @@ async def startup():
         await db.commit()
 
         bot.db = db
-        bot.cfg = cfg
 
         port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
         if port is not None and port.isdigit() and int(port) > 0:
