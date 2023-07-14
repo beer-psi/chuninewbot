@@ -150,7 +150,7 @@ class ProfileCog(commands.Cog, name="Profile"):
 
                 level = str(player_data.lv)
                 if player_data.reborn > 0:
-                    level += f" ({player_data.reborn}⭐)"
+                    level = f"{player_data.reborn}⭐ + {level}"
 
                 class_ = ""
                 if player_data.medal is not None:
