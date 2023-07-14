@@ -31,6 +31,7 @@ class FluffCog(commands.Cog, name="Fluff"):
         )
 
     @commands.command("bu")
+    @commands.check(lambda x: x.author.id != 204553051007090688)
     async def bu(self, ctx: Context):
         """🛐"""
 
