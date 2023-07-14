@@ -29,7 +29,7 @@ class EventsCog(commands.Cog, name="Events"):
         if isinstance(error, commands.CommandNotFound):
             return
 
-        exc = error.original if hasattr(error, "original") else error
+        exc = error.original
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
@@ -50,6 +50,8 @@ class EventsCog(commands.Cog, name="Events"):
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
+        elif isinstance(exc, commands.errors.CheckFailure) and ctx.command and ctx.command.name == "bu":
+            return await ctx.reply(f"đm {ctx.author.mention}", mention_author=False)
         elif (
             isinstance(exc, commands.BadArgument)
             or isinstance(exc, commands.BadUnionArgument)
@@ -61,8 +63,6 @@ class EventsCog(commands.Cog, name="Events"):
             or isinstance(exc, commands.PrivateMessageOnly)
         ):
             await ctx.reply(str(error), mention_author=False)
-        elif isinstance(exc, commands.errors.CheckFailure) and ctx.command and ctx.command.name == "bu":
-            await ctx.reply(f"đm {ctx.author.mention}", mention_author=False)
         else:
             await ctx.reply(
                 f"An error occurred while executing the command.",
