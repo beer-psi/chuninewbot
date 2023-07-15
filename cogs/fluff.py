@@ -7,24 +7,6 @@ from discord.ext.commands import Context
 if TYPE_CHECKING:
     from bot import ChuniBot
 
-class CbuView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="🛐", style=discord.ButtonStyle.blurple, custom_id="cbucbucbu")
-    async def cbucbucbu(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        if interaction.message is None or interaction.message.reference is None or interaction.channel is None:
-            return
-        
-        message = interaction.channel.get_partial_message(interaction.message.reference.message_id)
-
-        await message.reply(
-            "https://cdn.discordapp.com/emojis/1093540495818502164.gif",
-            mention_author=False,
-            view=CbuView(),
-        )
-
 
 class FluffCog(commands.Cog, name="Fluff"):
     def __init__(self) -> None:
@@ -67,7 +49,6 @@ class FluffCog(commands.Cog, name="Fluff"):
         await reference.reply(
             "https://cdn.discordapp.com/emojis/1093540495818502164.gif",
             mention_author=False,
-            view=CbuView(),
         )
 
 
