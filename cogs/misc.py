@@ -286,6 +286,25 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await self.bot.db.commit()
             await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
+    @commands.command("privacy")
+    async def privacy(self, ctx: Context):
+        """Everything you need to know about this bot's privacy-related information."""
+
+        if (
+            ctx.message.reference is not None
+            and ctx.message.reference.message_id is not None
+        ):
+            reference = await ctx.channel.fetch_message(
+                ctx.message.reference.message_id
+            )
+        else:
+            reference = ctx.message
+
+        await reference.reply(
+            "https://cdn.discordapp.com/emojis/1091440450122022972.webp?quality=lossless",
+            mention_author=False,
+        )
+
 
 async def setup(bot: ChuniBot) -> None:
     await bot.add_cog(MiscCog(bot))
