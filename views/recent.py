@@ -6,8 +6,11 @@ from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
 from bot import ChuniBot
+from decimal import Decimal
 from utils import floor_to_ndp
 from utils.ranks import rank_icon
+
+from api.enums import ClearType
 
 from .pagination import PaginationView
 
@@ -72,8 +75,16 @@ class RecentRecordsView(PaginationView):
                 .set_thumbnail(url=score.full_jacket_url())
             )
             if not score.unknown_const:
+                play_overpower = score.overpower_base
+                if score.score == 1010000:
+                    play_overpower = score.overpower_max
+                elif score.clear == ClearType.ALL_JUSTICE:
+                    play_overpower += Decimal(1)
+                elif score.clear == ClearType.FULL_COMBO:
+                    play_overpower += Decimal(0.5)
+                play_op_display = f"{floor_to_ndp(play_overpower, 2)} / {floor_to_ndp(score.overpower_max, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
                 embed.set_footer(
-                    text=f"Play rating {floor_to_ndp(score.play_rating, 2)}"
+                    text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}"
                 )
             embeds.append(embed)
 
@@ -119,7 +130,17 @@ class RecentRecordsView(PaginationView):
             )
         )
         if not score.unknown_const:
-            embed.set_footer(text=f"Play rating {floor_to_ndp(score.play_rating, 2)}")
+            play_overpower = score.overpower_base
+            if score.score == 1010000:
+                play_overpower = score.overpower_max
+            elif score.clear == ClearType.ALL_JUSTICE:
+                play_overpower += Decimal(1)
+            elif score.clear == ClearType.FULL_COMBO:
+                play_overpower += Decimal(0.5)
+            play_op_display = f"{floor_to_ndp(play_overpower, 2)} / {floor_to_ndp(score.overpower_max, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
+            embed.set_footer(
+                text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}"
+            )
         return embed
 
     async def callback(self, interaction: discord.Interaction):
