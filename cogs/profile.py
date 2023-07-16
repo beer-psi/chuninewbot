@@ -194,6 +194,7 @@ class ProfileCog(commands.Cog, name="Profile"):
             clal = await self.utils.login_check(ctx.author.id)
 
             async with ChuniNet(clal) as client:
+                await client.authenticate()
                 try:
                     if await client.change_player_name(new_name):
                         await ctx.reply("Your username has been changed.", mention_author=False)
