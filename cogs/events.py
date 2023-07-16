@@ -29,7 +29,11 @@ class EventsCog(commands.Cog, name="Events"):
         if isinstance(error, commands.CommandNotFound):
             return
 
-        exc = error.original
+        try:
+            exc = error.original
+        except AttributeError:
+            exc = error
+
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
