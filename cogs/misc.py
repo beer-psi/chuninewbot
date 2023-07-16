@@ -176,7 +176,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
-        """Get random charts based on level.
+        """Get random charts based on level or chart constant.
 
         Parameters
         ----------
@@ -189,21 +189,30 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         async with ctx.typing():
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
-
+            
+            # Check whether input is level or constant
             try:
-                query_level = float(level.replace("+", ".5"))
+                if level.find('+') != -1:
+                    min_level = float(level.replace("+", ".5"))
+                    max_level = float(level.replace("+", ".9"))
+                elif level.find('.') == -1:
+                    min_level = level + ".0"
+                    max_level = level + ".4"
+                else:
+                    min_level = float(level)
+                    max_level = float(level)
             except:
-                raise commands.BadArgument("Invalid level provided.")
+                raise commands.BadArgument("Please enter a valid level or chart constant.")
 
             async with self.bot.db.execute(
                 "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
                 "FROM chunirec_charts charts "
                 "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
                 "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                "WHERE level = ? OR const = ? "
+                "WHERE const >= ? AND const <= ? "
                 "ORDER BY random() "
                 "LIMIT ?",
-                (query_level, query_level, count),
+                (min_level, max_level, count),
             ) as cursor:
                 charts = await cursor.fetchall()
             if not charts:
