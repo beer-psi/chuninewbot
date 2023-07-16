@@ -379,6 +379,10 @@ async def update_db(db: aiosqlite.Connection):
         )
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT", "WE"]:
             if (chart := getattr(song.data, difficulty)) is not None:
+                if chart.level <= 9.5:
+                    chart.const = chart.level
+                    chart.is_const_unknown = 0
+
                 inserted_charts.append(
                     (
                         song.meta.id,
