@@ -163,7 +163,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                 description = (
                     f"{class_}\n"
                     f"▸ **Level**: {level}\n"
-                    f"▸ **Rating**: {player_data.rating.current} (MAX {player_data.rating.max})\n"
+                    f"▸ **Rating**: {player_data.rating.current:.2f} (MAX {player_data.rating.max:.2f})\n"
                     f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"
                     f"▸ **Playcount**: {player_data.playcount}\n"
                 )
