@@ -209,6 +209,7 @@ class RecordsCog(commands.Cog, name="Records"):
             if compare_message is not None:
                 view.message = compare_message
                 await compare_message.edit(
+                    content="",
                     embed=view.format_embed(view.items[view.page]),
                     view=view,
                 )
