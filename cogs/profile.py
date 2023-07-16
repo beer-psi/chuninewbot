@@ -190,6 +190,18 @@ class ProfileCog(commands.Cog, name="Profile"):
 
     @commands.hybrid_command(name="rename")
     async def rename(self, ctx: Context, *, new_name: str):
+        """Use magical power to change your IGN. 
+        
+        Please note that this will change the actual display name of your CHUNITHM account.
+        
+        Parameters
+        ----------
+        new_name: str
+            The username you want to change to.
+            Your username can include up to 8 characters, excluding specific characters. You can also use the following symbols.
+            ． ・ ： ； ？ ！ ～ ／ ＋ － × ÷ ＝ ♂ ♀ ∀ ＃ ＆ ＊ ＠ ☆ ○ ◎ ◇ □ △ ▽ ♪ † ‡ Σ α β γ θ φ ψ ω Д ё
+        """
+
         async with ctx.typing():
             clal = await self.utils.login_check(ctx.author.id)
 
