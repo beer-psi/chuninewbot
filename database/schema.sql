@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS chunirec_songs(
     artist TEXT,
     release TEXT,
     bpm INTEGER,
-    jacket TEXT
+    jacket TEXT,
+    zetaraku_jacket TEXT
 );
 
 CREATE TABLE IF NOT EXISTS chunirec_charts(
