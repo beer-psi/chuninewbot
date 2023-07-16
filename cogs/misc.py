@@ -140,9 +140,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         if chart_constant is not None:
             overpower_max = calculate_overpower_max(chart_constant)
             if score == 1010000:
-                res += f"\nOVER POWER: {floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.000%)"
+                res += f"\nOVER POWER: {floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.00%)"
             elif score < 500000:
-                res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.000%)"
+                res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)"
             else:
                 overpower_base = calculate_overpower_base(score, chart_constant)
                 res += f"\nOVER POWER:"
