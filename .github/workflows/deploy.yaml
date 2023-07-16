@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - trunk
-    paths-ignore:
-      - "**.md"
-      - ".vscode/**"
-      - ".env.example"
-      - ".gitignore"
-      - "LICENSE"
+    paths:
+      - "api/**"
+      - "cogs/**"
+      - "utils/**"
+      - "views/**"
+      - "bot.py"
+      - "poetry.lock"
+      - "pyproject.toml"
+      - "web.py"
 
 jobs:
   deploy:
