@@ -83,9 +83,11 @@ class RecordsCog(commands.Cog, name="Records"):
     async def compare(
         self, ctx: Context, *, user: Optional[discord.User | discord.Member] = None
     ):
-        """Compare your best score with the most recently posted score.
-        You can reply to another user's score to compare with that instead.
-        If there are multiple scores, you will be prompted to select one.
+        """Compare your best score with another score.
+        
+        By default, it's the most recently posted score. You can reply to another
+        user's score to compare with that instead. If there are multiple scores in
+        said message, you will be prompted to select one.
 
         Parameters
         ----------
@@ -135,6 +137,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
             if len(embeds) == 1:
                 embed = embeds[0]
+                compare_message = None
             else:
                 placeholders = ", ".join("?" for _ in range(len(embeds)))
                 query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders}) OR zetaraku_jacket IN ({placeholders})"
@@ -145,17 +148,16 @@ class RecordsCog(commands.Cog, name="Records"):
                 view = SelectToCompareView(
                     [(jacket_map[x], i) for i, x in enumerate(jackets)]
                 )
-                message = await ctx.reply(
+                compare_message = await ctx.reply(
                     "Select a score to compare with:", view=view, mention_author=False
                 )
                 await view.wait()
 
                 if view.value is None:
-                    await message.edit(
+                    await compare_message.edit(
                         content="Timed out before selecting a score.", view=None
                     )
                     return
-                await message.delete()
                 embed = embeds[int(view.value)]
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
@@ -203,11 +205,19 @@ class RecordsCog(commands.Cog, name="Records"):
 
             view = CompareView(ctx, userinfo, records)
             view.page = page
-            view.message = await ctx.reply(
-                embed=view.format_embed(view.items[view.page]),
-                view=view,
-                mention_author=False,
-            )
+
+            if compare_message is not None:
+                view.message = compare_message
+                await compare_message.edit(
+                    embed=view.format_embed(view.items[view.page]),
+                    view=view,
+                )
+            else:
+                view.message = await ctx.reply(
+                    embed=view.format_embed(view.items[view.page]),
+                    view=view,
+                    mention_author=False,
+                )
 
     @commands.hybrid_command("scores")
     async def scores(
