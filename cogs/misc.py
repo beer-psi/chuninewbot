@@ -251,8 +251,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("prefix")
     @commands.guild_only()
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
-        """Get or set the prefix for this server. Only users with the Manage Guild
-        permission can set the prefix.
+        """Get or set the prefix for this server. 
+        
+        Permissions
+        -----------
+        Only users with the Manage Guild permission can set the prefix.
 
         Parameters
         ----------
