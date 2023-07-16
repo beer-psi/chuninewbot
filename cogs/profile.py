@@ -190,7 +190,9 @@ class ProfileCog(commands.Cog, name="Profile"):
 
     @commands.hybrid_command(name="rename")
     async def rename(self, ctx: Context, *, new_name: str):
-        """Use magical power to change your IGN. Please note that this will change the actual display name of your CHUNITHM account.
+        """Use magical power to change your IGN. 
+        
+        Please note that this will change the actual display name of your CHUNITHM account.
         
         Parameters
         ----------
