@@ -4,7 +4,6 @@ from typing import Optional, cast
 from bs4.element import ResultSet, Tag
 
 from .enums import ClearType, Difficulty, Rank
-from .record import DetailedParams, RecentRecord
 
 
 def chuni_int(s: str) -> int:

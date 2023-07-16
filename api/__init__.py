@@ -175,6 +175,9 @@ class ChuniNet:
         return parse_music_for_rating(soup)
 
     async def change_player_name(self, new_name: str) -> bool:
+        new_name = new_name.translate(
+            dict((i, chr(i + 0xfee0)) for i in range(0x21, 0x7f)) | {0x20: u'\u3000', 0x2D: u'\u2212'}
+        )
         if len(new_name) > 8:
             raise ValueError("Player name must be 8 characters or less")
         if any([not (c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS or c.isalnum() or c.isspace()) for c in new_name]):
