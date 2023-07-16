@@ -84,7 +84,7 @@ class RecordsCog(commands.Cog, name="Records"):
         self, ctx: Context, *, user: Optional[discord.User | discord.Member] = None
     ):
         """Compare your best score with another score.
-        
+
         By default, it's the most recently posted score. You can reply to another
         user's score to compare with that instead. If there are multiple scores in
         said message, you will be prompted to select one.
@@ -333,7 +333,7 @@ class RecordsCog(commands.Cog, name="Records"):
         user: Optional[discord.User | discord.Member] = None,
     ):
         """View your best scores for a level."""
-        
+
         if level[-1] == "+":
             numeric_level = int(level.zfill(3)[:-1])
         else:

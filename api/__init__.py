@@ -18,7 +18,6 @@ from .parser import (
 )
 from .record import MusicRecord, RecentRecord, Record
 
-
 __all__ = ["ChuniNet"]
 
 
@@ -177,9 +176,18 @@ class ChuniNet:
     async def change_player_name(self, new_name: str) -> bool:
         if len(new_name) > 8:
             raise ValueError("Player name must be 8 characters or less")
-        if any([not (c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS or c.isalnum() or c.isspace()) for c in new_name]):
+        if any(
+            [
+                not (
+                    c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
+                    or c.isalnum()
+                    or c.isspace()
+                )
+                for c in new_name
+            ]
+        ):
             raise ValueError("Player name contains invalid characters")
-        
+
         resp = await self._request(
             "mobile/home/userOption/updateUserName/update/",
             method="POST",

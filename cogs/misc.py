@@ -106,7 +106,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
     @commands.hybrid_command("calculate", aliases=["calc"])
-    async def calc(self, ctx: Context, score: int, chart_constant: Optional[float] = None):
+    async def calc(
+        self, ctx: Context, score: int, chart_constant: Optional[float] = None
+    ):
         """Calculate rating from score and chart constant.
 
         Parameters
@@ -118,15 +120,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """
 
         if not 0 <= score <= 1010000:
-            raise commands.BadArgument(
-                "Score must be between 0 and 1010000."
-            )
-        
+            raise commands.BadArgument("Score must be between 0 and 1010000.")
+
         if chart_constant is not None and chart_constant <= 0:
-            raise commands.BadArgument(
-                "Chart constant must be greater than 0."
-            )
-        
+            raise commands.BadArgument("Chart constant must be greater than 0.")
+
         if chart_constant is None:
             rating = calculate_rating(score, 0)
         else:
@@ -135,7 +133,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         sign = ""
         if chart_constant is None and rating > 0:
             sign = "+"
-        
+
         await ctx.reply(
             f"Calculation result: {sign}{floor_to_ndp(rating, 2)}", mention_author=False
         )
@@ -251,8 +249,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.hybrid_command("prefix")
     @commands.guild_only()
     async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
-        """Get or set the prefix for this server. 
-        
+        """Get or set the prefix for this server.
+
         Permissions
         -----------
         Only users with the Manage Guild permission can set the prefix.

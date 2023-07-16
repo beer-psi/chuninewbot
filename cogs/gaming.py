@@ -3,8 +3,8 @@ import io
 from asyncio import CancelledError, TimeoutError
 from random import randrange
 from threading import Lock
-from typing import TYPE_CHECKING
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession

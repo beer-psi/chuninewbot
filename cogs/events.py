@@ -54,9 +54,15 @@ class EventsCog(commands.Cog, name="Events"):
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
-        elif isinstance(exc, commands.errors.CheckFailure) and ctx.command and ctx.command.name == "bu":
+        elif (
+            isinstance(exc, commands.errors.CheckFailure)
+            and ctx.command
+            and ctx.command.name == "bu"
+        ):
             return await ctx.reply(f"đm {ctx.author.mention}", mention_author=False)
-        elif isinstance(exc, commands.errors.NotOwner) or isinstance(exc, commands.errors.MissingPermissions):
+        elif isinstance(exc, commands.errors.NotOwner) or isinstance(
+            exc, commands.errors.MissingPermissions
+        ):
             return await ctx.reply("Insufficient permissions.", mention_author=False)
         elif (
             isinstance(exc, commands.BadArgument)
