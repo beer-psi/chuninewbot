@@ -189,7 +189,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                 )
     
     @commands.hybrid_command(name="rename")
-    async def rename(self, ctx: Context, new_name: str):
+    async def rename(self, ctx: Context, *, new_name: str):
         async with ctx.typing():
             clal = await self.utils.login_check(ctx.author.id)
 
