@@ -14,6 +14,8 @@ class HelpCommand(commands.HelpCommand):
         ctx = self.context
         bot = ctx.bot
 
+        assert bot.user is not None
+
         prefix = list(
             set(await bot.get_prefix(ctx.message))
             - set(when_mentioned(bot, ctx.message))
@@ -24,7 +26,7 @@ class HelpCommand(commands.HelpCommand):
             # bot.user already exists if this command is invoked
             .set_author(
                 name=f"Command list for {bot.user.display_name}:",
-                icon_url=bot.user.avatar.url,
+                icon_url=bot.user.avatar.url if bot.user.avatar else None,
             ).set_footer(  # type: ignore
                 text=f"Use {prefix}help <command> for more info on a command.\nSource code: https://github.com/beerpiss/chuninewbot"
             )
