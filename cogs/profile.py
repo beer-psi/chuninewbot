@@ -187,6 +187,21 @@ class ProfileCog(commands.Cog, name="Profile"):
                     view=view if user is None else None,  # type: ignore
                     mention_author=False,
                 )
+    
+    @commands.hybrid_command(name="rename")
+    async def rename(self, ctx: Context, new_name: str):
+        async with ctx.typing():
+            clal = await self.utils.login_check(ctx.author.id)
+
+            async with ChuniNet(clal) as client:
+                try:
+                    if await client.change_player_name(new_name):
+                        await ctx.reply("Your username has been changed.", mention_author=False)
+                    else:
+                        await ctx.reply("There was an error changing your username.", mention_author=False)
+                except ValueError as e:
+                    raise commands.BadArgument(str(e))
+                
 
 
 async def setup(bot: "ChuniBot"):

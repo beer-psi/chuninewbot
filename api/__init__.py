@@ -5,6 +5,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from yarl import URL
 
+from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
 from .enums import Difficulty, Genres, Rank
 from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
 from .parser import (
@@ -16,6 +17,9 @@ from .parser import (
     parse_player_data,
 )
 from .record import MusicRecord, RecentRecord, Record
+
+
+__all__ = ["ChuniNet"]
 
 
 class ChuniNet:
@@ -169,3 +173,22 @@ class ChuniNet:
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
         return parse_music_for_rating(soup)
+
+    async def change_player_name(self, new_name: str) -> bool:
+        if len(new_name) > 8:
+            raise ValueError("Player name must be 8 characters or less")
+        if any([not (c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS or c.isalnum() or c.isspace()) for c in new_name]):
+            raise ValueError("Player name contains invalid characters")
+        
+        resp = await self._request(
+            "mobile/home/userOption/updateUserName/update/",
+            method="POST",
+            data={
+                "userName": new_name,
+                "token": self.token,
+            },
+            headers={
+                "Referer": str(self.base / "mobile/home/userOption/updateUserName"),
+            },
+        )
+        return resp.url.path == "/mobile/home/userOption/"
