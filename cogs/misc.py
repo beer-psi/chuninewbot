@@ -253,7 +253,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     ):
         """Get random chart recommendations with target scores based on your rating.
 
-        Please note that recommended charts are generated randomly and are independent on your high scores.
+        Please note that recommended charts are generated randomly and are independent of your high scores.
 
         Parameters
         ----------
