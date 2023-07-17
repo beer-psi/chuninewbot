@@ -17,7 +17,7 @@ from cogs.botutils import UtilsCog
 from decimal import Decimal
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
 from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
-from utils.rating_calculator import calculate_rating
+from utils.rating_calculator import calculate_rating, calculate_score_for_rating
 from views.songlist import SonglistView
 
 
@@ -225,6 +225,41 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     if score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
                         res += f"\n{separator}"
                 
+        res += "```"
+
+        await ctx.reply(
+            res, mention_author=False
+        )
+
+    @commands.hybrid_command("rating")
+    async def rating(
+        self, ctx: Context, rating: float
+    ):
+        """Calculate score required to achieve the specified play rating.
+
+        Parameters
+        ----------
+        rating: float
+            Play rating you want to achieve
+        """
+
+        if not 1 <= rating <= 17.55:
+            raise commands.BadArgument("Play rating must be between 1.00 and 17.55.")
+        
+        res = "```Const |   Score\n---------------"
+        chart_constant = floor_to_ndp(rating - 3, 0)
+        if chart_constant < 1:
+            chart_constant = 1
+        while chart_constant <= rating and chart_constant <= 15.4:
+            required_score = calculate_score_for_rating(rating, chart_constant)
+            if required_score >= 975000:
+                res += f"\n {chart_constant:>4.1f} | {floor_to_ndp(required_score, 0):>7}"
+            if chart_constant >= 10:
+                chart_constant += 0.1
+            elif chart_constant >= 7:
+                chart_constant += 0.5
+            else:
+                chart_constant += 1
         res += "```"
 
         await ctx.reply(
