@@ -1,6 +1,9 @@
 from decimal import Decimal
 from utils import floor_to_ndp
 
+from api.enums import ClearType
+from api.record import MusicRecord
+
 
 def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
     level_base = Decimal(str(internal_level)) * 10000
@@ -31,3 +34,14 @@ def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
 
 def calculate_overpower_max(internal_level: float) -> Decimal:
     return Decimal(internal_level * 5 + 15)
+
+
+def calculate_play_overpower(score: MusicRecord) -> Decimal:
+    play_overpower = score.overpower_base
+    if score.score == 1010000:
+        play_overpower = score.overpower_max
+    elif score.clear == ClearType.ALL_JUSTICE:
+        play_overpower += Decimal(1)
+    elif score.clear == ClearType.FULL_COMBO:
+        play_overpower += Decimal(0.5)
+    return play_overpower
