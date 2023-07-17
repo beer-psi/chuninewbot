@@ -201,8 +201,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
     @commands.hybrid_command("find")
-    async def find(self, ctx: Context, query: float):
-        """Find charts by chart constant.
+    async def find(self, ctx: Context, level: str):
+        """Find charts by level or chart constant.
 
         Parameters
         ----------
@@ -210,13 +210,23 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Chart constant to search for.
         """
 
+        try:
+            if "." in level:
+                query_level = float(level)
+                where_clause = "WHERE const = ? "
+            else:
+                query_level = float(level.replace("+", ".5"))
+                where_clause = "WHERE level = ? "
+        except ValueError:
+            raise commands.BadArgument("Please enter a valid level or chart constant.")
+
         async with self.bot.db.execute(
             "SELECT songs.title, charts.difficulty, sdvxin.id AS sdvxin_id "
             "FROM chunirec_charts charts "
             "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
             "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-            "WHERE const = ?",
-            (query,),
+            f"{where_clause}",
+            (query_level,),
         ) as cursor:
             charts = await cursor.fetchall()
         if not charts:
