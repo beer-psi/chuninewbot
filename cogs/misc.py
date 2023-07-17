@@ -14,7 +14,7 @@ from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
-from utils.rating_calculator import calculate_rating
+from utils.rating_calculator import calculate_rating, calculate_score_for_rating
 from views.songlist import SonglistView
 
 
@@ -136,6 +136,47 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         await ctx.reply(
             f"Calculation result: {sign}{floor_to_ndp(rating, 2)}", mention_author=False
+        )
+
+    @commands.hybrid_command("rating")
+    async def rating(
+        self, ctx: Context, rating: float
+    ):
+        """Calculate score required to achieve the specified play rating.
+
+        Parameters
+        ----------
+        rating: float
+            Play rating you want to achieve
+        """
+
+        if not 1 <= rating <= 17.55:
+            raise commands.BadArgument("Play rating must be between 1.00 and 17.55.")
+        
+        res = "```Const |   Score\n---------------"
+        chart_constant = floor_to_ndp(rating - 3, 0)
+        if chart_constant < 1:
+            chart_constant = 1
+        while chart_constant <= rating and chart_constant <= 15.4:
+            required_score = calculate_score_for_rating(rating, chart_constant)
+            rating_pad = ""
+            score_pad = ""
+            if chart_constant < 10:
+                rating_pad = " "
+            if required_score < 1000000:
+                score_pad = " "
+            if required_score >= 975000:
+                res += f"\n {rating_pad}{chart_constant:.1f} | {score_pad}{floor_to_ndp(required_score, 0)}"
+            if chart_constant >= 10:
+                chart_constant += 0.1
+            elif chart_constant >= 7:
+                chart_constant += 0.5
+            else:
+                chart_constant += 1
+        res += "```"
+
+        await ctx.reply(
+            res, mention_author=False
         )
 
     @commands.hybrid_command("find")
