@@ -14,7 +14,9 @@ from api.consts import JACKET_BASE
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from decimal import Decimal
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
+from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
 from utils.rating_calculator import calculate_rating
 from views.songlist import SonglistView
 
@@ -110,12 +112,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def calc(
         self, ctx: Context, score: int, chart_constant: Optional[float] = None
     ):
-        """Calculate rating from score and chart constant.
+        """Calculate rating and over power from score and chart constant.
 
         Parameters
         ----------
         score: int
-            The score to calculate play rating from
+            The score to calculate play rating and over power from
         chart_constant: float
             Chart constant of the chart. Use the `info` command to find this.
         """
@@ -135,8 +137,67 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         if chart_constant is None and rating > 0:
             sign = "+"
 
+        res = f"Rating: {sign}{floor_to_ndp(rating, 2)}"
+        if chart_constant is not None:
+            overpower_max = calculate_overpower_max(chart_constant)
+            if score == 1010000:
+                res += f"\nOVER POWER: {floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.00%)"
+            elif score < 500000:
+                res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)"
+            else:
+                overpower_base = calculate_overpower_base(score, chart_constant)
+                res += f"\nOVER POWER:"
+                if score >= 1000000:
+                    overpower = overpower_base + Decimal(1)
+                    res += f"\n• AJ: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
+                overpower = overpower_base + Decimal(0.5)
+                res += f"\n• FC: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
+                res += f"\n• Non-FC: {floor_to_ndp(overpower_base, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower_base / overpower_max * 100, 2)}%)"
+
         await ctx.reply(
-            f"Calculation result: {sign}{floor_to_ndp(rating, 2)}", mention_author=False
+            res, mention_author=False
+        )
+
+    @commands.hybrid_command("const", aliases=["constant"])
+    async def const(
+        self, ctx: Context, chart_constant: float
+    ):
+        """Calculate rating and over power achieved with various scores based on chart constant.
+
+        Parameters
+        ----------
+        chart_constant: float
+            Chart constant of the chart. Use the `info` command to find this.
+        """
+
+        if chart_constant < 1 or chart_constant > 16:
+            raise commands.BadArgument("Chart constant must be between 1.0 and 16.0")
+
+        scores = [1009900, 1009500, 1009000, 1008500, 1008000, 1007500, 1007000, 1006500, 1006000, 1005500, 1005000, 1004000, 1003000, 1002000, 1001000, 1000000, 997500, 995000, 992500, 990000, 987500, 985000, 982500, 980000, 977500, 975000, 970000, 960000, 950000, 925000, 900000]
+        res = "```  Score |  Rate |      OP | OP (FC) | OP (AJ)\n----------------------------------------------"
+        rating = calculate_rating(1010000, chart_constant)
+        res += f"\n1010000 | {floor_to_ndp(rating, 2):>4} |       - |       - | 100.00%"
+        overpower_max = calculate_overpower_max(chart_constant)
+        for score in scores:
+            rating = calculate_rating(score, chart_constant)
+            overpower_base = calculate_overpower_base(score, chart_constant)
+            if score >= 1000000:
+                overpower = overpower_base + Decimal(1)
+                overpower_aj = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
+            else:
+                overpower_aj = "     -"
+            overpower = overpower_base + Decimal(0.5)
+            overpower_fc = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
+            overpower_non_fc = f"{floor_to_ndp(overpower_base / overpower_max * 100, 2)}%"
+            if rating > 0:
+                res += "\n"
+                res += f"{score:>7} | {floor_to_ndp(rating, 2):>4.2f} |  {overpower_non_fc} |  {overpower_fc} |  {overpower_aj}"
+                if score == 1009000 or score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
+                    res += "\n----------------------------------------------"
+        res += "```"
+
+        await ctx.reply(
+            res, mention_author=False
         )
 
     @commands.hybrid_command("find")

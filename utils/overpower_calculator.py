@@ -1,15 +1,14 @@
 from decimal import Decimal
+from utils import floor_to_ndp
 
 
-def calculate_rating(score: int, internal_level: float) -> Decimal:
+def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
     level_base = Decimal(str(internal_level)) * 10000
 
     rating100 = Decimal(0)
 
-    if score >= 1_009_000:
-        rating100 = level_base + 21_500
-    elif score >= 1_007_500:
-        rating100 = level_base + 20_000 + (score - 1_007_500)
+    if score >= 1_007_500:
+        rating100 = level_base + 20_000 + (score - 1_007_500) * 3
     elif score >= 1_005_000:
         rating100 = level_base + 15_000 + (score - 1_005_000) * 2
     elif score >= 1_000_000:
@@ -28,4 +27,7 @@ def calculate_rating(score: int, internal_level: float) -> Decimal:
     if rating100 < 0:
         rating100 = 0
 
-    return rating100 / 10000
+    return Decimal(floor_to_ndp(rating100 / 2_000, 2))
+
+def calculate_overpower_max(internal_level: float) -> Decimal:
+    return Decimal(internal_level * 5 + 15)

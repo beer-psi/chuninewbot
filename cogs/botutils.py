@@ -8,6 +8,7 @@ from discord.ext.commands import Context
 from api.enums import Rank
 from api.record import DetailedRecentRecord, MusicRecord, Record
 from update_db import update_db
+from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
 from utils.rating_calculator import calculate_rating
 from utils.types import SongSearchResult
 
@@ -106,6 +107,14 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         if isinstance(_song, DetailedRecentRecord) and chart_data[2] != 0:
             _song.full_combo = chart_data[2]
+
+        _song.overpower_base = calculate_overpower_base(
+            song.score, _song.internal_level if _song.internal_level != 0 else level
+        )
+        _song.overpower_max = calculate_overpower_max(
+            _song.internal_level if _song.internal_level != 0 else level
+        )
+
         return _song
 
     async def find_song(
