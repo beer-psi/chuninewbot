@@ -48,9 +48,11 @@ class CompareView(PaginationView):
         if score.play_rating is not None:
             play_overpower = calculate_play_overpower(score)
             play_op_display = f"{floor_to_ndp(play_overpower, 2)} / {floor_to_ndp(score.overpower_max, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
-            embed.set_footer(
-                text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}  •  {score.play_count} attempts"
-            )
+
+            footer = f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}"
+            if score.play_count is not None:
+                footer += f"  •  {score.play_count} attempt{'s' if score.play_count > 1 else ''}"
+            embed.set_footer(text=footer)
         return embed
 
     async def callback(self, interaction: discord.Interaction):
