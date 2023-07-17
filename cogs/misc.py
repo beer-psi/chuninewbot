@@ -192,16 +192,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             
             # Check whether input is level or constant
             try:
-                if level.find('+') != -1:
-                    min_level = float(level.replace("+", ".5"))
-                    max_level = float(level.replace("+", ".9"))
-                elif level.find('.') == -1:
-                    min_level = level + ".0"
-                    max_level = level + ".4"
+                if "." in level:
+                    query_level = float(level)
+                    where_clause = "WHERE const = ? "
                 else:
-                    min_level = float(level)
-                    max_level = float(level)
-            except:
+                    query_level = float(level.replace("+", ".5"))
+                    where_clause = "WHERE level = ? "
+            except ValueError:
                 raise commands.BadArgument("Please enter a valid level or chart constant.")
 
             async with self.bot.db.execute(
@@ -209,10 +206,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 "FROM chunirec_charts charts "
                 "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
                 "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                "WHERE const >= ? AND const <= ? "
+                f"{where_clause}"
                 "ORDER BY random() "
                 "LIMIT ?",
-                (min_level, max_level, count),
+                (query_level, count),
             ) as cursor:
                 charts = await cursor.fetchall()
             if not charts:
