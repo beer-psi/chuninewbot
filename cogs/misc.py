@@ -175,11 +175,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         scores = [1009900, 1009500, 1009000, 1008500, 1008000, 1007500, 1007000, 1006500, 1006000, 1005500, 1005000, 1004000, 1003000, 1002000, 1001000, 1000000, 997500, 995000, 992500, 990000, 987500, 985000, 982500, 980000, 977500, 975000, 970000, 960000, 950000, 925000, 900000]
         res = "```  Score |  Rate |      OP | OP (FC) | OP (AJ)\n----------------------------------------------"
         rating = calculate_rating(1010000, chart_constant)
-        if rating < 10:
-            rating_pad = " "
-        else:
-            rating_pad = ""
-        res += f"\n1010000 | {rating_pad}{floor_to_ndp(rating, 2)} |       - |       - | 100.00%"
+        res += f"\n1010000 | {floor_to_ndp(rating, 2):>4} |       - |       - | 100.00%"
         overpower_max = calculate_overpower_max(chart_constant)
         for score in scores:
             rating = calculate_rating(score, chart_constant)
