@@ -179,10 +179,6 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         overpower_max = calculate_overpower_max(chart_constant)
         for score in scores:
             rating = calculate_rating(score, chart_constant)
-            if rating < 10:
-                rating_pad = " "
-            else:
-                rating_pad = ""
             overpower_base = calculate_overpower_base(score, chart_constant)
             if score >= 1000000:
                 overpower = overpower_base + Decimal(1)
@@ -194,9 +190,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             overpower_non_fc = f"{floor_to_ndp(overpower_base / overpower_max * 100, 2)}%"
             if rating > 0:
                 res += "\n"
-                if score < 1000000:
-                    res += " "
-                res += f"{score} | {rating_pad}{floor_to_ndp(rating, 2):.2f} |  {overpower_non_fc} |  {overpower_fc} |  {overpower_aj}"
+                res += f"{score:>7} | {floor_to_ndp(rating, 2):>4.2f} |  {overpower_non_fc} |  {overpower_fc} |  {overpower_aj}"
                 if score == 1009000 or score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
                     res += "\n----------------------------------------------"
         res += "```"
