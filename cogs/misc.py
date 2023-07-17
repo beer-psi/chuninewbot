@@ -17,7 +17,7 @@ from cogs.botutils import UtilsCog
 from decimal import Decimal
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
 from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
-from utils.rating_calculator iimport calculate_rating, calculate_score_for_rating
+from utils.rating_calculator import calculate_rating, calculate_score_for_rating
 from views.songlist import SonglistView
 
 
