@@ -77,7 +77,7 @@ class RecentRecordsView(PaginationView):
             )
             if not score.unknown_const:
                 play_overpower = calculate_play_overpower(score)
-                play_op_display = f"{floor_to_ndp(play_overpower, 2)} / {floor_to_ndp(score.overpower_max, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
+                play_op_display = f"{floor_to_ndp(play_overpower, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
                 embed.set_footer(
                     text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}"
                 )
@@ -126,7 +126,7 @@ class RecentRecordsView(PaginationView):
         )
         if not score.unknown_const:
             play_overpower = calculate_play_overpower(score)
-            play_op_display = f"{floor_to_ndp(play_overpower, 2)} / {floor_to_ndp(score.overpower_max, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
+            play_op_display = f"{floor_to_ndp(play_overpower, 2)} ({floor_to_ndp(play_overpower / score.overpower_max * 100, 2)}%)"
             embed.set_footer(
                 text=f"Play rating {floor_to_ndp(score.play_rating, 2)}  •  OP {play_op_display}"
             )
