@@ -257,7 +257,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("recommend")
-    async def recommend(self, ctx: Context, count: int = 3):
+    async def recommend(
+        self, ctx: Context, count: int = 3, max_rating: Optional[float] = None
+    ):
         """Get random chart recommendations with target scores based on your rating.
 
         Please note that recommended charts are generated randomly and are independent on your high scores.
@@ -266,112 +268,124 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         ----------
         count: int
             Number of charts to return. Must be between 1 and 4.
+        max_rating: Optional[float]
+            Your maximum rating. If not provided, your rating will be fetched from CHUNITHM-NET,
+            assuming you're logged in.
         """
 
         async with ctx.typing():
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
-            clal = await self.utils.login_check(ctx)
-            async with ChuniNet(clal) as client:
-                player_data = await client.player_data()
-                max_rating = player_data.rating.max
+            if max_rating is None:
+                clal = await self.utils.login_check(ctx)
+                async with ChuniNet(clal) as client:
+                    player_data = await client.player_data()
+                    max_rating = player_data.rating.max
 
-                # Determine min-max const to recommend based on user rating. Formula is intentionally confusing.
-                min_level = max_rating * 1.05 - 3.05
-                max_level = max_rating * 0.85 + 0.95
-                if min_level < 7:
-                    min_level = 7
-                if max_level < 14:
-                    max_level += (14 - max_level) * 0.2
-                if max_level < min_level + 1:
-                    max_level = min_level + 1
-
-                async with self.bot.db.execute(
-                    "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
-                    "FROM chunirec_charts charts "
-                    "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
-                    "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                    "WHERE const >= ? AND const <= ? "
-                    "ORDER BY random() "
-                    "LIMIT ?",
-                    (min_level, max_level, count),
-                ) as cursor:
-                    charts = await cursor.fetchall()
-                if not charts:
-                    await ctx.reply("No charts found.", mention_author=False)
-                    return
-
-                embeds: list[discord.Embed] = []
-                for chart in charts:
-                    (
-                        title,
-                        genre,
-                        artist,
-                        jacket,
-                        difficulty,
-                        lev,
-                        const,
-                        is_const_unknown,
-                        sdvxin_id,
-                    ) = chart
-
-                    difficulty = Difficulty.from_short_form(difficulty)
-                    chart_level = format_level(lev)
-                    rating_diff = max_rating - const
-
-                    # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
-                    if rating_diff < 0.10:
-                        target_score = 975_000
-                    elif rating_diff < 0.30:
-                        target_score = 980_000
-                    elif rating_diff < 0.50:
-                        target_score = 985_000
-                    elif rating_diff < 0.70:
-                        target_score = 990_000
-                    elif rating_diff < 0.90:
-                        target_score = 995_000
-                    elif rating_diff < 1.10:
-                        target_score = 1_000_000
-                    elif rating_diff < 1.35:
-                        target_score = 1_002_500
-                    elif rating_diff < 1.60:
-                        target_score = 1_005_000
-                    elif rating_diff < 1.80:
-                        target_score = 1_006_000
-                    elif rating_diff < 2.00:
-                        target_score = 1_007_000
-                    elif rating_diff < 2.10:
-                        target_score = 1_007_500
-                    elif rating_diff < 2.15:
-                        target_score = 1_008_000
-                    elif rating_diff < 2.20:
-                        target_score = 1_008_500
-                    else:
-                        target_score = 1_009_000
-                    
-                    target_rating = calculate_rating(target_score, const)
-
-                    if sdvxin_id is not None:
-                        url = sdvxin_link(sdvxin_id, difficulty.short_form())
-                    else:
-                        url = yt_search_link(title, difficulty.short_form())
-
-                    embeds.append(
-                        discord.Embed(
-                            title=escape_markdown(title),
-                            description=escape_markdown(artist),
-                            color=difficulty.color(),
+                    if max_rating is None:
+                        raise commands.BadArgument(
+                            "No rating data found. Please play a song first."
                         )
-                        .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
-                        .add_field(name="Category", value=genre)
-                        .add_field(
-                            name=str(difficulty),
-                            value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
-                        )
-                        .add_field(name="Target Score", value=f"{target_score} ({floor_to_ndp(target_rating, 2)})")
+
+            # Determine min-max const to recommend based on user rating. Formula is intentionally confusing.
+            min_level = max_rating * 1.05 - 3.05
+            max_level = max_rating * 0.85 + 0.95
+            if min_level < 7:
+                min_level = 7
+            if max_level < 14:
+                max_level += (14 - max_level) * 0.2
+            if max_level < min_level + 1:
+                max_level = min_level + 1
+
+            async with self.bot.db.execute(
+                "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
+                "FROM chunirec_charts charts "
+                "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
+                "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
+                "WHERE const >= ? AND const <= ? "
+                "ORDER BY random() "
+                "LIMIT ?",
+                (min_level, max_level, count),
+            ) as cursor:
+                charts = await cursor.fetchall()
+            if not charts:
+                await ctx.reply("No charts found.", mention_author=False)
+                return
+
+            embeds: list[discord.Embed] = []
+            for chart in charts:
+                (
+                    title,
+                    genre,
+                    artist,
+                    jacket,
+                    difficulty,
+                    lev,
+                    const,
+                    is_const_unknown,
+                    sdvxin_id,
+                ) = chart
+
+                difficulty = Difficulty.from_short_form(difficulty)
+                chart_level = format_level(lev)
+                rating_diff = max_rating - const
+
+                # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
+                if rating_diff < 0.10:
+                    target_score = 975_000
+                elif rating_diff < 0.30:
+                    target_score = 980_000
+                elif rating_diff < 0.50:
+                    target_score = 985_000
+                elif rating_diff < 0.70:
+                    target_score = 990_000
+                elif rating_diff < 0.90:
+                    target_score = 995_000
+                elif rating_diff < 1.10:
+                    target_score = 1_000_000
+                elif rating_diff < 1.35:
+                    target_score = 1_002_500
+                elif rating_diff < 1.60:
+                    target_score = 1_005_000
+                elif rating_diff < 1.80:
+                    target_score = 1_006_000
+                elif rating_diff < 2.00:
+                    target_score = 1_007_000
+                elif rating_diff < 2.10:
+                    target_score = 1_007_500
+                elif rating_diff < 2.15:
+                    target_score = 1_008_000
+                elif rating_diff < 2.20:
+                    target_score = 1_008_500
+                else:
+                    target_score = 1_009_000
+
+                target_rating = calculate_rating(target_score, const)
+
+                if sdvxin_id is not None:
+                    url = sdvxin_link(sdvxin_id, difficulty.short_form())
+                else:
+                    url = yt_search_link(title, difficulty.short_form())
+
+                embeds.append(
+                    discord.Embed(
+                        title=escape_markdown(title),
+                        description=escape_markdown(artist),
+                        color=difficulty.color(),
                     )
-                await ctx.reply(embeds=embeds, mention_author=False)
+                    .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
+                    .add_field(name="Category", value=genre)
+                    .add_field(
+                        name=str(difficulty),
+                        value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
+                    )
+                    .add_field(
+                        name="Target Score",
+                        value=f"{target_score} ({floor_to_ndp(target_rating, 2)})",
+                    )
+                )
+            await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("prefix")
     @commands.guild_only()
