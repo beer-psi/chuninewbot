@@ -9,12 +9,15 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown, oauth_url
 
+from api import ChuniNet
 from api.consts import JACKET_BASE
 from api.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from decimal import Decimal
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
-from utils.rating_calculator import calculate_rating, calculate_score_for_rating
+from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
+from utils.rating_calculator iimport calculate_rating, calculate_score_for_rating
 from views.songlist import SonglistView
 
 
@@ -109,12 +112,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def calc(
         self, ctx: Context, score: int, chart_constant: Optional[float] = None
     ):
-        """Calculate rating from score and chart constant.
+        """Calculate rating and over power from score and chart constant.
 
         Parameters
         ----------
         score: int
-            The score to calculate play rating from
+            The score to calculate play rating and over power from
         chart_constant: float
             Chart constant of the chart. Use the `info` command to find this.
         """
@@ -134,8 +137,67 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         if chart_constant is None and rating > 0:
             sign = "+"
 
+        res = f"Rating: {sign}{floor_to_ndp(rating, 2)}"
+        if chart_constant is not None:
+            overpower_max = calculate_overpower_max(chart_constant)
+            if score == 1010000:
+                res += f"\nOVER POWER: {floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.00%)"
+            elif score < 500000:
+                res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)"
+            else:
+                overpower_base = calculate_overpower_base(score, chart_constant)
+                res += f"\nOVER POWER:"
+                if score >= 1000000:
+                    overpower = overpower_base + Decimal(1)
+                    res += f"\n• AJ: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
+                overpower = overpower_base + Decimal(0.5)
+                res += f"\n• FC: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
+                res += f"\n• Non-FC: {floor_to_ndp(overpower_base, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower_base / overpower_max * 100, 2)}%)"
+
         await ctx.reply(
-            f"Calculation result: {sign}{floor_to_ndp(rating, 2)}", mention_author=False
+            res, mention_author=False
+        )
+
+    @commands.hybrid_command("const", aliases=["constant"])
+    async def const(
+        self, ctx: Context, chart_constant: float
+    ):
+        """Calculate rating and over power achieved with various scores based on chart constant.
+
+        Parameters
+        ----------
+        chart_constant: float
+            Chart constant of the chart. Use the `info` command to find this.
+        """
+
+        if chart_constant < 1 or chart_constant > 16:
+            raise commands.BadArgument("Chart constant must be between 1.0 and 16.0")
+
+        scores = [1009900, 1009500, 1009000, 1008500, 1008000, 1007500, 1007000, 1006500, 1006000, 1005500, 1005000, 1004000, 1003000, 1002000, 1001000, 1000000, 997500, 995000, 992500, 990000, 987500, 985000, 982500, 980000, 977500, 975000, 970000, 960000, 950000, 925000, 900000]
+        res = "```  Score |  Rate |      OP | OP (FC) | OP (AJ)\n----------------------------------------------"
+        rating = calculate_rating(1010000, chart_constant)
+        res += f"\n1010000 | {floor_to_ndp(rating, 2):>4} |       - |       - | 100.00%"
+        overpower_max = calculate_overpower_max(chart_constant)
+        for score in scores:
+            rating = calculate_rating(score, chart_constant)
+            overpower_base = calculate_overpower_base(score, chart_constant)
+            if score >= 1000000:
+                overpower = overpower_base + Decimal(1)
+                overpower_aj = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
+            else:
+                overpower_aj = "     -"
+            overpower = overpower_base + Decimal(0.5)
+            overpower_fc = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
+            overpower_non_fc = f"{floor_to_ndp(overpower_base / overpower_max * 100, 2)}%"
+            if rating > 0:
+                res += "\n"
+                res += f"{score:>7} | {floor_to_ndp(rating, 2):>4.2f} |  {overpower_non_fc} |  {overpower_fc} |  {overpower_aj}"
+                if score == 1009000 or score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
+                    res += "\n----------------------------------------------"
+        res += "```"
+
+        await ctx.reply(
+            res, mention_author=False
         )
 
     @commands.hybrid_command("rating")
@@ -174,8 +236,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
     @commands.hybrid_command("find")
-    async def find(self, ctx: Context, query: float):
-        """Find charts by chart constant.
+    async def find(self, ctx: Context, level: str):
+        """Find charts by level or chart constant.
 
         Parameters
         ----------
@@ -183,13 +245,23 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Chart constant to search for.
         """
 
+        try:
+            if "." in level:
+                query_level = float(level)
+                where_clause = "WHERE const = ? "
+            else:
+                query_level = float(level.replace("+", ".5"))
+                where_clause = "WHERE level = ? "
+        except ValueError:
+            raise commands.BadArgument("Please enter a valid level or chart constant.")
+
         async with self.bot.db.execute(
             "SELECT songs.title, charts.difficulty, sdvxin.id AS sdvxin_id "
             "FROM chunirec_charts charts "
             "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
             "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-            "WHERE const = ?",
-            (query,),
+            f"{where_clause}",
+            (query_level,),
         ) as cursor:
             charts = await cursor.fetchall()
         if not charts:
@@ -210,7 +282,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
-        """Get random charts based on level.
+        """Get random charts based on level or chart constant.
 
         Parameters
         ----------
@@ -223,21 +295,27 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         async with ctx.typing():
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
-
+            
+            # Check whether input is level or constant
             try:
-                query_level = float(level.replace("+", ".5"))
-            except:
-                raise commands.BadArgument("Invalid level provided.")
+                if "." in level:
+                    query_level = float(level)
+                    where_clause = "WHERE const = ? "
+                else:
+                    query_level = float(level.replace("+", ".5"))
+                    where_clause = "WHERE level = ? "
+            except ValueError:
+                raise commands.BadArgument("Please enter a valid level or chart constant.")
 
             async with self.bot.db.execute(
                 "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
                 "FROM chunirec_charts charts "
                 "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
                 "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                "WHERE level = ? OR const = ? "
+                f"{where_clause}"
                 "ORDER BY random() "
                 "LIMIT ?",
-                (query_level, query_level, count),
+                (query_level, count),
             ) as cursor:
                 charts = await cursor.fetchall()
             if not charts:
@@ -277,6 +355,137 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(
                         name=str(difficulty),
                         value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
+                    )
+                )
+            await ctx.reply(embeds=embeds, mention_author=False)
+
+    @commands.hybrid_command("recommend")
+    async def recommend(
+        self, ctx: Context, count: int = 3, max_rating: Optional[float] = None
+    ):
+        """Get random chart recommendations with target scores based on your rating.
+
+        Please note that recommended charts are generated randomly and are independent on your high scores.
+
+        Parameters
+        ----------
+        count: int
+            Number of charts to return. Must be between 1 and 4.
+        max_rating: Optional[float]
+            Your maximum rating. If not provided, your rating will be fetched from CHUNITHM-NET,
+            assuming you're logged in.
+        """
+
+        async with ctx.typing():
+            if count > 4 or count < 1:
+                raise commands.BadArgument("Number of songs must be between 1 and 4.")
+
+            if max_rating is None:
+                clal = await self.utils.login_check(ctx)
+                async with ChuniNet(clal) as client:
+                    player_data = await client.player_data()
+                    max_rating = player_data.rating.max
+
+                    if max_rating is None:
+                        raise commands.BadArgument(
+                            "No rating data found. Please play a song first."
+                        )
+
+            # Determine min-max const to recommend based on user rating. Formula is intentionally confusing.
+            min_level = max_rating * 1.05 - 3.05
+            max_level = max_rating * 0.85 + 0.95
+            if min_level < 7:
+                min_level = 7
+            if max_level < 14:
+                max_level += (14 - max_level) * 0.2
+            if max_level < min_level + 1:
+                max_level = min_level + 1
+
+            async with self.bot.db.execute(
+                "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
+                "FROM chunirec_charts charts "
+                "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
+                "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
+                "WHERE const >= ? AND const <= ? "
+                "ORDER BY random() "
+                "LIMIT ?",
+                (min_level, max_level, count),
+            ) as cursor:
+                charts = await cursor.fetchall()
+            if not charts:
+                await ctx.reply("No charts found.", mention_author=False)
+                return
+
+            embeds: list[discord.Embed] = []
+            for chart in charts:
+                (
+                    title,
+                    genre,
+                    artist,
+                    jacket,
+                    difficulty,
+                    lev,
+                    const,
+                    is_const_unknown,
+                    sdvxin_id,
+                ) = chart
+
+                difficulty = Difficulty.from_short_form(difficulty)
+                chart_level = format_level(lev)
+                rating_diff = max_rating - const
+
+                # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
+                if rating_diff < 0.10:
+                    target_score = 975_000
+                elif rating_diff < 0.30:
+                    target_score = 980_000
+                elif rating_diff < 0.50:
+                    target_score = 985_000
+                elif rating_diff < 0.70:
+                    target_score = 990_000
+                elif rating_diff < 0.90:
+                    target_score = 995_000
+                elif rating_diff < 1.10:
+                    target_score = 1_000_000
+                elif rating_diff < 1.35:
+                    target_score = 1_002_500
+                elif rating_diff < 1.60:
+                    target_score = 1_005_000
+                elif rating_diff < 1.80:
+                    target_score = 1_006_000
+                elif rating_diff < 2.00:
+                    target_score = 1_007_000
+                elif rating_diff < 2.10:
+                    target_score = 1_007_500
+                elif rating_diff < 2.15:
+                    target_score = 1_008_000
+                elif rating_diff < 2.20:
+                    target_score = 1_008_500
+                else:
+                    target_score = 1_009_000
+
+                target_rating = calculate_rating(target_score, const)
+
+                if sdvxin_id is not None:
+                    url = sdvxin_link(sdvxin_id, difficulty.short_form())
+                else:
+                    url = yt_search_link(title, difficulty.short_form())
+
+                embeds.append(
+                    discord.Embed(
+                        title=escape_markdown(title),
+                        description=escape_markdown(artist),
+                        color=difficulty.color(),
+                    )
+                    .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
+                    .add_field(name="Category", value=genre)
+                    .add_field(
+                        name=str(difficulty),
+                        value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
+                    )
+                    .add_field(
+                        name="Target Score",
+                        value=f"{target_score} ({floor_to_ndp(target_rating, 2)})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)

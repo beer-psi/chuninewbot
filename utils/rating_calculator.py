@@ -25,6 +25,9 @@ def calculate_rating(score: int, internal_level: float) -> Decimal:
     elif score >= 500_000:
         rating100 = (((level_base - 50_000) / 2) * (score - 500_000)) / 300_000
 
+    if rating100 < 0:
+        rating100 = 0
+
     return rating100 / 10000
 
 def calculate_score_for_rating(rating: float, internal_level: float) -> int:

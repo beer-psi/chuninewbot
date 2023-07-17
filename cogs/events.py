@@ -41,7 +41,7 @@ class EventsCog(commands.Cog, name="Events"):
             )
         elif isinstance(exc, InvalidTokenException):
             return await ctx.reply(
-                f"Your CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.\nDetailed error: {error.original}",
+                f"CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.\nDetailed error: {error.original}",
                 mention_author=False,
             )
         elif isinstance(exc, ChuniNetException):
