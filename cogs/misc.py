@@ -159,14 +159,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             chart_constant = 1
         while chart_constant <= rating and chart_constant <= 15.4:
             required_score = calculate_score_for_rating(rating, chart_constant)
-            rating_pad = ""
-            score_pad = ""
-            if chart_constant < 10:
-                rating_pad = " "
-            if required_score < 1000000:
-                score_pad = " "
             if required_score >= 975000:
-                res += f"\n {rating_pad}{chart_constant:.1f} | {score_pad}{floor_to_ndp(required_score, 0)}"
+                res += f"\n {chart_constant:>4.1f} | {floor_to_ndp(required_score, 0):>7}"
             if chart_constant >= 10:
                 chart_constant += 0.1
             elif chart_constant >= 7:
