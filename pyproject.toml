@@ -7,7 +7,7 @@ authors = ["beerpiss <lacvtg.a1.2023@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.10"
 "discord.py" = "^2.1.0"
-aiohttp = "^3.8.3"
+aiohttp = "^3.8.5"
 yarl = "^1.8.2"
 beautifulsoup4 = "^4.11.2"
 aiosqlite = "^0.18.0"
