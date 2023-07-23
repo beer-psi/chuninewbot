@@ -26,7 +26,10 @@ from .utils import (
 
 
 def parse_player_card_and_avatar(soup: BeautifulSoup):
-    character = cast(str, soup.select_one(".player_chara_info img")["src"])
+    if (e := soup.select_one(".player_chara_info img")) is not None:
+        character = cast(str, e["src"])
+    else:
+        character = None
 
     name = soup.select_one(".player_name_in").get_text()
     lv = chuni_int(soup.select_one(".player_lv").get_text())

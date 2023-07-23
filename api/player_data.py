@@ -50,7 +50,7 @@ class UserAvatar:
 class PlayerData:
     possession: Possession = Possession.NONE
 
-    character: str
+    character: Optional[str] = None
     avatar: UserAvatar
 
     name: str
