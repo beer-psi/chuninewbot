@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from PIL import Image, ImageDraw
 
-from api import ChuniNet
+from chunithm_net import ChuniNet
 from utils.views.profile import ProfileView
 
 if TYPE_CHECKING:

@@ -8,7 +8,7 @@ from discord import Webhook, app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from api.exceptions import (
+from chunithm_net.exceptions import (
     ChuniNetException,
     InvalidTokenException,
     MaintenanceException,

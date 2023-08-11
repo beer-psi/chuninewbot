@@ -13,9 +13,9 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from api import ChuniNet
-from api.consts import JACKET_BASE
-from api.entities.enums import Difficulty
+from chunithm_net import ChuniNet
+from chunithm_net.consts import JACKET_BASE
+from chunithm_net.entities.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
 from database.models import Chart, Prefix

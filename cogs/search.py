@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from api.consts import JACKET_BASE
+from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, Chart, Song
 from utils import (
     did_you_mean_text,

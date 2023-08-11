@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from api.entities.record import DetailedRecentRecord, MusicRecord
+from chunithm_net.entities.record import DetailedRecentRecord, MusicRecord
 
 
 @dataclass(kw_only=True)

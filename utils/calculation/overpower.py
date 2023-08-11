@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from api.entities.enums import ClearType
+from chunithm_net.entities.enums import ClearType
 from utils import floor_to_ndp
 
 from ..types.annotated_records import AnnotatedMusicRecord

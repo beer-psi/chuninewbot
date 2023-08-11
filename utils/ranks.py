@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from bot import cfg
 
 if TYPE_CHECKING:
-    from api.entities.enums import Rank
+    from chunithm_net.entities.enums import Rank
 
 
 def rank_icon(rank: "str | Rank") -> str:

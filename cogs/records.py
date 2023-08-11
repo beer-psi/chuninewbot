@@ -8,9 +8,9 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api import ChuniNet
-from api.consts import JACKET_BASE
-from api.entities.enums import Difficulty
+from chunithm_net import ChuniNet
+from chunithm_net.consts import JACKET_BASE
+from chunithm_net.entities.enums import Difficulty
 from database.models import Song
 from utils import did_you_mean_text
 from utils.components import ScoreCardEmbed

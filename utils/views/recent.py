@@ -10,8 +10,8 @@ from ..components import ScoreCardEmbed
 from .pagination import PaginationView
 
 if TYPE_CHECKING:
-    from api import ChuniNet
-    from api.entities.player_data import PlayerData
+    from chunithm_net import ChuniNet
+    from chunithm_net.entities.player_data import PlayerData
 
     from ..types.annotated_records import AnnotatedRecentRecord
 

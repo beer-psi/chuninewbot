@@ -6,8 +6,8 @@ from discord.ext.commands import Context
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.entities.enums import Rank
-from api.entities.record import DetailedRecentRecord, MusicRecord, RecentRecord, Record
+from chunithm_net.entities.enums import Rank
+from chunithm_net.entities.record import DetailedRecentRecord, MusicRecord, RecentRecord, Record
 from database.models import Alias, Chart, Cookie, Prefix, Song
 from update_db import update_db
 from utils.calculation.overpower import (

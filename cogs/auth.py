@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api import ChuniNet
+from chunithm_net import ChuniNet
 from database.models import Cookie
 from utils.views.login import LoginFlowView
 

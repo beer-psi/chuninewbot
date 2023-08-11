@@ -16,7 +16,7 @@ from PIL import Image
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.consts import JACKET_BASE
+from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, GuessScore, Song
 
 if TYPE_CHECKING:
