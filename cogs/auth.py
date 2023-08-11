@@ -28,7 +28,7 @@ class AuthCog(commands.Cog, name="Auth"):
         description="Logs you out of the bot.",
     )
     async def logout(self, ctx: Context):
-        async with AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
             stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
             await session.execute(stmt)
         await ctx.reply("Successfully logged out.", mention_author=False)

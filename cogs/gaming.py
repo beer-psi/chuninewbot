@@ -211,16 +211,16 @@ class GamingCog(commands.Cog, name="Games"):
 
     @guess.command("leaderboard")
     async def guess_leaderboard(self, ctx: Context):
-        async with AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             stmt = select(GuessScore).order_by(GuessScore.score.desc()).limit(10)
             scores = (await session.execute(stmt)).scalars()
 
-        embed = discord.Embed(title="Guess Leaderboard")
-        description = ""
-        for idx, score in enumerate(scores):
-            description += f"\u200B{idx + 1}. <@{score.discord_id}>: {score.score}\n"
-        embed.description = description
-        await ctx.reply(embed=embed, mention_author=False)
+            embed = discord.Embed(title="Guess Leaderboard")
+            description = ""
+            for idx, score in enumerate(scores):
+                description += f"\u200B{idx + 1}. <@{score.discord_id}>: {score.score}\n"
+            embed.description = description
+            await ctx.reply(embed=embed, mention_author=False)
 
     @guess.command("reset", hidden=True)
     @commands.is_owner()

@@ -55,7 +55,7 @@ class SearchCog(commands.Cog, name="Search"):
         added_alias_lower = added_alias.strip().lower()
         song_title_or_alias_lower = song_title_or_alias.strip().lower()
 
-        async with AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
             stmt = select(Song).where(func.lower(Song.title) == added_alias_lower)
             song = (await session.execute(stmt)).scalar_one_or_none()
             if song is not None:
@@ -95,10 +95,10 @@ class SearchCog(commands.Cog, name="Search"):
                 Alias(alias=added_alias, guild_id=ctx.guild.id, song_id=song.id)
             )
 
-        await ctx.reply(
-            f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
-            mention_author=False,
-        )
+            await ctx.reply(
+                f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
+                mention_author=False,
+            )
 
     @commands.hybrid_command("removealias")
     @commands.guild_only()
@@ -114,7 +114,7 @@ class SearchCog(commands.Cog, name="Search"):
         # this command is guild-only
         assert ctx.guild is not None
 
-        async with AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
             stmt = select(Alias).where(
                 (func.lower(Alias.alias) == removed_alias.lower())
                 & (Alias.guild_id == ctx.guild.id)
@@ -128,7 +128,7 @@ class SearchCog(commands.Cog, name="Search"):
 
             await session.delete(alias)
 
-        await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
+            await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
 
     @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
@@ -140,27 +140,27 @@ class SearchCog(commands.Cog, name="Search"):
             The song title or alias to search for.
         """
 
-        guild_id = ctx.guild.id if ctx.guild is not None else None
-        song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+            guild_id = ctx.guild.id if ctx.guild is not None else None
+            song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
 
-        if similarity < 0.9:
-            return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
+            if similarity < 0.9:
+                return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
 
-        release = datetime.strptime(song.release, "%Y-%m-%d")
-        version = release_to_chunithm_version(release)
+            release = datetime.strptime(song.release, "%Y-%m-%d")
+            version = release_to_chunithm_version(release)
 
-        embed = discord.Embed(
-            title=song.title,
-            description=(
-                f"**Artist**: {emd(song.artist)}\n"
-                f"**Category**: {song.genre}\n"
-                f"**Version**: {version} ({song.release})\n"
-                f"**BPM**: {song.bpm if song.bpm != 0 else 'Unknown'}\n"
-            ),
-            color=discord.Color.yellow(),
-        ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
+            embed = discord.Embed(
+                title=song.title,
+                description=(
+                    f"**Artist**: {emd(song.artist)}\n"
+                    f"**Category**: {song.genre}\n"
+                    f"**Version**: {version} ({song.release})\n"
+                    f"**BPM**: {song.bpm if song.bpm != 0 else 'Unknown'}\n"
+                ),
+                color=discord.Color.yellow(),
+            ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
 
-        async with AsyncSession(self.bot.engine) as session:
             stmt = (
                 select(Chart)
                 .where(Chart.song_id == song.id)
@@ -182,11 +182,11 @@ class SearchCog(commands.Cog, name="Search"):
                     desc += f" ({chart.const:.1f})"
                 chart_level_desc.append(desc)
 
-        if len(chart_level_desc) > 0:
-            # embed.description is already set above
-            embed.description += "\n" "**Level**:\n"  # type: ignore
-            embed.description += " / ".join(chart_level_desc)
-        await ctx.reply(embed=embed, mention_author=False)
+            if len(chart_level_desc) > 0:
+                # embed.description is already set above
+                embed.description += "\n" "**Level**:\n"  # type: ignore
+                embed.description += " / ".join(chart_level_desc)
+            await ctx.reply(embed=embed, mention_author=False)
 
 
 async def setup(bot: "ChuniBot"):

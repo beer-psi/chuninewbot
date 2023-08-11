@@ -384,7 +384,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         except ValueError:
             raise commands.BadArgument("Please enter a valid level or chart constant.")
 
-        async with AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
 
             if len(charts) == 0:
@@ -613,27 +613,28 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         # discord.TextChannel should have an associated guild
         assert ctx.guild is not None
 
-        if new_prefix is None:
-            answer = await self.utils.guild_prefix(ctx)
-            await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
-        else:
-            permissions = ctx.author.guild_permissions  # type: ignore
-            missing_permission = permissions.manage_guild != True
-            if missing_permission:
-                raise commands.MissingPermissions(["manage_guild"])
+        async with ctx.typing():
+            if new_prefix is None:
+                answer = await self.utils.guild_prefix(ctx)
+                await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
+            else:
+                permissions = ctx.author.guild_permissions  # type: ignore
+                missing_permission = permissions.manage_guild != True
+                if missing_permission:
+                    raise commands.MissingPermissions(["manage_guild"])
 
-            default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
-            async with AsyncSession(self.bot.engine) as session, session.begin():
-                if new_prefix == default_prefix:
-                    stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)
-                    await session.execute(stmt)
-                    del self.bot.prefixes[ctx.guild.id]
-                else:
-                    prefix = Prefix(guild_id=ctx.guild.id, prefix=new_prefix)
-                    await session.merge(prefix)
-                    self.bot.prefixes[ctx.guild.id] = new_prefix
+                default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+                async with AsyncSession(self.bot.engine) as session, session.begin():
+                    if new_prefix == default_prefix:
+                        stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)
+                        await session.execute(stmt)
+                        del self.bot.prefixes[ctx.guild.id]
+                    else:
+                        prefix = Prefix(guild_id=ctx.guild.id, prefix=new_prefix)
+                        await session.merge(prefix)
+                        self.bot.prefixes[ctx.guild.id] = new_prefix
 
-            await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
+                await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
     @commands.command("privacy")
     async def privacy(self, ctx: Context):
