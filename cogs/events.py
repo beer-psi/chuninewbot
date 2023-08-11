@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 
 import aiohttp
 import discord
-from discord import Webhook
+from discord import Webhook, app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -15,8 +15,6 @@ from api.exceptions import (
 )
 
 if TYPE_CHECKING:
-    from discord.ext.commands.errors import CommandInvokeError
-
     from bot import ChuniBot
 
 
@@ -25,14 +23,26 @@ class EventsCog(commands.Cog, name="Events"):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error: "CommandInvokeError"):
+    async def on_command_error(
+        self,
+        ctx: Context,
+        error: commands.errors.CommandInvokeError,
+    ):
         if isinstance(error, commands.CommandNotFound):
             return
 
-        try:
+        if isinstance(error, commands.errors.HybridCommandError):
             exc = error.original
-        except AttributeError:
-            exc = error
+            if isinstance(exc, app_commands.errors.CommandInvokeError):
+                try:
+                    exc = error.original
+                except AttributeError:
+                    exc = error
+        else:
+            try:
+                exc = error.original
+            except AttributeError:
+                exc = error
 
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
@@ -41,7 +51,7 @@ class EventsCog(commands.Cog, name="Events"):
             )
         elif isinstance(exc, InvalidTokenException):
             return await ctx.reply(
-                f"CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in.\nDetailed error: {error.original}",
+                f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in.\nDetailed error: {exc}",
                 mention_author=False,
             )
         elif isinstance(exc, ChuniNetException):
@@ -54,12 +64,6 @@ class EventsCog(commands.Cog, name="Events"):
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
-        elif (
-            isinstance(exc, commands.errors.CheckFailure)
-            and ctx.command
-            and ctx.command.name == "bu"
-        ):
-            return await ctx.reply(f"đm {ctx.author.mention}", mention_author=False)
         elif isinstance(exc, commands.errors.NotOwner) or isinstance(
             exc, commands.errors.MissingPermissions
         ):

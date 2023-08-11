@@ -5,12 +5,17 @@ from typing import TYPE_CHECKING, Optional, overload
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from api.enums import Rank
-from api.record import DetailedRecentRecord, MusicRecord, Record
+from api.entities.enums import Rank
+from api.entities.record import DetailedRecentRecord, MusicRecord, RecentRecord, Record
 from update_db import update_db
-from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
-from utils.rating_calculator import calculate_rating
-from utils.types import SongSearchResult
+from utils.calculation.overpower import calculate_overpower_base, calculate_overpower_max
+from utils.calculation.rating import calculate_rating
+from utils.types import (
+    AnnotatedDetailedRecentRecord,
+    AnnotatedMusicRecord,
+    AnnotatedRecentRecord,
+    SongSearchResult,
+)
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -50,18 +55,22 @@ class UtilsCog(commands.Cog, name="Utils"):
         return clal[0]
 
     @overload
-    async def annotate_song(self, song: DetailedRecentRecord) -> DetailedRecentRecord:
+    async def annotate_song(self, song: DetailedRecentRecord) -> AnnotatedDetailedRecentRecord:
         ...
 
     @overload
-    async def annotate_song(self, song: Record | MusicRecord) -> MusicRecord:
+    async def annotate_song(self, song: Record | MusicRecord) -> MusicRecord | AnnotatedMusicRecord:
+        ...
+
+    @overload
+    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
         ...
 
     async def annotate_song(
-        self, song: Record | MusicRecord | DetailedRecentRecord
-    ) -> MusicRecord | DetailedRecentRecord:
+        self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
+    ) -> MusicRecord | AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
         if isinstance(song, Record) and not (
-            isinstance(song, MusicRecord) or isinstance(song, DetailedRecentRecord)
+            isinstance(song, MusicRecord) or isinstance(song, DetailedRecentRecord) or isinstance(song, RecentRecord)
         ):
             if song.detailed is None:
                 raise Exception("Cannot fetch song details without song.detailed.idx")
@@ -74,9 +83,8 @@ class UtilsCog(commands.Cog, name="Utils"):
                 return MusicRecord.from_record(song)
             id = song_data[0]
 
-            _song: MusicRecord = MusicRecord.from_record(song)
-            _song.jacket = song_data[1]
-            _song.rank = Rank.from_score(song.score)
+            annotated_song: AnnotatedMusicRecord = AnnotatedMusicRecord(**song.__dict__, jacket=song_data[1])
+            annotated_song.rank = Rank.from_score(song.score)
         else:
             async with self.bot.db.execute(
                 "SELECT id FROM chunirec_songs WHERE title = ? AND jacket = ?",
@@ -86,7 +94,13 @@ class UtilsCog(commands.Cog, name="Utils"):
             if song_data is None:
                 return song
             id = song_data[0]
-            _song = song
+
+            if isinstance(song, DetailedRecentRecord):
+                annotated_song = AnnotatedDetailedRecentRecord(**song.__dict__)
+            elif isinstance(song, RecentRecord):
+                annotated_song = AnnotatedRecentRecord(**song.__dict__)
+            else:
+                annotated_song = AnnotatedMusicRecord(**song.__dict__)
 
         async with self.bot.db.execute(
             "SELECT level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE song_id = ? AND difficulty = ?",
@@ -94,28 +108,24 @@ class UtilsCog(commands.Cog, name="Utils"):
         ) as cursor:
             chart_data = await cursor.fetchone()
         if chart_data is None:
-            return _song
-        _song.internal_level = chart_data[1]
+            return annotated_song
+        annotated_song.internal_level = chart_data[1]
 
         level = chart_data[0]
-        _song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
-        _song.unknown_const = bool(chart_data[3])
+        annotated_song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
+        annotated_song.unknown_const = bool(chart_data[3])
 
-        _song.play_rating = calculate_rating(
-            song.score, _song.internal_level if _song.internal_level != 0 else level
-        )
+        internal_level = annotated_song.internal_level if annotated_song.internal_level != 0 else level
 
-        if isinstance(_song, DetailedRecentRecord) and chart_data[2] != 0:
-            _song.full_combo = chart_data[2]
+        annotated_song.play_rating = calculate_rating(song.score, internal_level)
 
-        _song.overpower_base = calculate_overpower_base(
-            song.score, _song.internal_level if _song.internal_level != 0 else level
-        )
-        _song.overpower_max = calculate_overpower_max(
-            _song.internal_level if _song.internal_level != 0 else level
-        )
+        annotated_song.overpower_base = calculate_overpower_base(song.score, internal_level)
+        annotated_song.overpower_max = calculate_overpower_max(internal_level)
 
-        return _song
+        if isinstance(annotated_song, AnnotatedDetailedRecentRecord) and chart_data[2] != 0:
+            annotated_song.full_combo = chart_data[2]
+
+        return annotated_song
 
     async def find_song(
         self, query: str, *, guild_id: Optional[int] = None

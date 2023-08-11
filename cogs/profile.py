@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 from PIL import Image, ImageDraw
 
 from api import ChuniNet
-from views.profile import ProfileView
+from utils.views.profile import ProfileView
 
 if TYPE_CHECKING:
     from bot import ChuniBot

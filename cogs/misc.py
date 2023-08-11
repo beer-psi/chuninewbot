@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import time
+from decimal import Decimal
 from random import random
 from typing import Optional
 
@@ -11,14 +12,13 @@ from discord.utils import escape_markdown, oauth_url
 
 from api import ChuniNet
 from api.consts import JACKET_BASE
-from api.enums import Difficulty
+from api.entities.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
-from decimal import Decimal
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
-from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
-from utils.rating_calculator import calculate_rating, calculate_score_for_rating
-from views.songlist import SonglistView
+from utils.calculation.overpower import calculate_overpower_base, calculate_overpower_max
+from utils.calculation.rating import calculate_rating, calculate_score_for_rating
+from utils.views.songlist import SonglistView
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
@@ -199,7 +199,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         elif mode == "aj":
             rating = calculate_rating(1010000, chart_constant)
             res += f"\n1010000 | {overpower_max:>5.2f} = 100.00%"
-        
+
         for score in scores:
             rating = calculate_rating(score, chart_constant)
             overpower_base = calculate_overpower_base(score, chart_constant)
@@ -208,7 +208,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 overpower_aj = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
             else:
                 overpower_aj = "     -"
-            
+
             if rating > 0:
                 res += "\n"
                 if mode == "full":
@@ -219,12 +219,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     if score == 1009000 or score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
                         res += f"\n{separator}"
                 elif mode == "aj":
-                    res += f"{score:>7} | {overpower:>5.2f} = {overpower_aj:>7}"
+                    # AJ means scores are above 1m => overpower is defined
+                    res += f"{score:>7} | {overpower:>5.2f} = {overpower_aj:>7}"  # type: ignore[reportUnboundVariable]
                 else:
                     res += f"{score:>7} | {floor_to_ndp(rating, 2):>5.2f}"
                     if score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
                         res += f"\n{separator}"
-                
+
         res += "```"
 
         await ctx.reply(
@@ -245,7 +246,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         if not 1 <= rating <= 17.55:
             raise commands.BadArgument("Play rating must be between 1.00 and 17.55.")
-        
+
         res = "```Const |   Score\n---------------"
         chart_constant = floor_to_ndp(rating - 3, 0)
         if chart_constant < 1:
@@ -326,7 +327,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         async with ctx.typing():
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
-            
+
             # Check whether input is level or constant
             try:
                 if "." in level:

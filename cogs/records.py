@@ -8,11 +8,12 @@ from discord.ext.commands import Context
 
 from api import ChuniNet
 from api.consts import JACKET_BASE
-from api.enums import Difficulty
+from api.entities.enums import Difficulty
 from utils import did_you_mean_text
-from views.b30 import B30View
-from views.compare import CompareView
-from views.recent import RecentRecordsView
+from utils.components import ScoreCardEmbed
+from utils.views.b30 import B30View
+from utils.views.compare import CompareView
+from utils.views.recent import RecentRecordsView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -210,12 +211,12 @@ class RecordsCog(commands.Cog, name="Records"):
                 view.message = compare_message
                 await compare_message.edit(
                     content="",
-                    embed=view.format_embed(view.items[view.page]),
+                    embed=ScoreCardEmbed(view.items[view.page]),
                     view=view,
                 )
             else:
                 view.message = await ctx.reply(
-                    embed=view.format_embed(view.items[view.page]),
+                    embed=ScoreCardEmbed(view.items[view.page]),
                     view=view,
                     mention_author=False,
                 )
@@ -262,7 +263,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             view = CompareView(ctx, userinfo, records)
             view.message = await ctx.reply(
-                embed=view.format_embed(view.items[view.page]),
+                embed=ScoreCardEmbed(view.items[view.page]),
                 view=view,
                 mention_author=False,
             )

@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from yarl import URL
 
 from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
-from .enums import Difficulty, Genres, Rank
+from .entities.enums import Difficulty, Genres, Rank
+from .entities.record import MusicRecord, RecentRecord, Record
 from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
 from .parser import (
     parse_basic_recent_record,
@@ -16,7 +17,6 @@ from .parser import (
     parse_player_card_and_avatar,
     parse_player_data,
 )
-from .record import MusicRecord, RecentRecord, Record
 
 __all__ = ["ChuniNet"]
 
@@ -48,6 +48,9 @@ class ChuniNet:
         return self
 
     async def __aexit__(self, type, value, traceback):
+        await self.session.close()
+
+    async def close(self):
         await self.session.close()
 
     @property

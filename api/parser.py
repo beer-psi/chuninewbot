@@ -3,9 +3,9 @@ from typing import cast
 
 from bs4 import BeautifulSoup, Tag
 
-from .enums import ClearType, Possession, Rank, SkillClass
-from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating, UserAvatar
-from .record import (
+from .entities.enums import ClearType, Possession, Rank, SkillClass
+from .entities.player_data import Currency, Nameplate, Overpower, PlayerData, Rating, UserAvatar
+from .entities.record import (
     DetailedParams,
     DetailedRecentRecord,
     Judgements,

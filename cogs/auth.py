@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from api import ChuniNet
-from views.login import LoginFlowView
+from utils.views.login import LoginFlowView
 
 if TYPE_CHECKING:
     from bot import ChuniBot

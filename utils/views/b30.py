@@ -6,19 +6,19 @@ import discord.ui
 from discord.ext.commands import Context
 
 from utils import floor_to_ndp
-from utils.ranks import rank_icon
 
 from .pagination import PaginationView
+from ..components import ScoreCardEmbed
 
 if TYPE_CHECKING:
-    from api import MusicRecord
+    from ..types.annotated_records import AnnotatedMusicRecord
 
 
 class B30View(PaginationView):
     def __init__(
         self,
         ctx: Context,
-        items: Sequence["MusicRecord"],
+        items: Sequence["AnnotatedMusicRecord"],
         per_page: int = 3,
         show_average: bool = True,
     ):
@@ -37,20 +37,11 @@ class B30View(PaginationView):
         )
 
     def format_page(
-        self, items: Sequence["MusicRecord"], start_index: int = 0
+        self, items: Sequence["AnnotatedMusicRecord"], start_index: int = 0
     ) -> Sequence[discord.Embed]:
-        embeds = []
-        for idx, item in enumerate(items):
-            embeds.append(
-                discord.Embed(
-                    description=f"▸ {rank_icon(item.rank)} ▸ {item.score} ▸ **{floor_to_ndp(item.play_rating, 2)}{'' if not item.unknown_const else '*'}**\n",
-                    color=item.difficulty.color(),
-                )
-                .set_author(
-                    name=f"{idx + start_index + 1}. {item.title} [{item.displayed_difficulty}]"
-                )
-                .set_thumbnail(url=item.full_jacket_url())
-            )
+        embeds: list[discord.Embed] = [
+            ScoreCardEmbed(item, index=start_index + idx + 1, show_clear_type=False) for idx, item in enumerate(items)
+        ]
         embeds.append(
             discord.Embed(description=f"Page {self.page + 1}/{self.max_index + 1}")
         )
