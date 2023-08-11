@@ -58,7 +58,7 @@ class RecentRecordsView(PaginationView):
 
     async def on_timeout(self):
         await self.chuni_client.close()
-        return super().on_timeout()
+        return await super().on_timeout()
 
     def format_score_page(
         self, scores: Sequence["AnnotatedRecentRecord"]
