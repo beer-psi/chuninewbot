@@ -34,9 +34,15 @@ class EventsCog(commands.Cog, name="Events"):
         if isinstance(error, commands.errors.HybridCommandError):
             exc = error.original
             if isinstance(exc, app_commands.errors.CommandInvokeError):
-                exc = exc.original
+                try:
+                    exc = error.original
+                except AttributeError:
+                    exc = error
         else:
-            exc = error.original
+            try:
+                exc = error.original
+            except AttributeError:
+                exc = error
 
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
