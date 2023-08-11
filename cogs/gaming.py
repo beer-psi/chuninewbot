@@ -13,8 +13,11 @@ from discord.ext.commands import Context
 from discord.ext.commands.context import DeferTyping
 from jarowinkler import jaro_similarity
 from PIL import Image
+from sqlalchemy import delete, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.consts import JACKET_BASE
+from database.models import Alias, GuessScore, Song
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -92,22 +95,32 @@ class GamingCog(commands.Cog, name="Games"):
         with _current_sessions_lock:
             _current_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
 
-        async with ctx.typing():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             prefix = await self.utils.guild_prefix(ctx)
 
-            async with self.bot.db.execute(
-                'SELECT id, title, genre, artist, jacket FROM chunirec_songs WHERE genre != "WORLD\'S END" ORDER BY RANDOM() LIMIT 1'
-            ) as cursor:
-                (id, title, genre, artist, jacket) = await cursor.fetchone()  # type: ignore
+            stmt = (
+                select(Song)
+                .where(Song.genre != "WORLD'S END")
+                .order_by(text("RANDOM()"))
+                .limit(1)
+            )
+            song = (await session.execute(stmt)).scalar_one()
 
-            async with self.bot.db.execute(
-                f"SELECT alias FROM aliases WHERE song_id = :id AND (guild_id = -1 OR guild_id = :guild_id)",
-                {"id": id, "guild_id": ctx.guild.id if ctx.guild is not None else -1},
-            ) as cursor:
-                aliases = [alias for (alias,) in await cursor.fetchall()]
-            aliases = [title] + aliases
+            stmt = select(Alias).where(
+                (Alias.song_id == song.id)
+                & (
+                    (Alias.guild_id == -1)
+                    | (
+                        Alias.guild_id
+                        == (ctx.guild.id if ctx.guild is not None else -1)
+                    )
+                )
+            )
+            aliases = [song.title] + [
+                alias.alias for alias in (await session.execute(stmt)).scalars()
+            ]
 
-            jacket_url = f"{JACKET_BASE}/{jacket}"
+            jacket_url = f"{JACKET_BASE}/{song.jacket}"
             async with self.session.get(jacket_url) as resp:
                 jacket_bytes = await resp.read()
                 img = Image.open(io.BytesIO(jacket_bytes))
@@ -170,8 +183,8 @@ class GamingCog(commands.Cog, name="Games"):
                 description=(
                     f"**Answer**: {answers}\n"
                     "\n"
-                    f"**Artist**: {artist}\n"
-                    f"**Category**: {genre}"
+                    f"**Artist**: {song.artist}\n"
+                    f"**Category**: {song.genre}"
                 )
             )
             answer_embed.set_image(url=jacket_url)
@@ -198,15 +211,14 @@ class GamingCog(commands.Cog, name="Games"):
 
     @guess.command("leaderboard")
     async def guess_leaderboard(self, ctx: Context):
-        async with self.bot.db.execute(
-            "SELECT * FROM guess_leaderboard ORDER BY score DESC LIMIT 10"
-        ) as cursor:
-            rows = await cursor.fetchall()
+        async with AsyncSession(self.bot.engine) as session:
+            stmt = select(GuessScore).order_by(GuessScore.score.desc()).limit(10)
+            scores = (await session.execute(stmt)).scalars()
 
         embed = discord.Embed(title="Guess Leaderboard")
         description = ""
-        for idx, row in enumerate(rows):
-            description += f"\u200B{idx + 1}. <@{row[0]}>: {row[1]}\n"
+        for idx, score in enumerate(scores):
+            description += f"\u200B{idx + 1}. <@{score.discord_id}>: {score.score}\n"
         embed.description = description
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -215,25 +227,22 @@ class GamingCog(commands.Cog, name="Games"):
     async def guess_reset(self, ctx: Context):
         """Resets the c>guess leaderboard"""
 
-        await self.bot.db.execute("DELETE FROM guess_leaderboard")
+        async with AsyncSession(self.bot.engine) as session, session.begin():
+            await session.execute(delete(GuessScore))
 
         await ctx.message.add_reaction("✅")
 
     async def _increment_score(self, discord_id: int):
-        async with self.bot.db.execute(
-            "SELECT score FROM guess_leaderboard WHERE discord_id = ?", (discord_id,)
-        ) as cursor:
-            row = await cursor.fetchone()
-        if row is None:
-            await self.bot.db.execute(
-                "INSERT INTO guess_leaderboard VALUES (?, 1)", (discord_id,)
-            )
-        else:
-            await self.bot.db.execute(
-                "UPDATE guess_leaderboard SET score = score + 1 WHERE discord_id = ?",
-                (discord_id,),
-            )
-        await self.bot.db.commit()
+        async with AsyncSession(self.bot.engine) as session, session.begin():
+            stmt = select(GuessScore).where(GuessScore.discord_id == discord_id)
+            score = (await session.execute(stmt)).scalar_one_or_none()
+
+            if score is None:
+                score = GuessScore(discord_id=discord_id, score=1)
+                session.add(score)
+            else:
+                score.score += 1
+                await session.merge(score)
 
 
 async def setup(bot: "ChuniBot") -> None:

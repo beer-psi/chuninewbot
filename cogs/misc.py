@@ -3,20 +3,27 @@ import sys
 import time
 from decimal import Decimal
 from random import random
-from typing import Optional
+from typing import Optional, Sequence
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown, oauth_url
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from api import ChuniNet
 from api.consts import JACKET_BASE
 from api.entities.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
+from database.models import Chart, Prefix
 from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
-from utils.calculation.overpower import calculate_overpower_base, calculate_overpower_max
+from utils.calculation.overpower import (
+    calculate_overpower_base,
+    calculate_overpower_max,
+)
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
 from utils.views.songlist import SonglistView
 
@@ -154,14 +161,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 res += f"\n• FC: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
                 res += f"\n• Non-FC: {floor_to_ndp(overpower_base, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower_base / overpower_max * 100, 2)}%)"
 
-        await ctx.reply(
-            res, mention_author=False
-        )
+        await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("const", aliases=["constant"])
-    async def const(
-        self, ctx: Context, chart_constant: float, mode: str = "default"
-    ):
+    async def const(self, ctx: Context, chart_constant: float, mode: str = "default"):
         """Calculate rating and over power achieved with various scores based on chart constant.
 
         Parameters
@@ -182,15 +185,93 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         if mode == "full":
             separator = "----------------------------------------------"
             res = f"```  Score |  Rate |      OP | OP (FC) | OP (AJ)\n{separator}"
-            scores = [1009900, 1009500, 1009000, 1008500, 1008000, 1007500, 1007000, 1006500, 1006000, 1005500, 1005000, 1004000, 1003000, 1002000, 1001000, 1000000, 997500, 995000, 992500, 990000, 987500, 985000, 982500, 980000, 977500, 975000, 970000, 960000, 950000, 925000, 900000]
+            scores = [
+                1009900,
+                1009500,
+                1009000,
+                1008500,
+                1008000,
+                1007500,
+                1007000,
+                1006500,
+                1006000,
+                1005500,
+                1005000,
+                1004000,
+                1003000,
+                1002000,
+                1001000,
+                1000000,
+                997500,
+                995000,
+                992500,
+                990000,
+                987500,
+                985000,
+                982500,
+                980000,
+                977500,
+                975000,
+                970000,
+                960000,
+                950000,
+                925000,
+                900000,
+            ]
         elif mode == "aj":
             separator = "-------------------------"
             res = f"```  Score |         OP (AJ)\n{separator}"
-            scores = [1009950, 1009900, 1009850, 1009800, 1009750, 1009700, 1009650, 1009600, 1009550, 1009500, 1009400, 1009300, 1009200, 1009100, 1009000]
+            scores = [
+                1009950,
+                1009900,
+                1009850,
+                1009800,
+                1009750,
+                1009700,
+                1009650,
+                1009600,
+                1009550,
+                1009500,
+                1009400,
+                1009300,
+                1009200,
+                1009100,
+                1009000,
+            ]
         else:
             separator = "---------------"
             res = f"```  Score |  Rate\n{separator}"
-            scores = [1009000, 1008500, 1008000, 1007500, 1007000, 1006500, 1006000, 1005500, 1005000, 1004000, 1003000, 1002000, 1001000, 1000000, 997500, 995000, 992500, 990000, 987500, 985000, 982500, 980000, 977500, 975000, 970000, 960000, 950000, 925000, 900000]
+            scores = [
+                1009000,
+                1008500,
+                1008000,
+                1007500,
+                1007000,
+                1006500,
+                1006000,
+                1005500,
+                1005000,
+                1004000,
+                1003000,
+                1002000,
+                1001000,
+                1000000,
+                997500,
+                995000,
+                992500,
+                990000,
+                987500,
+                985000,
+                982500,
+                980000,
+                977500,
+                975000,
+                970000,
+                960000,
+                950000,
+                925000,
+                900000,
+            ]
 
         overpower_max = calculate_overpower_max(chart_constant)
         if mode == "full":
@@ -213,29 +294,42 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 res += "\n"
                 if mode == "full":
                     overpower = overpower_base + Decimal(0.5)
-                    overpower_fc = f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
-                    overpower_non_fc = f"{floor_to_ndp(overpower_base / overpower_max * 100, 2)}%"
+                    overpower_fc = (
+                        f"{floor_to_ndp(overpower / overpower_max * 100, 2)}%"
+                    )
+                    overpower_non_fc = (
+                        f"{floor_to_ndp(overpower_base / overpower_max * 100, 2)}%"
+                    )
                     res += f"{score:>7} | {floor_to_ndp(rating, 2):>5.2f} | {overpower_non_fc:>7} | {overpower_fc:>7} | {overpower_aj:>7}"
-                    if score == 1009000 or score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
+                    if (
+                        score == 1009000
+                        or score == 1007500
+                        or score == 1005000
+                        or score == 1000000
+                        or score == 990000
+                        or score == 975000
+                    ):
                         res += f"\n{separator}"
                 elif mode == "aj":
                     # AJ means scores are above 1m => overpower is defined
                     res += f"{score:>7} | {overpower:>5.2f} = {overpower_aj:>7}"  # type: ignore[reportUnboundVariable]
                 else:
                     res += f"{score:>7} | {floor_to_ndp(rating, 2):>5.2f}"
-                    if score == 1007500 or score == 1005000 or score == 1000000 or score == 990000 or score == 975000:
+                    if (
+                        score == 1007500
+                        or score == 1005000
+                        or score == 1000000
+                        or score == 990000
+                        or score == 975000
+                    ):
                         res += f"\n{separator}"
 
         res += "```"
 
-        await ctx.reply(
-            res, mention_author=False
-        )
+        await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("rating")
-    async def rating(
-        self, ctx: Context, rating: float
-    ):
+    async def rating(self, ctx: Context, rating: float):
         """Calculate score required to achieve the specified play rating.
 
         Parameters
@@ -254,7 +348,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         while chart_constant <= rating and chart_constant <= 15.4:
             required_score = calculate_score_for_rating(rating, chart_constant)
             if required_score >= 975000:
-                res += f"\n {chart_constant:>4.1f} | {floor_to_ndp(required_score, 0):>7}"
+                res += (
+                    f"\n {chart_constant:>4.1f} | {floor_to_ndp(required_score, 0):>7}"
+                )
             if chart_constant >= 10:
                 chart_constant += 0.1
             elif chart_constant >= 7:
@@ -263,9 +359,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 chart_constant += 1
         res += "```"
 
-        await ctx.reply(
-            res, mention_author=False
-        )
+        await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, level: str):
@@ -277,40 +371,42 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Chart constant to search for.
         """
 
+        stmt = select(Chart).options(
+            joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view)
+        )
         try:
             if "." in level:
                 query_level = float(level)
-                where_clause = "WHERE const = ? "
+                stmt = stmt.where(Chart.const == query_level)
             else:
                 query_level = float(level.replace("+", ".5"))
-                where_clause = "WHERE level = ? "
+                stmt = stmt.where(Chart.level == query_level)
         except ValueError:
             raise commands.BadArgument("Please enter a valid level or chart constant.")
 
-        async with self.bot.db.execute(
-            "SELECT songs.title, charts.difficulty, sdvxin.id AS sdvxin_id "
-            "FROM chunirec_charts charts "
-            "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
-            "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-            f"{where_clause}",
-            (query_level,),
-        ) as cursor:
-            charts = await cursor.fetchall()
-        if not charts:
-            await ctx.reply("No charts found.", mention_author=False)
-            return
+        async with AsyncSession(self.bot.engine) as session:
+            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
 
-        results: list[tuple[str, str, str | None]] = []
-        for chart in charts:
-            title, difficulty, sdvxin_id = chart
-            results.append((title, difficulty, sdvxin_id))
+            if len(charts) == 0:
+                await ctx.reply("No charts found.", mention_author=False)
+                return
 
-        view = SonglistView(ctx, results)
-        view.message = await ctx.reply(
-            embed=view.format_songlist(view.items[: view.per_page]),
-            view=view,
-            mention_author=False,
-        )
+            results: list[tuple[str, str, str | None]] = []
+            for chart in charts:
+                results.append(
+                    (
+                        chart.song.title,
+                        chart.difficulty,
+                        chart.sdvxin_chart_view.id if chart.sdvxin_chart_view else None,
+                    )
+                )
+
+            view = SonglistView(ctx, results)
+            view.message = await ctx.reply(
+                embed=view.format_songlist(view.items[: view.per_page]),
+                view=view,
+                mention_author=False,
+            )
 
     @commands.hybrid_command("random")
     async def random(self, ctx: Context, level: str, count: int = 3):
@@ -324,69 +420,58 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Number of charts to return. Must be between 1 and 4.
         """
 
-        async with ctx.typing():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
             # Check whether input is level or constant
+            stmt = (
+                select(Chart)
+                .order_by(text("RANDOM()"))
+                .limit(count)
+                .options(joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view))
+            )
             try:
                 if "." in level:
                     query_level = float(level)
-                    where_clause = "WHERE const = ? "
+                    stmt = stmt.where(Chart.const == query_level)
                 else:
                     query_level = float(level.replace("+", ".5"))
-                    where_clause = "WHERE level = ? "
+                    stmt = stmt.where(Chart.level == query_level)
             except ValueError:
-                raise commands.BadArgument("Please enter a valid level or chart constant.")
+                raise commands.BadArgument(
+                    "Please enter a valid level or chart constant."
+                )
 
-            async with self.bot.db.execute(
-                "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
-                "FROM chunirec_charts charts "
-                "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
-                "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                f"{where_clause}"
-                "ORDER BY random() "
-                "LIMIT ?",
-                (query_level, count),
-            ) as cursor:
-                charts = await cursor.fetchall()
-            if not charts:
+            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
+
+            if len(charts) == 0:
                 await ctx.reply("No charts found.", mention_author=False)
                 return
 
             embeds: list[discord.Embed] = []
             for chart in charts:
-                (
-                    title,
-                    genre,
-                    artist,
-                    jacket,
-                    difficulty,
-                    lev,
-                    const,
-                    is_const_unknown,
-                    sdvxin_id,
-                ) = chart
+                difficulty = Difficulty.from_short_form(chart.difficulty)
+                chart_level = format_level(chart.level)
 
-                difficulty = Difficulty.from_short_form(difficulty)
-                chart_level = format_level(lev)
-
-                if sdvxin_id is not None:
-                    url = sdvxin_link(sdvxin_id, difficulty.short_form())
+                if chart.sdvxin_chart_view is not None:
+                    url = sdvxin_link(
+                        chart.sdvxin_chart_view.id, difficulty.short_form()
+                    )
                 else:
-                    url = yt_search_link(title, difficulty.short_form())
+                    url = yt_search_link(chart.song.title, difficulty.short_form())
 
                 embeds.append(
                     discord.Embed(
-                        title=escape_markdown(title),
-                        description=escape_markdown(artist),
+                        title=escape_markdown(chart.song.title),
+                        description=escape_markdown(chart.song.artist),
                         color=difficulty.color(),
                     )
-                    .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
-                    .add_field(name="Category", value=genre)
+                    .set_thumbnail(url=f"{JACKET_BASE}/{chart.song.jacket}")
+                    .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
+                        value=f"[{chart_level}{f' ({chart.const})' if not chart.is_const_unknown else ''}]({url})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
@@ -408,7 +493,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             assuming you're logged in.
         """
 
-        async with ctx.typing():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
@@ -433,38 +518,24 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             if max_level < min_level + 1:
                 max_level = min_level + 1
 
-            async with self.bot.db.execute(
-                "SELECT songs.title, songs.genre, songs.artist, songs.jacket, charts.difficulty, level, const, is_const_unknown, sdvxin.id AS sdvxin_id "
-                "FROM chunirec_charts charts "
-                "LEFT JOIN chunirec_songs songs ON charts.song_id = songs.id "
-                "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-                "WHERE const >= ? AND const <= ? "
-                "ORDER BY random() "
-                "LIMIT ?",
-                (min_level, max_level, count),
-            ) as cursor:
-                charts = await cursor.fetchall()
-            if not charts:
+            stmt = (
+                select(Chart)
+                .where((Chart.const >= min_level) & (Chart.const <= max_level))
+                .order_by(text("RANDOM()"))
+                .limit(count)
+                .options(joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view))
+            )
+
+            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
+            if len(charts) == 0:
                 await ctx.reply("No charts found.", mention_author=False)
                 return
 
             embeds: list[discord.Embed] = []
             for chart in charts:
-                (
-                    title,
-                    genre,
-                    artist,
-                    jacket,
-                    difficulty,
-                    lev,
-                    const,
-                    is_const_unknown,
-                    sdvxin_id,
-                ) = chart
-
-                difficulty = Difficulty.from_short_form(difficulty)
-                chart_level = format_level(lev)
-                rating_diff = max_rating - const
+                difficulty = Difficulty.from_short_form(chart.difficulty)
+                chart_level = format_level(chart.level)
+                rating_diff = max_rating - chart.const
 
                 # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
                 if rating_diff < 0.10:
@@ -496,24 +567,26 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 else:
                     target_score = 1_009_000
 
-                target_rating = calculate_rating(target_score, const)
+                target_rating = calculate_rating(target_score, chart.const)
 
-                if sdvxin_id is not None:
-                    url = sdvxin_link(sdvxin_id, difficulty.short_form())
+                if chart.sdvxin_chart_view is not None:
+                    url = sdvxin_link(
+                        chart.sdvxin_chart_view.id, difficulty.short_form()
+                    )
                 else:
-                    url = yt_search_link(title, difficulty.short_form())
+                    url = yt_search_link(chart.song.title, difficulty.short_form())
 
                 embeds.append(
                     discord.Embed(
-                        title=escape_markdown(title),
-                        description=escape_markdown(artist),
+                        title=escape_markdown(chart.song.title),
+                        description=escape_markdown(chart.song.artist),
                         color=difficulty.color(),
                     )
-                    .set_thumbnail(url=f"{JACKET_BASE}/{jacket}")
-                    .add_field(name="Category", value=genre)
+                    .set_thumbnail(url=f"{JACKET_BASE}/{chart.song.jacket}")
+                    .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({const})' if not is_const_unknown else ''}]({url})",
+                        value=f"[{chart_level}{f' ({chart.const})' if not chart.is_const_unknown else ''}]({url})",
                     )
                     .add_field(
                         name="Target Score",
@@ -541,13 +614,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         assert ctx.guild is not None
 
         if new_prefix is None:
-            answer = self.bot.cfg.get("DEFAULT_PREFIX", "c>")
-            async with self.bot.db.execute(
-                "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
-            ) as cursor:
-                prefix = await cursor.fetchone()
-            if prefix is not None:
-                answer = prefix[0]
+            answer = await self.utils.guild_prefix(ctx)
             await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
         else:
             permissions = ctx.author.guild_permissions  # type: ignore
@@ -555,11 +622,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             if missing_permission:
                 raise commands.MissingPermissions(["manage_guild"])
 
-            await self.bot.db.execute(
-                "INSERT INTO guild_prefix (guild_id, prefix) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET prefix = excluded.prefix",
-                (ctx.guild.id, new_prefix),
-            )
-            await self.bot.db.commit()
+            async with AsyncSession(self.bot.engine) as session, session.begin():
+                prefix = Prefix(guild_id=ctx.guild.id, prefix=new_prefix)
+                await session.merge(prefix)
+
             await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
     @commands.command("privacy")

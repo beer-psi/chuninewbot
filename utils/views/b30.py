@@ -7,8 +7,8 @@ from discord.ext.commands import Context
 
 from utils import floor_to_ndp
 
-from .pagination import PaginationView
 from ..components import ScoreCardEmbed
+from .pagination import PaginationView
 
 if TYPE_CHECKING:
     from ..types.annotated_records import AnnotatedMusicRecord
@@ -40,7 +40,8 @@ class B30View(PaginationView):
         self, items: Sequence["AnnotatedMusicRecord"], start_index: int = 0
     ) -> Sequence[discord.Embed]:
         embeds: list[discord.Embed] = [
-            ScoreCardEmbed(item, index=start_index + idx + 1, show_clear_type=False) for idx, item in enumerate(items)
+            ScoreCardEmbed(item, index=start_index + idx + 1, show_clear_type=False)
+            for idx, item in enumerate(items)
         ]
         embeds.append(
             discord.Embed(description=f"Page {self.page + 1}/{self.max_index + 1}")

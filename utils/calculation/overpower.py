@@ -33,6 +33,7 @@ def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
 
     return Decimal(floor_to_ndp(rating100 / 2_000, 2))
 
+
 def calculate_overpower_max(internal_level: float) -> Decimal:
     return Decimal(internal_level * 5 + 15)
 

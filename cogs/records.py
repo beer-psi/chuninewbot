@@ -5,10 +5,13 @@ from typing import TYPE_CHECKING, Optional, cast
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api import ChuniNet
 from api.consts import JACKET_BASE
 from api.entities.enums import Difficulty
+from database.models import Song
 from utils import did_you_mean_text
 from utils.components import ScoreCardEmbed
 from utils.views.b30 import B30View
@@ -96,7 +99,7 @@ class RecordsCog(commands.Cog, name="Records"):
             The user to compare with. Defaults to the author.
         """
 
-        async with ctx.typing():
+        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
             clal = await self.utils.login_check(ctx if user is None else user.id)
 
             if ctx.message.reference is not None:
@@ -140,12 +143,13 @@ class RecordsCog(commands.Cog, name="Records"):
                 embed = embeds[0]
                 compare_message = None
             else:
-                placeholders = ", ".join("?" for _ in range(len(embeds)))
-                query = f"SELECT title, jacket FROM chunirec_songs WHERE jacket IN ({placeholders}) OR zetaraku_jacket IN ({placeholders})"
                 jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]  # type: ignore
-                async with self.bot.db.execute(query, jackets * 2) as cursor:
-                    titles = list(await cursor.fetchall())
-                jacket_map = {jacket: title for title, jacket in titles}
+                stmt = select(Song).where(
+                    (Song.jacket.in_(jackets)) | (Song.zetaraku_jacket.in_(jackets))
+                )
+                songs = (await session.execute(stmt)).scalars().all()
+
+                jacket_map = {song.jacket: song.title for song in songs}
                 view = SelectToCompareView(
                     [(jacket_map[x], i) for i, x in enumerate(jackets)]
                 )
@@ -163,20 +167,18 @@ class RecordsCog(commands.Cog, name="Records"):
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
 
-            async with self.bot.db.execute(
-                "SELECT chunithm_id FROM chunirec_songs WHERE jacket = ? OR zetaraku_jacket = ?",
-                (thumbnail_filename, thumbnail_filename),
-            ) as cursor:
-                song_id = await cursor.fetchone()
-            if song_id is None:
+            stmt = select(Song).where(
+                (Song.jacket == thumbnail_filename)
+                | (Song.zetaraku_jacket == thumbnail_filename)
+            )
+            song = (await session.execute(stmt)).scalar_one_or_none()
+            if song is None:
                 await ctx.reply("No song found.", mention_author=False)
                 return
 
-            song_id = song_id[0]
-
             async with ChuniNet(clal) as client:
                 userinfo = await client.authenticate()
-                records = await client.music_record(song_id)
+                records = await client.music_record(song.chunithm_id)
 
             if len(records) == 0:
                 await ctx.reply(
@@ -244,13 +246,17 @@ class RecordsCog(commands.Cog, name="Records"):
             clal = await self.utils.login_check(ctx if user is None else user.id)
 
             guild_id = ctx.guild.id if ctx.guild else None
-            result = await self.utils.find_song(query, guild_id=guild_id)
-            if result.similarity < 0.9:
-                return await ctx.reply(did_you_mean_text(result), mention_author=False)
+            song, alias, similarity = await self.utils.find_song(
+                query, guild_id=guild_id
+            )
+            if similarity < 0.9:
+                return await ctx.reply(
+                    did_you_mean_text(song, alias), mention_author=False
+                )
 
             async with ChuniNet(clal) as client:
                 userinfo = await client.authenticate()
-                records = await client.music_record(result.chunithm_id)
+                records = await client.music_record(song.chunithm_id)
 
             if len(records) == 0:
                 await ctx.reply(

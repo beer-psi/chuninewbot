@@ -9,6 +9,7 @@ from .pagination import PaginationView
 
 if TYPE_CHECKING:
     from api.entities.player_data import PlayerData
+
     from ..types.annotated_records import AnnotatedMusicRecord
 
 

@@ -41,4 +41,3 @@ class AnnotatedRecentRecord(AnnotatedMusicRecord):
 @dataclass(kw_only=True)
 class AnnotatedDetailedRecentRecord(AnnotatedMusicRecord, DetailedRecentRecord):
     full_combo: Optional[int] = None
-

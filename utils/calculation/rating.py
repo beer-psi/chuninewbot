@@ -30,6 +30,7 @@ def calculate_rating(score: int, internal_level: float) -> Decimal:
 
     return rating100 / 10000
 
+
 def calculate_score_for_rating(rating: float, internal_level: float) -> int:
     diff = Decimal(Decimal(str(rating)) * 10000 - Decimal(str(internal_level)) * 10000)
     req = -1

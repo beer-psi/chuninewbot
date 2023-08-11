@@ -1,11 +1,16 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from api.consts import JACKET_BASE
+from database.models import Alias, Chart, Song
 from utils import (
     did_you_mean_text,
     format_level,
@@ -47,50 +52,49 @@ class SearchCog(commands.Cog, name="Search"):
         # this command is guild-only
         assert ctx.guild is not None
 
-        async with self.bot.db.execute(
-            "SELECT id FROM chunirec_songs WHERE title = ?", (song_title_or_alias,)
-        ) as cursor:
-            song = await cursor.fetchone()
-        if song is None:
-            async with self.bot.db.execute(
-                "SELECT song_id FROM aliases WHERE lower(alias) = ? AND (guild_id = -1 OR guild_id = ?)",
-                (song_title_or_alias.lower(), ctx.guild.id),
-            ) as cursor:
-                alias = await cursor.fetchone()
-            if alias is None:
-                await ctx.reply(
-                    f"**{song_title_or_alias}** does not exist.", mention_author=False
+        added_alias_lower = added_alias.strip().lower()
+        song_title_or_alias_lower = song_title_or_alias.strip().lower()
+
+        async with AsyncSession(self.bot.engine) as session, session.begin():
+            stmt = select(Song).where(func.lower(Song.title) == added_alias_lower)
+            song = (await session.execute(stmt)).scalar_one_or_none()
+            if song is not None:
+                return await ctx.reply(
+                    f"**{added_alias}** is already a song title.", mention_author=False
                 )
-                return
-            song_id = alias[0]
-        else:
-            song_id = song[0]
 
-        async with self.bot.db.execute(
-            "SELECT alias FROM aliases WHERE lower(alias) = ? AND (guild_id = -1 OR guild_id = ?)",
-            (added_alias.lower(), ctx.guild.id),
-        ) as cursor:
-            alias = await cursor.fetchone()
-        if alias is not None:
-            await ctx.reply(f"**{added_alias}** already exists.", mention_author=False)
-            return
-
-        async with self.bot.db.execute(
-            "SELECT id FROM chunirec_songs WHERE lower(title) = ?",
-            (added_alias.lower(),),
-        ) as cursor:
-            song = await cursor.fetchone()
-        if song is not None:
-            await ctx.reply(
-                f"**{emd(added_alias)}** is already a song title.", mention_author=False
+            stmt = select(Alias).where(
+                (func.lower(Alias.alias) == added_alias_lower)
+                & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
             )
-            return
+            alias = (await session.execute(stmt)).scalar_one_or_none()
+            if alias is not None:
+                return await ctx.reply(
+                    f"**{added_alias}** already exists.", mention_author=False
+                )
 
-        await self.bot.db.execute(
-            "INSERT INTO aliases (alias, guild_id, song_id) VALUES (?, ?, ?)",
-            (added_alias, ctx.guild.id, song_id),
-        )
-        await self.bot.db.commit()
+            stmt = select(Song).where(
+                func.lower(Song.title) == song_title_or_alias_lower
+            )
+            song = (await session.execute(stmt)).scalar_one_or_none()
+
+            if song is None:
+                stmt = select(Alias).where(
+                    (func.lower(Alias.alias) == song_title_or_alias_lower)
+                    & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
+                )
+                alias = (await session.execute(stmt)).scalar_one_or_none()
+                if alias is None:
+                    return await ctx.reply(
+                        f"**{song_title_or_alias}** does not exist.",
+                        mention_author=False,
+                    )
+                song = alias.song
+
+            session.add(
+                Alias(alias=added_alias, guild_id=ctx.guild.id, song_id=song.id)
+            )
+
         await ctx.reply(
             f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
             mention_author=False,
@@ -110,22 +114,20 @@ class SearchCog(commands.Cog, name="Search"):
         # this command is guild-only
         assert ctx.guild is not None
 
-        async with self.bot.db.execute(
-            "SELECT alias FROM aliases WHERE lower(alias) = ? AND guild_id = ?",
-            (removed_alias.lower(), ctx.guild.id),
-        ) as cursor:
-            alias = await cursor.fetchone()
-        if alias is None:
-            await ctx.reply(
-                f"**{removed_alias}** does not exist.", mention_author=False
+        async with AsyncSession(self.bot.engine) as session, session.begin():
+            stmt = select(Alias).where(
+                (func.lower(Alias.alias) == removed_alias.lower())
+                & (Alias.guild_id == ctx.guild.id)
             )
-            return
+            alias = (await session.execute(stmt)).scalar_one_or_none()
 
-        await self.bot.db.execute(
-            "DELETE FROM aliases WHERE lower(alias) = ? AND guild_id = ?",
-            (removed_alias.lower(), ctx.guild.id),
-        )
-        await self.bot.db.commit()
+            if alias is None:
+                return await ctx.reply(
+                    f"**{removed_alias}** does not exist.", mention_author=False
+                )
+
+            await session.delete(alias)
+
         await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
 
     @commands.hybrid_command("info")
@@ -139,46 +141,46 @@ class SearchCog(commands.Cog, name="Search"):
         """
 
         guild_id = ctx.guild.id if ctx.guild is not None else None
-        result = await self.utils.find_song(query, guild_id=guild_id)
+        song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
 
-        if result.similarity < 0.9:
-            return await ctx.reply(did_you_mean_text(result), mention_author=False)
+        if similarity < 0.9:
+            return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
 
-        version = release_to_chunithm_version(result.release)
+        release = datetime.strptime(song.release, "%Y-%m-%d")
+        version = release_to_chunithm_version(release)
 
         embed = discord.Embed(
-            title=result.title,
+            title=song.title,
             description=(
-                f"**Artist**: {emd(result.artist)}\n"
-                f"**Category**: {result.genre}\n"
-                f"**Version**: {version} ({result.release.date()})\n"
-                f"**BPM**: {result.bpm if result.bpm != 0 else 'Unknown'}\n"
+                f"**Artist**: {emd(song.artist)}\n"
+                f"**Category**: {song.genre}\n"
+                f"**Version**: {version} ({song.release})\n"
+                f"**BPM**: {song.bpm if song.bpm != 0 else 'Unknown'}\n"
             ),
             color=discord.Color.yellow(),
-        ).set_thumbnail(url=f"{JACKET_BASE}/{result.jacket}")
+        ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
 
-        chart_level_desc = []
-        async with self.bot.db.execute(
-            "SELECT charts.difficulty, level, const, sdvxin.id as sdvxin_id "
-            "FROM chunirec_charts charts "
-            "LEFT JOIN sdvxin ON charts.song_id = sdvxin.song_id AND charts.difficulty = sdvxin.difficulty "
-            "WHERE charts.song_id = ? "
-            "ORDER BY charts.id ASC",
-            (result.id,),
-        ) as cursor:
-            charts = await cursor.fetchall()
-
-        for chart in charts:
-            difficulty, level, const, sdvxin_id = chart
-            url = (
-                sdvxin_link(sdvxin_id, difficulty)
-                if sdvxin_id is not None
-                else yt_search_link(result.title, difficulty)
+        async with AsyncSession(self.bot.engine) as session:
+            stmt = (
+                select(Chart)
+                .where(Chart.song_id == song.id)
+                .order_by(Chart.id)
+                .options(joinedload(Chart.sdvxin_chart_view))
             )
-            desc = f"[{difficulty[0]}]({url}) {format_level(level)}"
-            if const != 0:
-                desc += f" ({const:.1f})"
-            chart_level_desc.append(desc)
+            charts = (await session.execute(stmt)).scalars().all()
+
+            chart_level_desc = []
+
+            for chart in charts:
+                url = (
+                    sdvxin_link(chart.sdvxin_chart_view.id, chart.difficulty)
+                    if chart.sdvxin_chart_view is not None
+                    else yt_search_link(song.title, chart.difficulty)
+                )
+                desc = f"[{chart.difficulty[0]}]({url}) {format_level(chart.level)}"
+                if chart.const != 0:
+                    desc += f" ({chart.const:.1f})"
+                chart_level_desc.append(desc)
 
         if len(chart_level_desc) > 0:
             # embed.description is already set above
