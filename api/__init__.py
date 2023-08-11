@@ -76,14 +76,16 @@ class ChuniNet:
             return req.headers["Location"]
 
     async def authenticate(self):
-        uid_redemption_url = await self.validate_cookie()
-        async with self.session.get(uid_redemption_url) as req:
-            if req.status == HTTPStatus.SERVICE_UNAVAILABLE:
+        # If redirects are followed and no session tokens are set,
+        # the website should redirect back to AUTH_URL for the token
+        # anyways.
+        async with self.session.get(self.base / "mobile/home/") as resp:
+            if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
                 raise MaintenanceException("Service under maintenance")
             if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
                 raise InvalidTokenException("Invalid cookie: No userId cookie found")
 
-            return parse_player_card_and_avatar(BeautifulSoup(await req.text(), "lxml"))
+            return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
