@@ -65,10 +65,8 @@ def guild_specific_prefix(default: str):
     return inner
 
 
-def enable_distlib(conn, _):
-    """
-    Enable distlib to be used with SQLAlchemy.
-    """
+def setup_database(conn, _):
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.create_function("jwsim", 2, jarowinkler_similarity)
 
 
@@ -117,7 +115,7 @@ async def startup():
             print(f"Failed to load extension cogs.{file.stem}")
             print(f"{type(e).__name__}: {e}")
 
-    sqlalchemy.event.listen(bot.engine.sync_engine, "connect", enable_distlib)
+    sqlalchemy.event.listen(bot.engine.sync_engine, "connect", setup_database)
 
     port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
     if port is not None and port.isdigit() and int(port) > 0:
