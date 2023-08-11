@@ -31,14 +31,11 @@ class UtilsCog(commands.Cog, name="Utils"):
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
+        default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
         if ctx.guild is None:
-            return self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+            return default_prefix
 
-        async with AsyncSession(self.bot.engine) as session:
-            stmt = select(Prefix).where(Prefix.guild_id == ctx.guild.id)
-            prefix = (await session.execute(stmt)).scalar_one_or_none()
-
-        return prefix.prefix if prefix is not None else self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+        return self.bot.prefixes.get(ctx.guild.id, default_prefix)
 
     async def login_check(self, ctx_or_id: Context | int) -> str:
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id

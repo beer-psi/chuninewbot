@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown, oauth_url
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -622,9 +622,16 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             if missing_permission:
                 raise commands.MissingPermissions(["manage_guild"])
 
+            default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
             async with AsyncSession(self.bot.engine) as session, session.begin():
-                prefix = Prefix(guild_id=ctx.guild.id, prefix=new_prefix)
-                await session.merge(prefix)
+                if new_prefix == default_prefix:
+                    stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)
+                    await session.execute(stmt)
+                    del self.bot.prefixes[ctx.guild.id]
+                else:
+                    prefix = Prefix(guild_id=ctx.guild.id, prefix=new_prefix)
+                    await session.merge(prefix)
+                    self.bot.prefixes[ctx.guild.id] = new_prefix
 
             await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 

@@ -22,7 +22,7 @@ from jarowinkler import jarowinkler_similarity
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from database.models import Prefix
+from database.models import Base, Prefix
 from utils.help import HelpCommand
 from web import init_app
 
@@ -32,12 +32,25 @@ if TYPE_CHECKING:
 
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
-    engine: AsyncEngine
+    engine: AsyncEngine = create_async_engine(
+        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
+    )
     launch_time: float
     app: Optional["Application"] = None
 
+    prefixes: dict[int, str]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    async def setup_hook(self) -> None:
+        async with self.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+        async with AsyncSession(self.engine) as session:
+            prefixes = (await session.execute(select(Prefix))).scalars()
+
+        self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}
 
 
 def guild_specific_prefix(default: str):
@@ -47,13 +60,7 @@ def guild_specific_prefix(default: str):
         if msg.guild is None:
             return when_mentioned + [default]
         else:
-            async with AsyncSession(bot.engine) as session:
-                stmt = select(Prefix).where(Prefix.guild_id == msg.guild.id)
-                prefix: Prefix | None = (
-                    await session.execute(stmt)
-                ).scalar_one_or_none()
-
-            return when_mentioned + [(prefix.prefix if prefix is not None else default)]
+            return when_mentioned + [bot.prefixes.get(msg.guild.id, default)]
 
     return inner
 
@@ -96,7 +103,7 @@ async def startup():
     bot.cfg = cfg
 
     await bot.load_extension("cogs.botutils")
-    if cfg["DEV"] == "1":
+    if cfg.get("DEV", "0") == "1":
         await bot.load_extension("cogs.hotreload")
         await bot.load_extension("jishaku")
 
@@ -110,9 +117,6 @@ async def startup():
             print(f"Failed to load extension cogs.{file.stem}")
             print(f"{type(e).__name__}: {e}")
 
-    bot.engine = create_async_engine(
-        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
-    )
     sqlalchemy.event.listen(bot.engine.sync_engine, "connect", enable_distlib)
 
     port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
