@@ -76,19 +76,31 @@ class ChuniNet:
             return req.headers["Location"]
 
     async def authenticate(self):
-        # If redirects are followed and no session tokens are set,
-        # the website should redirect back to AUTH_URL for the token
-        # anyways.
-        async with self.session.get(self.base / "mobile/home/") as resp:
-            if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
-                raise MaintenanceException("Service under maintenance")
-            if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-                raise InvalidTokenException("Invalid cookie: No userId cookie found")
+        if self.user_id is not None:
+            try:
+                # In some cases, the site token is refreshed automatically.
+                resp = await self._request("mobile/home/")
+            except ChuniNetError as e:
+                # In other cases, the token is invalidated and a relogin is required.
+                # Error code for when site token is invalidated
+                if e.code == 200004:
+                    uid_redemption_url = await self.validate_cookie()
+                    resp = await self.session.get(uid_redemption_url)
+                else:
+                    raise e
+        else:
+            uid_redemption_url = await self.validate_cookie()
+            resp = await self.session.get(uid_redemption_url)
 
-            return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
+        if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
+            raise MaintenanceException("Service under maintenance")
+        if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
+            raise InvalidTokenException("Invalid cookie: No userId cookie found")
+
+        return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
-        if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
+        if self.user_id is None:
             await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
