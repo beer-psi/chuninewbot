@@ -5,8 +5,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import JACKET_BASE
@@ -55,7 +54,7 @@ class SearchCog(commands.Cog, name="Search"):
         added_alias_lower = added_alias.strip().lower()
         song_title_or_alias_lower = song_title_or_alias.strip().lower()
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             stmt = select(Song).where(func.lower(Song.title) == added_alias_lower)
             song = (await session.execute(stmt)).scalar_one_or_none()
             if song is not None:
@@ -114,7 +113,7 @@ class SearchCog(commands.Cog, name="Search"):
         # this command is guild-only
         assert ctx.guild is not None
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             stmt = select(Alias).where(
                 (func.lower(Alias.alias) == removed_alias.lower())
                 & (Alias.guild_id == ctx.guild.id)
@@ -140,7 +139,7 @@ class SearchCog(commands.Cog, name="Search"):
             The song title or alias to search for.
         """
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
             song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
 

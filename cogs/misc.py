@@ -384,7 +384,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         except ValueError:
             raise commands.BadArgument("Please enter a valid level or chart constant.")
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
 
             if len(charts) == 0:
@@ -420,7 +420,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Number of charts to return. Must be between 1 and 4.
         """
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
@@ -493,7 +493,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             assuming you're logged in.
         """
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             if count > 4 or count < 1:
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
@@ -624,7 +624,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     raise commands.MissingPermissions(["manage_guild"])
 
                 default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
-                async with AsyncSession(self.bot.engine) as session, session.begin():
+                async with self.bot.begin_db_session() as session, session.begin():
                     if new_prefix == default_prefix:
                         stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)
                         await session.execute(stmt)

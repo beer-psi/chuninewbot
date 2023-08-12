@@ -20,7 +20,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot
 from jarowinkler import jarowinkler_similarity
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine, AsyncSession, create_async_engine
 
 from database.models import Base, Prefix
 from utils.help import HelpCommand
@@ -32,9 +32,12 @@ if TYPE_CHECKING:
 
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
+
     engine: AsyncEngine = create_async_engine(
         "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
     )
+    begin_db_session: async_sessionmaker[AsyncSession]
+
     launch_time: float
     app: Optional["Application"] = None
 
@@ -43,11 +46,13 @@ class ChuniBot(Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
+
     async def setup_hook(self) -> None:
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        async with AsyncSession(self.engine) as session:
+        async with self.begin_db_session() as session:
             prefixes = (await session.execute(select(Prefix))).scalars()
 
         self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}

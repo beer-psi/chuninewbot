@@ -28,7 +28,7 @@ class AuthCog(commands.Cog, name="Auth"):
         description="Logs you out of the bot.",
     )
     async def logout(self, ctx: Context):
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session, session.begin():
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
             await session.execute(stmt)
         await ctx.reply("Successfully logged out.", mention_author=False)
@@ -41,7 +41,7 @@ class AuthCog(commands.Cog, name="Auth"):
             try:
                 await client.validate_cookie()
 
-                async with AsyncSession(self.bot.engine) as session, session.begin():
+                async with self.bot.begin_db_session() as session, session.begin():
                     await session.merge(Cookie(discord_id=id, cookie=clal))
             except Exception as e:
                 return e

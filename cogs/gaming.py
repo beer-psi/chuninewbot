@@ -95,7 +95,7 @@ class GamingCog(commands.Cog, name="Games"):
         with _current_sessions_lock:
             _current_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             prefix = await self.utils.guild_prefix(ctx)
 
             stmt = (
@@ -211,7 +211,7 @@ class GamingCog(commands.Cog, name="Games"):
 
     @guess.command("leaderboard")
     async def guess_leaderboard(self, ctx: Context):
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             stmt = select(GuessScore).order_by(GuessScore.score.desc()).limit(10)
             scores = (await session.execute(stmt)).scalars()
 
@@ -227,13 +227,13 @@ class GamingCog(commands.Cog, name="Games"):
     async def guess_reset(self, ctx: Context):
         """Resets the c>guess leaderboard"""
 
-        async with AsyncSession(self.bot.engine) as session, session.begin():
+        async with self.bot.begin_db_session() as session:
             await session.execute(delete(GuessScore))
 
         await ctx.message.add_reaction("✅")
 
     async def _increment_score(self, discord_id: int):
-        async with AsyncSession(self.bot.engine) as session, session.begin():
+        async with self.bot.begin_db_session() as session, session.begin():
             stmt = select(GuessScore).where(GuessScore.discord_id == discord_id)
             score = (await session.execute(stmt)).scalar_one_or_none()
 

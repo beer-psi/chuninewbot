@@ -47,7 +47,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         return clal
 
     async def fetch_cookie(self, id: int) -> str | None:
-        async with AsyncSession(self.bot.engine) as session:
+        async with self.bot.begin_db_session() as session:
             stmt = select(Cookie).where(Cookie.discord_id == id)
             cookie = (await session.execute(stmt)).scalar_one_or_none()
 
@@ -75,7 +75,7 @@ class UtilsCog(commands.Cog, name="Utils"):
     async def annotate_song(
         self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
     ) -> MusicRecord | AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
-        async with AsyncSession(self.bot.engine) as session:
+        async with self.bot.begin_db_session() as session:
             if isinstance(song, Record) and not (
                 isinstance(song, MusicRecord)
                 or isinstance(song, DetailedRecentRecord)
@@ -169,7 +169,7 @@ class UtilsCog(commands.Cog, name="Utils"):
             The third item is the similarity of the matched song.
         """
         query = query.lower()
-        async with AsyncSession(self.bot.engine) as session:
+        async with self.bot.begin_db_session() as session:
             stmt = (
                 select(Song, Song.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
                 .order_by(text("similarity DESC"))

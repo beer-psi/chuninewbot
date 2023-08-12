@@ -99,7 +99,7 @@ class RecordsCog(commands.Cog, name="Records"):
             The user to compare with. Defaults to the author.
         """
 
-        async with ctx.typing(), AsyncSession(self.bot.engine) as session:
+        async with ctx.typing(), self.bot.begin_db_session() as session:
             clal = await self.utils.login_check(ctx if user is None else user.id)
 
             if ctx.message.reference is not None:
