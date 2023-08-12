@@ -27,7 +27,7 @@ class ChuniNet:
     def __init__(
         self,
         clal: str,
-        user_id: Optional[int] = None,
+        user_id: Optional[str] = None,
         token: Optional[str] = None,
         base: URL = URL("https://chunithm-net-eng.com"),
     ) -> None:
@@ -40,7 +40,7 @@ class ChuniNet:
         )
 
         if user_id is not None:
-            self.session.cookie_jar.update_cookies({"userId": str(user_id)}, self.base)
+            self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
         if token is not None:
             self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
@@ -60,12 +60,20 @@ class ChuniNet:
             return None
         return cookie.value
 
+    @user_id.setter
+    def set_user_id(self, user_id: str):
+        self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
+
     @property
     def token(self):
         cookie = self.session.cookie_jar.filter_cookies(self.base).get("_t")
         if cookie is None:
             return None
         return cookie.value
+
+    @token.setter
+    def set_token(self, token: str):
+        self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:

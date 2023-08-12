@@ -43,6 +43,10 @@ class ChuniBot(Bot):
 
     prefixes: dict[int, str]
 
+    # key: user discord ID
+    # value: userId, _t cookies from CHUNITHM-NET
+    sessions: dict[int, tuple[str, str]] = {}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

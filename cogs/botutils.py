@@ -1,14 +1,20 @@
+import contextlib
 from math import floor
 from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from chunithm_net import ChuniNet
 from chunithm_net.entities.enums import Rank
-from chunithm_net.entities.record import DetailedRecentRecord, MusicRecord, RecentRecord, Record
-from database.models import Alias, Chart, Cookie, Prefix, Song
+from chunithm_net.entities.record import (
+    DetailedRecentRecord,
+    MusicRecord,
+    RecentRecord,
+    Record,
+)
+from database.models import Alias, Chart, Cookie, Song
 from update_db import update_db
 from utils.calculation.overpower import (
     calculate_overpower_base,
@@ -19,7 +25,6 @@ from utils.types import (
     AnnotatedDetailedRecentRecord,
     AnnotatedMusicRecord,
     AnnotatedRecentRecord,
-    SongSearchResult,
 )
 
 if TYPE_CHECKING:
@@ -45,6 +50,19 @@ class UtilsCog(commands.Cog, name="Utils"):
                 "You are not logged in. Please send `c>login` in my DMs to log in."
             )
         return clal
+
+    @contextlib.asynccontextmanager
+    async def chuninet(self, ctx_or_id: Context | int):
+        id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
+        cookie = await self.login_check(ctx_or_id)
+        user_id, token = self.bot.sessions.get(id, (None, None))
+
+        session = ChuniNet(cookie, user_id, token)
+        try:
+            yield session
+        finally:
+            await session.close()
+            self.bot.sessions[id] = (session.user_id, session.token)
 
     async def fetch_cookie(self, id: int) -> str | None:
         async with self.bot.begin_db_session() as session:

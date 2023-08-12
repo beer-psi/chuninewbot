@@ -498,10 +498,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 raise commands.BadArgument("Number of songs must be between 1 and 4.")
 
             if max_rating is None:
-                clal = await self.utils.login_check(ctx)
-                async with ChuniNet(clal) as client:
-                    player_data = await client.player_data()
-                    max_rating = player_data.rating.max
+                async with self.utils.chuninet(ctx) as client:
+                    basic_player_data = await client.authenticate()
+                    max_rating = basic_player_data.rating.max
 
                     if max_rating is None:
                         raise commands.BadArgument(

@@ -1,5 +1,6 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Coroutine
+from typing import AsyncContextManager
+from typing import TYPE_CHECKING
 
 import discord.ui
 from discord.ext.commands import Context
@@ -36,10 +37,14 @@ class RecentRecordsView(PaginationView):
         bot: "ChuniBot",
         scores: Sequence["AnnotatedRecentRecord"],
         chuni_client: "ChuniNet",
+        chuni_client_manager: AsyncContextManager["ChuniNet"],
         userinfo: "PlayerData",
     ):
         super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
+
         self.chuni_client = chuni_client
+        self.chuni_client_manager = chuni_client_manager
+
         self.userinfo = userinfo
         self.page = 0
         self.max_index = len(self.items) - 1
@@ -57,7 +62,7 @@ class RecentRecordsView(PaginationView):
         self.dropdown.options = self._dropdown_options[:25]
 
     async def on_timeout(self):
-        await self.chuni_client.close()
+        await self.chuni_client_manager.__aexit__(None, None, None)
         return await super().on_timeout()
 
     def format_score_page(

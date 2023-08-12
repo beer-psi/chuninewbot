@@ -44,21 +44,25 @@ class EventsCog(commands.Cog, name="Events"):
             except AttributeError:
                 exc = error
 
+        logging.getLogger("discord").error(
+            "Exception in command %s", ctx.command, exc_info=exc
+        )
+
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
                 mention_author=False,
             )
         elif isinstance(exc, InvalidTokenException):
-            return await ctx.reply(
-                f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in.\nDetailed error: {exc}",
-                mention_author=False,
-            )
+            message = f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in."
+            if self.bot.cfg.get("DEV", "0") == "1":
+                message += f"\nDetailed error: {exc}"
+            return await ctx.reply(message, mention_author=False)
         elif isinstance(exc, ChuniNetException):
-            return await ctx.reply(
-                "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login).",
-                mention_author=False,
-            )
+            message = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
+            if self.bot.cfg.get("DEV", "0") == "1":
+                message += f"\nDetailed error: {exc}"
+            return await ctx.reply(message, mention_author=False)
         elif isinstance(exc, commands.errors.ExpectedClosingQuoteError):
             return await ctx.reply(
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
@@ -84,9 +88,7 @@ class EventsCog(commands.Cog, name="Events"):
                 f"An error occurred while executing the command.",
                 mention_author=False,
             )
-            logging.getLogger("discord").error(
-                "Exception in command %s", ctx.command, exc_info=exc
-            )
+
             if webhook_url := self.bot.cfg.get("ERROR_REPORTING_WEBHOOK"):
                 async with aiohttp.ClientSession() as session:
                     webhook = Webhook.from_url(webhook_url, session=session)
