@@ -100,6 +100,30 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "we_star": "9",
         "image": "7615de9e9eced518.jpg",
     },
+    "c2d66153dca3823f": {
+        "id": "8025",
+        "catname": "イロドリミドリ",
+        "title": "Help me, あーりん！",
+        "we_kanji": "嘘",
+        "we_star": "5",
+        "image": "c1ff8df1757fedf4.jpg",
+    },
+    "2678230924ec08dd": {
+        "id": "8078",
+        "catname": "イロドリミドリ",
+        "title": "あねぺったん",
+        "we_kanji": "嘘",
+        "we_star": "7",
+        "image": "a6889b8a729210be.jpg",
+    },
+    "7252bf5ea6ff6294": {
+        "id": "8116",
+        "catname": "イロドリミドリ",
+        "title": "イロドリミドリ杯花映塚全一決定戦公式テーマソング『ウソテイ』",
+        "we_kanji": "嘘",
+        "we_star": "7",
+        "image": "43bd6cbc31e4c02c.jpg",
+    }
 }
 for idx, random in enumerate(
     # Random WE, A through F
@@ -163,7 +187,12 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
             title = alias[0]
 
             song = (
-                await session.execute(select(Song).where(Song.title == title))
+                await session.execute(
+                    select(Song)
+                    # Limit to non-WE entries. WE entries are redirected to
+                    # their non-WE respectives when song-searching anyways.
+                    .where((Song.title == title) & (Song.chunithm_id < 8000))
+                )
             ).scalar_one_or_none()
             if song is None:
                 continue
@@ -279,7 +308,11 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                 ]  # FIXME: dont assume the ID is always 5 digits
 
                 song = (
-                    await session.execute(select(Song).where(Song.title == title))
+                    await session.execute(
+                        select(Song)
+                        # Limit to non-WE charts. WE charts have their own section.
+                        .where((Song.title == title) & (Song.chunithm_id < 8000))
+                    )
                 ).scalar_one_or_none()
                 if song is None:
                     print(f"Could not find song with title {title}")
@@ -352,6 +385,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             jacket = chunithm_song["image"]
         except StopIteration:
             print(f"Couldn't find {song.meta}")
+            return
 
         if not jacket:
             try:
@@ -483,17 +517,17 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
 
 async def main():
     engine: AsyncEngine = create_async_engine(
-        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
+        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "eee.sqlite3")
     )
     async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine, expire_on_commit=False
     )
 
-    async with async_session() as session, session.begin():
-        await session.run_sync(Base.metadata.create_all)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-    # await update_db(db)
-    # await update_aliases(async_session)
+    await update_db(async_session)
+    await update_aliases(async_session)
     await update_sdvxin(async_session)
 
     await engine.dispose()
