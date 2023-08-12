@@ -389,17 +389,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 await ctx.reply("No charts found.", mention_author=False)
                 return
 
-            results: list[tuple[str, str, str | None]] = []
-            for chart in charts:
-                results.append(
-                    (
-                        chart.song.title,
-                        chart.difficulty,
-                        chart.sdvxin_chart_view.id if chart.sdvxin_chart_view else None,
-                    )
-                )
-
-            view = SonglistView(ctx, results)
+            view = SonglistView(ctx, charts)
             view.message = await ctx.reply(
                 embed=view.format_songlist(view.items[: view.per_page]),
                 view=view,
