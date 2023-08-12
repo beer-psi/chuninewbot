@@ -47,7 +47,8 @@ def upgrade() -> None:
 
     op.execute(charts.update().where(charts.c.maxcombo == 0).values(maxcombo=None))
 
-    op.drop_column("chunirec_charts", "is_const_unknown")
+    with op.batch_alter_table("chunirec_charts", schema=None) as batch_op:
+        batch_op.drop_column("is_const_unknown")
 
 
 def downgrade() -> None:
