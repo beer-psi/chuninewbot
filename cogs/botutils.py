@@ -117,9 +117,14 @@ class UtilsCog(commands.Cog, name="Utils"):
                 )
                 annotated_song.rank = Rank.from_score(song.score)
             else:
-                stmt = select(Song).where(
-                    (Song.title == song.title) & (Song.jacket == song.jacket)
-                )
+                stmt = select(Song)
+                if song.detailed is None:
+                    stmt = stmt.where(
+                        (Song.title == song.title) & (Song.jacket == song.jacket)
+                    )
+                else:
+                    stmt = stmt.where(Song.chunithm_id == song.detailed.idx)
+
                 song_data = (await session.execute(stmt)).scalar_one()
 
                 id = song_data.id
@@ -167,6 +172,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         query: str,
         *,
         guild_id: Optional[int] = None,
+        worlds_end: bool = False,
     ) -> tuple[Song, Alias | None, float]:
         """Finds the song that best matches a given query.
 
@@ -176,6 +182,8 @@ class UtilsCog(commands.Cog, name="Utils"):
             The query to search for.
         guild_id: Optional[int]
             The ID of the guild to search for aliases in. If None, only global aliases are searched.
+        worlds_end: bool
+            Whether to search for WORLD'S END charts, instead of normal charts.
 
         Returns
         -------
@@ -189,6 +197,9 @@ class UtilsCog(commands.Cog, name="Utils"):
                 .order_by(text("similarity DESC"))
                 .limit(1)
             )
+
+            if worlds_end:
+                stmt = stmt.where(Song.genre == "WORLD'S END")
 
             song, similarity = (await session.execute(stmt)).one()
 

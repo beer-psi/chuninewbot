@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shlex
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
@@ -10,7 +11,7 @@ from sqlalchemy import select
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from database.models import Song
-from utils import did_you_mean_text
+from utils import Arguments, did_you_mean_text
 from utils.components import ScoreCardEmbed
 from utils.views.b30 import B30View
 from utils.views.compare import CompareView
@@ -221,31 +222,44 @@ class RecordsCog(commands.Cog, name="Records"):
                     mention_author=False,
                 )
 
-    @commands.hybrid_command("scores")
+    @commands.command("scores")
     async def scores(
         self,
         ctx: Context,
-        user: Optional[discord.User | discord.Member] = None,
         *,
         query: str,
     ):
-        """Get a user's scores for a song.
-        If no user is specified, your scores will be shown.
+        """**Get a user's scores for a song.
+        If no user is specified, your scores will be shown.**
 
-        Parameters
-        ----------
-        user: Optional[discord.User | discord.Member]
-            The user to get scores for.
-        query: str
-            The song to get scores for.
+        **Parameters:**
+        `username`: Discord username of the player. Yourself, if not provided.
+        `query`: Song title to search for.
+        `-we`: Search for WORLD'S END songs instead of standard songs (no param).
         """
+        parser = Arguments()
+        parser.add_argument("query", nargs="+")
+        parser.add_argument("-we", "--worlds-end", action="store_true")
+
+        try:
+            args = parser.parse_intermixed_args(shlex.split(query))
+        except RuntimeError as e:
+            await ctx.reply(str(e), mention_author=False)
+            return
+
+        try:
+            user = await commands.UserConverter().convert(ctx, args.query[0])
+            query = " ".join(args.query[1:])
+        except commands.BadArgument:
+            user = None
+            query = " ".join(args.query)
 
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
             guild_id = ctx.guild.id if ctx.guild else None
             song, alias, similarity = await self.utils.find_song(
-                query, guild_id=guild_id
+                query, guild_id=guild_id, worlds_end=args.worlds_end
             )
             if similarity < 0.9:
                 return await ctx.reply(
@@ -253,6 +267,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
 
             userinfo = await client.authenticate()
+
             records = await client.music_record(song.chunithm_id)
 
             if len(records) == 0:

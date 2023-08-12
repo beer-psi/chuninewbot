@@ -1,5 +1,5 @@
 # pyright: reportOptionalMemberAccess=false, reportOptionalSubscript=false
-from typing import cast
+from typing import cast, Optional
 
 from bs4 import BeautifulSoup, Tag
 
@@ -190,14 +190,14 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     )
 
 
-def parse_music_record(soup: BeautifulSoup) -> list[MusicRecord]:
+def parse_music_record(soup: BeautifulSoup, detailed: Optional[DetailedParams] = None) -> list[MusicRecord]:
     jacket = (
         str(elem["src"]).split("/")[-1]
         if (elem := soup.select_one(".play_jacket_img img"))
         else ""
     )
     title = (
-        elem.get_text() if (elem := soup.select_one(".play_musicdata_title")) else ""
+        elem.get_text(strip=True) if (elem := soup.select_one(".play_musicdata_title, .play_musicdata_worldsend_title")) else ""
     )
     records = []
     for block in soup.select(".music_box"):
@@ -207,6 +207,7 @@ def parse_music_record(soup: BeautifulSoup) -> list[MusicRecord]:
             rank, clear = Rank.D, ClearType.FAILED
         records.append(
             MusicRecord(
+                detailed=detailed,
                 title=title,
                 jacket=jacket,
                 difficulty=difficulty_from_imgurl(" ".join(block["class"])),
@@ -222,7 +223,7 @@ def parse_music_record(soup: BeautifulSoup) -> list[MusicRecord]:
                     elem.get_text().replace("times", "")
                     if (
                         elem := block.select_one(
-                            ".musicdata_score_num .text_b:-soup-contains(times)"
+                            ".musicdata_score_num .text_b:-soup-contains(times), .music_box .block_icon_text span:not([class])"
                         )
                     )
                     is not None

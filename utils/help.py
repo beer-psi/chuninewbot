@@ -55,19 +55,24 @@ class HelpCommand(commands.HelpCommand):
 
         embed = discord.Embed(color=self.COLOUR)
         embed.description = (
-            f"```{prefix}{command.qualified_name} {command.signature}```\n"
-            f"**{command.help}**"
+            f"```{prefix}{command.qualified_name}```\n"
+            f"{command.help}"
         )
 
         params = command.clean_params.values()
         if params:
             params_desc = ""
             for param in params:
+                if not param.description:
+                    continue
+
                 params_desc += f"`{param.name}`"
-                if param.description:
-                    params_desc += f": {param.description}"
+                params_desc += f": {param.description}"
                 if param.default is not param.empty:
                     params_desc += f" (default: {param.default})"
+
                 params_desc += "\n"
-            embed.description += f"\n\n**Parameters:**\n{params_desc}"
+
+            if params_desc:
+                embed.description += f"\n\n**Parameters:**\n{params_desc}"
         await self.get_destination().send(embed=embed)

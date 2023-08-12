@@ -3,6 +3,7 @@ from typing import Optional
 import discord
 from discord.utils import escape_markdown
 
+from chunithm_net.entities.enums import Difficulty
 from utils import floor_to_ndp
 
 from ..calculation.overpower import calculate_play_overpower
@@ -39,14 +40,15 @@ class ScoreCardEmbed(discord.Embed):
             play_overpower = calculate_play_overpower(record)
             play_op_display = f"{floor_to_ndp(play_overpower, 2)} ({floor_to_ndp(play_overpower / record.overpower_max * 100, 2)}%)"
 
-            if show_clear_type:
-                footer_sections = [
-                    f"Rating: {floor_to_ndp(record.play_rating, 2)}",
-                    f"OP {play_op_display}",
-                ]
-            else:
-                score_data += f" ▸ **{record.play_rating:.2f}**"
-                footer_sections = [f"OP {play_op_display}"]
+            footer_sections = []
+            if record.difficulty != Difficulty.WORLDS_END:
+                if show_clear_type:
+                    footer_sections.append(f"Rating: {floor_to_ndp(record.play_rating, 2)}")
+                else:
+                    score_data += f" ▸ **{record.play_rating:.2f}**"
+
+            if record.difficulty != Difficulty.WORLDS_END:
+                footer_sections.append(f"OP: {play_op_display}")
 
         if record.play_count is not None:
             footer_sections.append(

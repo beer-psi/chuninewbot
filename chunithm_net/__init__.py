@@ -7,7 +7,7 @@ from yarl import URL
 
 from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
 from .entities.enums import Difficulty, Genres, Rank
-from .entities.record import MusicRecord, RecentRecord, Record
+from .entities.record import DetailedParams, MusicRecord, RecentRecord, Record
 from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
 from .parser import (
     parse_basic_recent_record,
@@ -146,6 +146,9 @@ class ChuniNet:
         return parse_detailed_recent_record(idx, soup)
 
     async def music_record(self, idx: int) -> list[MusicRecord]:
+        if idx >= 8000:
+            return await self.worlds_end_music_record(idx)
+
         resp = await self._request(
             "mobile/record/musicGenre/sendMusicDetail/",
             method="POST",
@@ -155,7 +158,22 @@ class ChuniNet:
             },
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
-        return parse_music_record(soup)
+        return parse_music_record(soup, DetailedParams(idx, self.token))
+
+    async def worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
+        if idx < 8000:
+            return await self.music_record(idx)
+
+        resp = await self._request(
+            "mobile/record/worldsEndList/sendWorldsEndDetail/",
+            method="POST",
+            data={
+                "idx": idx,
+                "token": self.token,
+            }
+        )
+        soup = BeautifulSoup(await resp.text(), "lxml")
+        return parse_music_record(soup, DetailedParams(idx, self.token))
 
     async def best30(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailBest/")

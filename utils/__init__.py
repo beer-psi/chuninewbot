@@ -1,3 +1,4 @@
+import argparse
 import decimal
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -11,6 +12,11 @@ if TYPE_CHECKING:
     from database.models import Alias, Song
 
     T = TypeVar("T")
+
+
+class Arguments(argparse.ArgumentParser):
+    def error(self, message):
+        raise RuntimeError(message)
 
 
 def floor_to_ndp(number: "T", dp: int) -> "T":
