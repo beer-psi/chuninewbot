@@ -26,7 +26,7 @@ class B30View(PaginationView):
         self.average = floor_to_ndp(
             sum(item.play_rating for item in items) / len(items), 2
         )
-        self.has_estimated_play_rating = any(item.unknown_const for item in items)
+        self.has_estimated_play_rating = any(item.internal_level is None for item in items)
         self.show_average = show_average
 
     def format_content(self) -> str:

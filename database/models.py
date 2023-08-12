@@ -75,10 +75,9 @@ class Chart(Base):
 
     difficulty: Mapped[str] = mapped_column(nullable=False)
     level: Mapped[float] = mapped_column(nullable=False)
-    const: Mapped[float] = mapped_column(nullable=False)
+    const: Mapped[Optional[float]] = mapped_column(nullable=True)
 
-    maxcombo: Mapped[int] = mapped_column(nullable=False)
-    is_const_unknown: Mapped[bool] = mapped_column(nullable=False)
+    maxcombo: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     song: Mapped["Song"] = relationship(back_populates="charts")
     sdvxin_chart_view: Mapped[Optional["SdvxinChartView"]] = relationship(

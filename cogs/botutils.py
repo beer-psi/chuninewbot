@@ -143,11 +143,10 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         level = chart_data.level
         annotated_song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
-        annotated_song.unknown_const = bool(chart_data.is_const_unknown)
 
         internal_level = (
             annotated_song.internal_level
-            if annotated_song.internal_level != 0
+            if annotated_song.internal_level != None
             else level
         )
 

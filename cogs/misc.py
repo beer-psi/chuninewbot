@@ -461,7 +461,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({chart.const})' if not chart.is_const_unknown else ''}]({url})",
+                        value=f"[{chart_level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
@@ -522,6 +522,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
             embeds: list[discord.Embed] = []
             for chart in charts:
+                assert chart.const is not None
+
                 difficulty = Difficulty.from_short_form(chart.difficulty)
                 chart_level = format_level(chart.level)
                 rating_diff = max_rating - chart.const
@@ -573,7 +575,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({chart.const})' if not chart.is_const_unknown else ''}]({url})",
+                        value=f"[{chart_level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
                     )
                     .add_field(
                         name="Target Score",

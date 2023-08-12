@@ -10,7 +10,6 @@ from chunithm_net.entities.record import DetailedRecentRecord, MusicRecord
 class AnnotatedMusicRecord(MusicRecord):
     level: Optional[str] = None
     internal_level: Optional[float] = None
-    unknown_const: bool = True
 
     play_rating: "float | Decimal" = 0.0
 
@@ -23,8 +22,6 @@ class AnnotatedMusicRecord(MusicRecord):
             return f"{self.difficulty}"
         elif (
             self.internal_level is None
-            or self.internal_level == 0
-            or self.unknown_const
         ):
             return f"{self.difficulty} {self.level}"
         else:
