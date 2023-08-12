@@ -17,7 +17,7 @@ from chunithm_net.entities.enums import Difficulty
 from bot import ChuniBot
 from cogs.botutils import UtilsCog
 from database.models import Chart, Prefix
-from utils import floor_to_ndp, format_level, sdvxin_link, yt_search_link
+from utils import floor_to_ndp, format_level, yt_search_link
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -453,9 +453,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 chart_level = format_level(chart.level)
 
                 if chart.sdvxin_chart_view is not None:
-                    url = sdvxin_link(
-                        chart.sdvxin_chart_view.id, difficulty.short_form()
-                    )
+                    url = chart.sdvxin_chart_view.url
                 else:
                     url = yt_search_link(chart.song.title, difficulty.short_form())
 
@@ -567,9 +565,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 target_rating = calculate_rating(target_score, chart.const)
 
                 if chart.sdvxin_chart_view is not None:
-                    url = sdvxin_link(
-                        chart.sdvxin_chart_view.id, difficulty.short_form()
-                    )
+                    url = chart.sdvxin_chart_view.url
                 else:
                     url = yt_search_link(chart.song.title, difficulty.short_form())
 

@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
-from sqlalchemy import delete, func, insert, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import JACKET_BASE
@@ -14,7 +14,6 @@ from utils import (
     did_you_mean_text,
     format_level,
     release_to_chunithm_version,
-    sdvxin_link,
     yt_search_link,
 )
 
@@ -172,7 +171,7 @@ class SearchCog(commands.Cog, name="Search"):
 
             for chart in charts:
                 url = (
-                    sdvxin_link(chart.sdvxin_chart_view.id, chart.difficulty)
+                    chart.sdvxin_chart_view.url
                     if chart.sdvxin_chart_view is not None
                     else yt_search_link(song.title, chart.difficulty)
                 )

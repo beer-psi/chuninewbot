@@ -11,8 +11,10 @@ from sqlalchemy import (
     type_coerce,
 )
 from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from utils import sdvxin_link
 
 
 class Base(DeclarativeBase, AsyncAttrs):
@@ -134,6 +136,10 @@ class SdvxinChartView(Base):
         back_populates="sdvxin_chart_view",
         primaryjoin="and_(Chart.song_id == SdvxinChartView.song_id, Chart.difficulty == SdvxinChartView.difficulty)",
     )
+
+    @hybrid_property
+    def url(self) -> str:
+        return sdvxin_link(self.id, self.difficulty)
 
 
 class GuessScore(Base):
