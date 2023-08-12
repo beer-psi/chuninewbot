@@ -6,7 +6,6 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import delete
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from chunithm_net import ChuniNet
 from database.models import Cookie

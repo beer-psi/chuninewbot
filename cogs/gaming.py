@@ -14,7 +14,6 @@ from discord.ext.commands.context import DeferTyping
 from jarowinkler import jaro_similarity
 from PIL import Image
 from sqlalchemy import delete, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, GuessScore, Song

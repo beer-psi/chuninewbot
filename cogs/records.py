@@ -6,9 +6,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from chunithm_net import ChuniNet
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from database.models import Song
