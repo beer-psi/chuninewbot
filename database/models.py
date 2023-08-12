@@ -41,7 +41,7 @@ class Song(Base):
     genre: Mapped[str] = mapped_column(nullable=False)
     artist: Mapped[str] = mapped_column(nullable=False)
     release: Mapped[str] = mapped_column(nullable=False)
-    bpm: Mapped[int] = mapped_column(nullable=False)
+    bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     jacket: Mapped[str] = mapped_column(nullable=False)
     zetaraku_jacket: Mapped[str] = mapped_column(nullable=False)

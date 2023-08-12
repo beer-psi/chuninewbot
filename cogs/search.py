@@ -167,7 +167,7 @@ class SearchCog(commands.Cog, name="Search"):
                     f"**Artist**: {emd(song.artist)}\n"
                     f"**Category**: {song.genre}\n"
                     f"**Version**: {version} ({song.release})\n"
-                    f"**BPM**: {song.bpm if song.bpm != 0 else 'Unknown'}\n"
+                    f"**BPM**: {song.bpm if song.bpm else 'Unknown'}\n"
                 ),
                 color=discord.Color.yellow(),
             ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
