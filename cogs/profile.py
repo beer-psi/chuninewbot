@@ -95,7 +95,9 @@ class ProfileCog(commands.Cog, name="Profile"):
         self, ctx: Context, *, user: Optional[discord.User | discord.Member] = None
     ):
         """View your CHUNITHM avatar."""
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             basic_data = await client.authenticate()
             avatar_urls = basic_data.avatar
 
@@ -138,7 +140,9 @@ class ProfileCog(commands.Cog, name="Profile"):
     ):
         """View your CHUNITHM profile."""
 
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             await client.authenticate()
             player_data = await client.player_data()
 

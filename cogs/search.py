@@ -90,7 +90,7 @@ class SearchCog(commands.Cog, name="Search"):
                 song = alias.song
 
             session.add(
-                Alias(alias=added_alias, guild_id=ctx.guild.id, song_id=song.id)
+                Alias(alias=added_alias, guild_id=ctx.guild.id, song_id=song.id, owner_id=ctx.author.id)
             )
 
             await ctx.reply(
@@ -100,7 +100,7 @@ class SearchCog(commands.Cog, name="Search"):
 
     @commands.hybrid_command("removealias")
     @commands.guild_only()
-    async def removealias(self, ctx: Context, removed_alias: str):
+    async def removealias(self, ctx: Context, *, removed_alias: str):
         """Remove an alias for this server.
 
         Parameters
@@ -124,6 +124,15 @@ class SearchCog(commands.Cog, name="Search"):
                     f"**{removed_alias}** does not exist.", mention_author=False
                 )
 
+            if alias.owner_id != ctx.author.id and not (
+                isinstance(ctx.author, discord.Member)
+                and ctx.author.guild_permissions.administrator
+            ):
+                return await ctx.reply(
+                    f"You cannot delete an alias that you didn't add yourself.",
+                    mention_author=False,
+                )
+
             await session.delete(alias)
 
             await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
@@ -140,10 +149,14 @@ class SearchCog(commands.Cog, name="Search"):
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
-            song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
+            song, alias, similarity = await self.utils.find_song(
+                query, guild_id=guild_id
+            )
 
             if similarity < 0.9:
-                return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
+                return await ctx.reply(
+                    did_you_mean_text(song, alias), mention_author=False
+                )
 
             release = datetime.strptime(song.release, "%Y-%m-%d")
             version = release_to_chunithm_version(release)

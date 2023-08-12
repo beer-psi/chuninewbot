@@ -217,7 +217,9 @@ class GamingCog(commands.Cog, name="Games"):
             embed = discord.Embed(title="Guess Leaderboard")
             description = ""
             for idx, score in enumerate(scores):
-                description += f"\u200B{idx + 1}. <@{score.discord_id}>: {score.score}\n"
+                description += (
+                    f"\u200B{idx + 1}. <@{score.discord_id}>: {score.score}\n"
+                )
             embed.description = description
             await ctx.reply(embed=embed, mention_author=False)
 

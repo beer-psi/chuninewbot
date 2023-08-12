@@ -20,9 +20,7 @@ class AnnotatedMusicRecord(MusicRecord):
     def displayed_difficulty(self) -> str:
         if self.level is None and self.internal_level is None:
             return f"{self.difficulty}"
-        elif (
-            self.internal_level is None
-        ):
+        elif self.internal_level is None:
             return f"{self.difficulty} {self.level}"
         else:
             return f"{self.difficulty} {self.internal_level}"

@@ -42,16 +42,10 @@ def upgrade() -> None:
         )
 
     op.execute(
-        charts.update()
-        .where(charts.c.is_const_unknown == True)
-        .values(const=None)
+        charts.update().where(charts.c.is_const_unknown == True).values(const=None)
     )
 
-    op.execute(
-        charts.update()
-        .where(charts.c.maxcombo == 0)
-        .values(maxcombo=None)
-    )
+    op.execute(charts.update().where(charts.c.maxcombo == 0).values(maxcombo=None))
 
     op.drop_column("chunirec_charts", "is_const_unknown")
 
@@ -69,11 +63,7 @@ def downgrade() -> None:
         sa.Column("is_const_unknown", sa.BOOLEAN(), nullable=False),
     )
 
-    op.execute(
-        charts.update()
-        .where(charts.c.maxcombo == None)
-        .values(maxcombo=0)
-    )
+    op.execute(charts.update().where(charts.c.maxcombo == None).values(maxcombo=0))
 
     op.execute(
         charts.update()
@@ -95,5 +85,3 @@ def downgrade() -> None:
             existing_nullable=True,
             nullable=False,
         )
-
-

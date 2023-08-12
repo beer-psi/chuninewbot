@@ -68,7 +68,7 @@ class EventsCog(commands.Cog, name="Events"):
             return await ctx.reply(
                 f"You're too fast. Take a break for {exc.retry_after:.2f} seconds.",
                 mention_author=False,
-                delete_after=exc.retry_after
+                delete_after=exc.retry_after,
             )
         elif isinstance(exc, commands.errors.ExpectedClosingQuoteError):
             return await ctx.reply(

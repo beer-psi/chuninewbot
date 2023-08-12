@@ -72,7 +72,9 @@ class RecordsCog(commands.Cog, name="Records"):
             tasks = [self.utils.annotate_song(score) for score in recent_scores]
             recent_scores = await asyncio.gather(*tasks)
 
-            view = RecentRecordsView(ctx, self.bot, recent_scores, client, ctxmgr, userinfo)
+            view = RecentRecordsView(
+                ctx, self.bot, recent_scores, client, ctxmgr, userinfo
+            )
             view.message = await ctx.reply(
                 content=f"Most recent credits for {userinfo.name}:",
                 embeds=view.format_score_page(view.items[0]),
@@ -96,7 +98,9 @@ class RecordsCog(commands.Cog, name="Records"):
             The user to compare with. Defaults to the author.
         """
 
-        async with ctx.typing(), self.bot.begin_db_session() as session, self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.bot.begin_db_session() as session, self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             if ctx.message.reference is not None:
                 message = await ctx.channel.fetch_message(
                     cast(int, ctx.message.reference.message_id)
@@ -236,7 +240,9 @@ class RecordsCog(commands.Cog, name="Records"):
             The song to get scores for.
         """
 
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             guild_id = ctx.guild.id if ctx.guild else None
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id
@@ -277,7 +283,9 @@ class RecordsCog(commands.Cog, name="Records"):
             The user to get scores for.
         """
 
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             await client.authenticate()
             best30 = await client.best30()
 
@@ -304,7 +312,9 @@ class RecordsCog(commands.Cog, name="Records"):
             The user to get scores for.
         """
 
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             await client.authenticate()
             recent10 = await client.recent10()
 
@@ -338,7 +348,9 @@ class RecordsCog(commands.Cog, name="Records"):
         if numeric_level not in range(1, 16):
             raise commands.BadArgument("Invalid level.")
 
-        async with ctx.typing(), self.utils.chuninet(ctx if user is None else user.id) as client:
+        async with ctx.typing(), self.utils.chuninet(
+            ctx if user is None else user.id
+        ) as client:
             await client.authenticate()
             records = await client.music_record_by_folder(level=level)
             assert records is not None

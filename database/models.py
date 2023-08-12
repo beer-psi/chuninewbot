@@ -2,6 +2,7 @@ from typing import Optional
 
 from jarowinkler import jarowinkler_similarity
 from sqlalchemy import (
+    BigInteger,
     ColumnElement,
     Float,
     ForeignKey,
@@ -24,7 +25,7 @@ class Base(DeclarativeBase, AsyncAttrs):
 class Cookie(Base):
     __tablename__ = "cookies"
 
-    discord_id: Mapped[int] = mapped_column(primary_key=True)
+    discord_id: Mapped[int] = mapped_column(BigInteger(), primary_key=True)
     cookie: Mapped[str] = mapped_column(String(64), nullable=False)
 
 
@@ -93,10 +94,11 @@ class Alias(Base):
     rowid: Mapped[int] = mapped_column(primary_key=True)
 
     alias: Mapped[str] = mapped_column(nullable=False)
-    guild_id: Mapped[int] = mapped_column(nullable=False)
+    guild_id: Mapped[int] = mapped_column(BigInteger(), nullable=False)
     song_id: Mapped[str] = mapped_column(
         ForeignKey("chunirec_songs.id"), nullable=False
     )
+    owner_id: Mapped[Optional[int]] = mapped_column(BigInteger(), nullable=True)
 
     song: Mapped["Song"] = relationship(back_populates="aliases")
 
@@ -113,7 +115,7 @@ class Alias(Base):
 class Prefix(Base):
     __tablename__ = "guild_prefix"
 
-    guild_id: Mapped[int] = mapped_column(primary_key=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger(), primary_key=True)
     prefix: Mapped[str] = mapped_column(nullable=False)
 
 
@@ -144,5 +146,5 @@ class SdvxinChartView(Base):
 class GuessScore(Base):
     __tablename__ = "guess_leaderboard"
 
-    discord_id: Mapped[int] = mapped_column(primary_key=True)
+    discord_id: Mapped[int] = mapped_column(BigInteger(), primary_key=True)
     score: Mapped[int] = mapped_column(nullable=False)
