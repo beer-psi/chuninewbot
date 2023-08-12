@@ -17,7 +17,7 @@ from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from cogs.botutils import UtilsCog
 from database.models import Chart, Prefix, Song
-from utils import floor_to_ndp, format_level, yt_search_link
+from utils import floor_to_ndp, yt_search_link
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -381,8 +381,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 query_level = float(level)
                 stmt = stmt.where(Chart.const == query_level)
             else:
-                query_level = float(level.replace("+", ".5"))
-                stmt = stmt.where(Chart.level == query_level)
+                stmt = stmt.where(Chart.level == level)
         except ValueError:
             raise commands.BadArgument("Please enter a valid level or chart constant.")
 
@@ -428,8 +427,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     query_level = float(level)
                     stmt = stmt.where(Chart.const == query_level)
                 else:
-                    query_level = float(level.replace("+", ".5"))
-                    stmt = stmt.where(Chart.level == query_level)
+                    stmt = stmt.where(Chart.level == level)
             except ValueError:
                 raise commands.BadArgument(
                     "Please enter a valid level or chart constant."
@@ -444,7 +442,6 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             embeds: list[discord.Embed] = []
             for chart in charts:
                 difficulty = Difficulty.from_short_form(chart.difficulty)
-                chart_level = format_level(chart.level)
 
                 if chart.sdvxin_chart_view is not None:
                     url = chart.sdvxin_chart_view.url
@@ -461,7 +458,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
+                        value=f"[{chart.level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
                     )
                 )
             await ctx.reply(embeds=embeds, mention_author=False)
@@ -525,7 +522,6 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 assert chart.const is not None
 
                 difficulty = Difficulty.from_short_form(chart.difficulty)
-                chart_level = format_level(chart.level)
                 rating_diff = max_rating - chart.const
 
                 # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
@@ -575,7 +571,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     .add_field(name="Category", value=chart.song.genre)
                     .add_field(
                         name=str(difficulty),
-                        value=f"[{chart_level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
+                        value=f"[{chart.level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
                     )
                     .add_field(
                         name="Target Score",

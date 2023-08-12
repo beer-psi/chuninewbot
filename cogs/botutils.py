@@ -146,13 +146,17 @@ class UtilsCog(commands.Cog, name="Utils"):
             return annotated_song
         annotated_song.internal_level = chart_data.const
 
-        level = chart_data.level
-        annotated_song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
+        annotated_song.level = chart_data.level
+
+        try:
+            numeric_level = float(chart_data.level.replace("+", ".5"))
+        except ValueError:
+            numeric_level = 0
 
         internal_level = (
             annotated_song.internal_level
             if annotated_song.internal_level != None
-            else level
+            else numeric_level
         )
 
         annotated_song.play_rating = calculate_rating(song.score, internal_level)

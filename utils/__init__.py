@@ -25,10 +25,6 @@ def floor_to_ndp(number: "T", dp: int) -> "T":
         return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore
 
 
-def format_level(level: float) -> str:
-    return str(level).replace(".0", "").replace(".5", "+")
-
-
 def did_you_mean_text(result: "Song", alias: "Alias | None") -> str:
     did_you_mean = f"**{escape_markdown(result.title)}**"
     if alias is not None:

@@ -12,7 +12,6 @@ from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, Chart, Song
 from utils import (
     did_you_mean_text,
-    format_level,
     release_to_chunithm_version,
     yt_search_link,
 )
@@ -193,7 +192,7 @@ class SearchCog(commands.Cog, name="Search"):
                     if chart.sdvxin_chart_view is not None
                     else yt_search_link(song.title, chart.difficulty)
                 )
-                desc = f"[{chart.difficulty[0]}]({url}) {format_level(chart.level)}"
+                desc = f"[{chart.difficulty[0]}]({url}) {chart.level}"
                 if chart.const != 0:
                     desc += f" ({chart.const:.1f})"
                 chart_level_desc.append(desc)

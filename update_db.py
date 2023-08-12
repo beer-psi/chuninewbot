@@ -84,40 +84,42 @@ CHUNITHM_CATCODES = {
 }
 
 MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
-    "1bc5d471609c4d10": {  # folern【狂】
-        "id": "8166",
-        "catname": "ORIGINAL",
-        "image": "0511952ab823d845.jpg",
-    },
     "7a561ab609a0629d": {  # Trackless wilderness【狂】
         "id": "8227",
         "catname": "ORIGINAL",
-        "image": "168de844aeef254b.jpg",
+        "title": "Trackless wilderness",
+        "we_kanji": "狂",
+        "image": "629be924b3383e08.jpg",
     },
     "e6605126a95c4c8d": {  # Trrricksters!!【狂】
         "id": "8228",
         "catname": "ORIGINAL",
-        "image": "1195656064a159f0.jpg",
+        "title": "Trrricksters!!",
+        "we_kanji": "狂",
+        "image": "7615de9e9eced518.jpg",
     },
 }
 for idx, random in enumerate(
     # Random WE, A through F
     [
-        "d8b8af2016eec2f0",
-        "5a0bc7702113a633",
-        "948e0c4b67f4269d",
-        "56e583c091b4295c",
-        "49794fec968b90ba",
-        "b9df9d9d74b372d9",
+        ("d8b8af2016eec2f0", "97af9ed62e768d73.jpg"),
+        ("5a0bc7702113a633", "fd4a488ed2bc67d8.jpg"),
+        ("948e0c4b67f4269d", "ce911dfdd8624a7c.jpg"),
+        ("56e583c091b4295c", "6a3201f1b63ff9a3.jpg"),
+        ("49794fec968b90ba", "d43ab766613ba19e.jpg"),
+        ("b9df9d9d74b372d9", "4a359278c6108748.jpg"),
     ]
 ):
-    MANUAL_MAPPINGS[random] = {
+    random_id, random_image = random
+    MANUAL_MAPPINGS[random_id] = {
         "id": str(8244 + idx),
         "catname": "VARIETY",
-        "image": "ca580486c86bd49b.jpg",
+        "title": "Random",
+        "we_kanji": f"分{chr(65 + idx)}",
+        "image": random_image,
     }
 
-WORLD_END_REGEX = re.compile(r"【.{1,2}】$", re.MULTILINE)
+WORLD_END_REGEX = re.compile(r"【(.{1,2})】$", re.MULTILINE)
 
 
 def normalize_title(title: str, remove_we_kanji: bool = False) -> str:
@@ -382,7 +384,8 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             dict(
                 id=song.meta.id,
                 chunithm_id=chunithm_id,
-                title=song.meta.title,
+                # Don't use song.meta.title
+                title=chunithm_song["title"],
                 chunithm_catcode=chunithm_catcode,
                 genre=song.meta.genre,
                 artist=song.meta.artist,
@@ -392,7 +395,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 zetaraku_jacket=zetaraku_jacket,
             )
         )
-        for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT", "WE"]:
+        for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
             if (chart := getattr(song.data, difficulty)) is not None:
                 if 0 < chart.level <= 9.5:
                     chart.const = chart.level
@@ -402,11 +405,22 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     dict(
                         song_id=song.meta.id,
                         difficulty=difficulty,
-                        level=chart.level,
+                        level=str(chart.level).replace(".5", "+").replace(".0", ""),
                         const=None if chart.is_const_unknown == 1 else chart.const,
                         maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
                     )
                 )
+
+        if (chart := getattr(song.data, "WE")) is not None:
+            inserted_charts.append(
+                dict(
+                    song_id = song.meta.id,
+                    difficulty="WE",
+                    level=chunithm_song["we_kanji"],
+                    const=None,
+                    maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
+                )
+            )
 
     async with async_session() as session, session.begin():
         insert_statement = insert(Song).values(inserted_songs)

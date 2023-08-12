@@ -75,7 +75,7 @@ class Chart(Base):
     )
 
     difficulty: Mapped[str] = mapped_column(nullable=False)
-    level: Mapped[float] = mapped_column(nullable=False)
+    level: Mapped[str] = mapped_column(nullable=False)
     const: Mapped[Optional[float]] = mapped_column(nullable=True)
 
     maxcombo: Mapped[Optional[int]] = mapped_column(nullable=True)
