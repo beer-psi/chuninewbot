@@ -67,6 +67,15 @@ class ChuniBot(Bot):
 
         self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}
 
+    async def close(self) -> None:
+        if self.app is not None:
+            await self.app.shutdown()
+            await self.app.cleanup()
+
+        await self.engine.dispose()
+
+        return await super().close()
+
 
 def guild_specific_prefix(default: str):
     async def inner(bot: ChuniBot, msg: discord.Message) -> list[str]:
