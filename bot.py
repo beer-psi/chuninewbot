@@ -45,7 +45,7 @@ class ChuniBot(Bot):
 
     # key: user discord ID
     # value: userId, _t cookies from CHUNITHM-NET
-    sessions: dict[int, tuple[str, str]] = {}
+    sessions: dict[int, tuple[str | None, str | None]] = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
