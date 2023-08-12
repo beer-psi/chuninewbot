@@ -12,11 +12,11 @@ from discord.utils import escape_markdown, oauth_url
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import joinedload
 
+from bot import ChuniBot
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
-from bot import ChuniBot
 from cogs.botutils import UtilsCog
-from database.models import Chart, Prefix
+from database.models import Chart, Prefix, Song
 from utils import floor_to_ndp, format_level, yt_search_link
 from utils.calculation.overpower import (
     calculate_overpower_base,
@@ -369,9 +369,13 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             Chart constant to search for.
         """
 
-        stmt = select(Chart).options(
-            joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view)
+        stmt = (
+            select(Chart)
+            .options(joinedload(Chart.sdvxin_chart_view), joinedload(Chart.song))
+            .join(Song, Chart.song)
+            .order_by(Song.title)
         )
+
         try:
             if "." in level:
                 query_level = float(level)
