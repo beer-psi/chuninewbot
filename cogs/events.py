@@ -55,14 +55,21 @@ class EventsCog(commands.Cog, name="Events"):
             )
         elif isinstance(exc, InvalidTokenException):
             message = f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in."
-            if self.bot.cfg.get("DEV", "0") == "1":
+            if self.bot.dev:
                 message += f"\nDetailed error: {exc}"
             return await ctx.reply(message, mention_author=False)
         elif isinstance(exc, ChuniNetException):
             message = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
-            if self.bot.cfg.get("DEV", "0") == "1":
+            if self.bot.dev:
                 message += f"\nDetailed error: {exc}"
             return await ctx.reply(message, mention_author=False)
+
+        elif isinstance(exc, commands.errors.CommandOnCooldown):
+            return await ctx.reply(
+                f"You're too fast. Take a break for {exc.retry_after:.2f} seconds.",
+                mention_author=False,
+                delete_after=exc.retry_after
+            )
         elif isinstance(exc, commands.errors.ExpectedClosingQuoteError):
             return await ctx.reply(
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",

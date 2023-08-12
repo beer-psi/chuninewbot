@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 class ChuniBot(Bot):
     cfg: dict[str, str | None]
+    dev: bool = False
 
     engine: AsyncEngine = create_async_engine(
         "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
@@ -85,8 +86,14 @@ async def startup():
             "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
         )
 
-    logger = logging.getLogger("discord")
-    logger.setLevel(logging.DEBUG)
+    (intents := discord.Intents.default()).message_content = True
+    bot = ChuniBot(
+        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore
+        intents=intents,
+        help_command=HelpCommand(),
+    )
+    bot.cfg = cfg
+    bot.dev = cfg.get("DEV", "0") == "1"
 
     handler = logging.handlers.RotatingFileHandler(
         filename="discord.log",
@@ -98,19 +105,16 @@ async def startup():
     formatter = logging.Formatter(
         "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
     )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
-    (intents := discord.Intents.default()).message_content = True
-    bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore
-        intents=intents,
-        help_command=HelpCommand(),
+    discord.utils.setup_logging(
+        handler=handler,
+        formatter=formatter,
+        level=logging.DEBUG if bot.dev else logging.INFO,
+        root=False,
     )
-    bot.cfg = cfg
 
     await bot.load_extension("cogs.botutils")
-    if cfg.get("DEV", "0") == "1":
+    if bot.dev:
         await bot.load_extension("cogs.hotreload")
         await bot.load_extension("jishaku")
 
