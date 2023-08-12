@@ -157,17 +157,23 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
                 continue
             title = alias[0]
 
-            song = (await session.execute(select(Song).where(Song.title == title))).scalar_one_or_none()
+            song = (
+                await session.execute(select(Song).where(Song.title == title))
+            ).scalar_one_or_none()
             if song is None:
                 continue
 
-            inserted_aliases.extend([dict(alias=x, guild_id=-1, song_id=song.id, owner_id=None) for x in alias[1:]])
-
+            inserted_aliases.extend(
+                [
+                    dict(alias=x, guild_id=-1, song_id=song.id, owner_id=None)
+                    for x in alias[1:]
+                ]
+            )
 
         insert_statement = insert(Alias).values(inserted_aliases)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Alias.alias, Alias.guild_id],
-            set_={"song_id": insert_statement.excluded.song_id}
+            set_={"song_id": insert_statement.excluded.song_id},
         )
         await session.execute(upsert_statement)
 
@@ -267,7 +273,9 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     :5
                 ]  # FIXME: dont assume the ID is always 5 digits
 
-                song = (await session.execute(select(Song).where(Song.title == title))).scalar_one_or_none()
+                song = (
+                    await session.execute(select(Song).where(Song.title == title))
+                ).scalar_one_or_none()
                 if song is None:
                     print(f"Could not find song with title {title}")
                     continue
@@ -286,7 +294,9 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     )
                     if value_soup.select_one("a") is None:
                         continue
-                    inserted_data.append(dict(id=sdvx_in_id, song_id=song.id, difficulty=difficulty))
+                    inserted_data.append(
+                        dict(id=sdvx_in_id, song_id=song.id, difficulty=difficulty)
+                    )
 
         stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
         await session.execute(stmt)
@@ -451,15 +461,13 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
 #                 pass
 
 
-
-
-
-
 async def main():
     engine: AsyncEngine = create_async_engine(
         "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
     )
-    async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(engine, expire_on_commit=False)
+    async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
+        engine, expire_on_commit=False
+    )
 
     # await update_db(db)
     # await update_aliases(async_session)

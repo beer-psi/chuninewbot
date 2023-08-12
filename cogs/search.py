@@ -90,7 +90,12 @@ class SearchCog(commands.Cog, name="Search"):
                 song = alias.song
 
             session.add(
-                Alias(alias=added_alias, guild_id=ctx.guild.id, song_id=song.id, owner_id=ctx.author.id)
+                Alias(
+                    alias=added_alias,
+                    guild_id=ctx.guild.id,
+                    song_id=song.id,
+                    owner_id=ctx.author.id,
+                )
             )
 
             await ctx.reply(

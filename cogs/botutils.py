@@ -157,10 +157,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         )
         annotated_song.overpower_max = calculate_overpower_max(internal_level)
 
-        if (
-            isinstance(annotated_song, AnnotatedDetailedRecentRecord)
-            and chart_data.maxcombo != 0
-        ):
+        if isinstance(annotated_song, AnnotatedDetailedRecentRecord):
             annotated_song.full_combo = chart_data.maxcombo
 
         return annotated_song
