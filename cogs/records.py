@@ -247,12 +247,14 @@ class RecordsCog(commands.Cog, name="Records"):
             await ctx.reply(str(e), mention_author=False)
             return
 
-        try:
-            user = await commands.UserConverter().convert(ctx, args.query[0])
-            query = " ".join(args.query[1:])
-        except commands.BadArgument:
-            user = None
-            query = " ".join(args.query)
+        user = None
+        query = " ".join(args.query)
+        for converter in [commands.MemberConverter, commands.UserConverter]:
+            try:
+                user = await converter().convert(ctx, args.query[0])
+                query = " ".join(args.query[1:])
+            except commands.BadArgument:
+                pass
 
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
