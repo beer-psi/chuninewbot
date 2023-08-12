@@ -1,3 +1,4 @@
+import shlex
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ from sqlalchemy.orm import joinedload
 from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, Chart, Song
 from utils import (
+    Arguments,
     did_you_mean_text,
     release_to_chunithm_version,
     yt_search_link,
@@ -155,11 +157,21 @@ class SearchCog(commands.Cog, name="Search"):
         query: str
             The song title or alias to search for.
         """
+        parser = Arguments()
+        parser.add_argument("query", nargs="+")
+        parser.add_argument("-we", "--worlds-end", action="store_true")
+
+        try:
+            args = parser.parse_intermixed_args(shlex.split(query))
+            query = " ".join(args.query)
+        except RuntimeError as e:
+            await ctx.reply(str(e), mention_author=False)
+            return
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
             song, alias, similarity = await self.utils.find_song(
-                query, guild_id=guild_id
+                query, guild_id=guild_id, worlds_end=args.worlds_end
             )
 
             if similarity < 0.9:
@@ -197,8 +209,9 @@ class SearchCog(commands.Cog, name="Search"):
                     if chart.sdvxin_chart_view is not None
                     else yt_search_link(song.title, chart.difficulty)
                 )
-                desc = f"[{chart.difficulty[0]}]({url}) {chart.level}"
-                if chart.const != 0:
+                worlds_end = "WORLD'S END"
+                desc = f'[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}'
+                if chart.const is not None:
                     desc += f" ({chart.const:.1f})"
                 chart_level_desc.append(desc)
 
