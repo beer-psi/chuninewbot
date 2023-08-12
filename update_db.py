@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from bot import BOT_DIR, cfg
-from database.models import Alias, Chart, SdvxinChartView, Song
+from database.models import Alias, Base, Chart, SdvxinChartView, Song
 
 
 @dataclass_json
@@ -89,6 +89,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "catname": "ORIGINAL",
         "title": "Trackless wilderness",
         "we_kanji": "狂",
+        "we_star": "7",
         "image": "629be924b3383e08.jpg",
     },
     "e6605126a95c4c8d": {  # Trrricksters!!【狂】
@@ -96,6 +97,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "catname": "ORIGINAL",
         "title": "Trrricksters!!",
         "we_kanji": "狂",
+        "we_star": "9",
         "image": "7615de9e9eced518.jpg",
     },
 }
@@ -116,6 +118,7 @@ for idx, random in enumerate(
         "catname": "VARIETY",
         "title": "Random",
         "we_kanji": f"分{chr(65 + idx)}",
+        "we_star": "5",
         "image": random_image,
     }
 
@@ -412,11 +415,14 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 )
 
         if (chart := getattr(song.data, "WE")) is not None:
+            we_stars = ""
+            for _ in range(-1, int(chunithm_song["we_star"]), 2):
+                we_stars += "☆"
             inserted_charts.append(
                 dict(
                     song_id = song.meta.id,
                     difficulty="WE",
-                    level=chunithm_song["we_kanji"],
+                    level=chunithm_song["we_kanji"] + we_stars,
                     const=None,
                     maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
                 )
@@ -482,6 +488,9 @@ async def main():
     async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine, expire_on_commit=False
     )
+
+    async with async_session() as session, session.begin():
+        await session.run_sync(Base.metadata.create_all)
 
     # await update_db(db)
     # await update_aliases(async_session)
