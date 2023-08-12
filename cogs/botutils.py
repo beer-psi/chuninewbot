@@ -1,16 +1,31 @@
-from datetime import datetime
+import contextlib
 from math import floor
 from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
+from sqlalchemy import select, text
 
-from api.enums import Rank
-from api.record import DetailedRecentRecord, MusicRecord, Record
+from chunithm_net import ChuniNet
+from chunithm_net.entities.enums import Rank
+from chunithm_net.entities.record import (
+    DetailedRecentRecord,
+    MusicRecord,
+    RecentRecord,
+    Record,
+)
+from database.models import Alias, Chart, Cookie, Song
 from update_db import update_db
-from utils.overpower_calculator import calculate_overpower_base, calculate_overpower_max
-from utils.rating_calculator import calculate_rating
-from utils.types import SongSearchResult
+from utils.calculation.overpower import (
+    calculate_overpower_base,
+    calculate_overpower_max,
+)
+from utils.calculation.rating import calculate_rating
+from utils.types import (
+    AnnotatedDetailedRecentRecord,
+    AnnotatedMusicRecord,
+    AnnotatedRecentRecord,
+)
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -21,14 +36,11 @@ class UtilsCog(commands.Cog, name="Utils"):
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
+        default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
         if ctx.guild is None:
-            return self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+            return default_prefix
 
-        async with self.bot.db.execute(
-            "SELECT prefix FROM guild_prefix WHERE guild_id = ?", (ctx.guild.id,)
-        ) as cursor:
-            prefix = await cursor.fetchone()
-        return prefix[0] if prefix is not None else self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+        return self.bot.prefixes.get(ctx.guild.id, default_prefix)
 
     async def login_check(self, ctx_or_id: Context | int) -> str:
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
@@ -39,87 +51,126 @@ class UtilsCog(commands.Cog, name="Utils"):
             )
         return clal
 
+    @contextlib.asynccontextmanager
+    async def chuninet(self, ctx_or_id: Context | int):
+        id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
+        cookie = await self.login_check(ctx_or_id)
+        user_id, token = self.bot.sessions.get(id, (None, None))
+
+        session = ChuniNet(cookie, user_id, token)
+        try:
+            yield session
+        finally:
+            await session.close()
+            self.bot.sessions[id] = (session.user_id, session.token)
+
     async def fetch_cookie(self, id: int) -> str | None:
-        async with self.bot.db.execute(
-            "SELECT cookie FROM cookies WHERE discord_id = ?", (id,)
-        ) as cursor:
-            clal = await cursor.fetchone()
-        if clal is None:
+        async with self.bot.begin_db_session() as session:
+            stmt = select(Cookie).where(Cookie.discord_id == id)
+            cookie = (await session.execute(stmt)).scalar_one_or_none()
+
+        if cookie is None:
             return None
 
-        return clal[0]
+        return cookie.cookie
 
     @overload
-    async def annotate_song(self, song: DetailedRecentRecord) -> DetailedRecentRecord:
+    async def annotate_song(
+        self, song: DetailedRecentRecord
+    ) -> AnnotatedDetailedRecentRecord:
         ...
 
     @overload
-    async def annotate_song(self, song: Record | MusicRecord) -> MusicRecord:
+    async def annotate_song(
+        self, song: Record | MusicRecord
+    ) -> MusicRecord | AnnotatedMusicRecord:
+        ...
+
+    @overload
+    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
         ...
 
     async def annotate_song(
-        self, song: Record | MusicRecord | DetailedRecentRecord
-    ) -> MusicRecord | DetailedRecentRecord:
-        if isinstance(song, Record) and not (
-            isinstance(song, MusicRecord) or isinstance(song, DetailedRecentRecord)
-        ):
-            if song.detailed is None:
-                raise Exception("Cannot fetch song details without song.detailed.idx")
-            async with self.bot.db.execute(
-                "SELECT id, jacket FROM chunirec_songs WHERE chunithm_id = ?",
-                (song.detailed.idx,),
-            ) as cursor:
-                song_data = await cursor.fetchone()
-            if song_data is None:
-                return MusicRecord.from_record(song)
-            id = song_data[0]
+        self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
+    ) -> MusicRecord | AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
+        async with self.bot.begin_db_session() as session:
+            if isinstance(song, Record) and not (
+                isinstance(song, MusicRecord)
+                or isinstance(song, DetailedRecentRecord)
+                or isinstance(song, RecentRecord)
+            ):
+                if song.detailed is None:
+                    raise Exception(
+                        "Cannot fetch song details without song.detailed.idx"
+                    )
 
-            _song: MusicRecord = MusicRecord.from_record(song)
-            _song.jacket = song_data[1]
-            _song.rank = Rank.from_score(song.score)
-        else:
-            async with self.bot.db.execute(
-                "SELECT id FROM chunirec_songs WHERE title = ? AND jacket = ?",
-                (song.title, song.jacket),
-            ) as cursor:
-                song_data = await cursor.fetchone()
-            if song_data is None:
-                return song
-            id = song_data[0]
-            _song = song
+                stmt = select(Song).where(Song.chunithm_id == song.detailed.idx)
+                song_data = (await session.execute(stmt)).scalar_one_or_none()
 
-        async with self.bot.db.execute(
-            "SELECT level, const, maxcombo, is_const_unknown FROM chunirec_charts WHERE song_id = ? AND difficulty = ?",
-            (id, song.difficulty.short_form()),
-        ) as cursor:
-            chart_data = await cursor.fetchone()
+                if song_data is None:
+                    return MusicRecord.from_record(song)
+
+                id = song_data.id
+
+                annotated_song: AnnotatedMusicRecord = AnnotatedMusicRecord(
+                    **song.__dict__, jacket=song_data.jacket
+                )
+                annotated_song.rank = Rank.from_score(song.score)
+            else:
+                stmt = select(Song).where(
+                    (Song.title == song.title) & (Song.jacket == song.jacket)
+                )
+                song_data = (await session.execute(stmt)).scalar_one()
+
+                id = song_data.id
+
+                if isinstance(song, DetailedRecentRecord):
+                    annotated_song = AnnotatedDetailedRecentRecord(**song.__dict__)
+                elif isinstance(song, RecentRecord):
+                    annotated_song = AnnotatedRecentRecord(**song.__dict__)
+                else:
+                    annotated_song = AnnotatedMusicRecord(**song.__dict__)
+
+            stmt = select(Chart).where(
+                (Chart.song_id == id)
+                & (Chart.difficulty == song.difficulty.short_form())
+            )
+            chart_data = (await session.execute(stmt)).scalar_one_or_none()
+
         if chart_data is None:
-            return _song
-        _song.internal_level = chart_data[1]
+            return annotated_song
+        annotated_song.internal_level = chart_data.const
 
-        level = chart_data[0]
-        _song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
-        _song.unknown_const = bool(chart_data[3])
+        level = chart_data.level
+        annotated_song.level = str(floor(level)) + ("+" if level * 10 % 10 >= 5 else "")
 
-        _song.play_rating = calculate_rating(
-            song.score, _song.internal_level if _song.internal_level != 0 else level
+        internal_level = (
+            annotated_song.internal_level
+            if annotated_song.internal_level != None
+            else level
         )
 
-        if isinstance(_song, DetailedRecentRecord) and chart_data[2] != 0:
-            _song.full_combo = chart_data[2]
+        annotated_song.play_rating = calculate_rating(song.score, internal_level)
 
-        _song.overpower_base = calculate_overpower_base(
-            song.score, _song.internal_level if _song.internal_level != 0 else level
+        annotated_song.overpower_base = calculate_overpower_base(
+            song.score, internal_level
         )
-        _song.overpower_max = calculate_overpower_max(
-            _song.internal_level if _song.internal_level != 0 else level
-        )
+        annotated_song.overpower_max = calculate_overpower_max(internal_level)
 
-        return _song
+        if (
+            isinstance(annotated_song, AnnotatedDetailedRecentRecord)
+            and chart_data.maxcombo != 0
+        ):
+            annotated_song.full_combo = chart_data.maxcombo
+
+        return annotated_song
 
     async def find_song(
-        self, query: str, *, guild_id: Optional[int] = None
-    ) -> SongSearchResult:
+        self,
+        query: str,
+        *,
+        guild_id: Optional[int] = None,
+    ) -> tuple[Song, Alias | None, float]:
         """Finds the song that best matches a given query.
 
         Parameters
@@ -131,60 +182,36 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         Returns
         -------
-        SongSearchResult
+        tuple[Song, Alias | None, float]
+            The third item is the similarity of the matched song.
         """
+        query = query.lower()
+        async with self.bot.begin_db_session() as session:
+            stmt = (
+                select(Song, Song.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
+                .order_by(text("similarity DESC"))
+                .limit(1)
+            )
 
-        async with self.bot.db.execute(
-            "SELECT jwsim(lower(title), ?) AS similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket "
-            "FROM chunirec_songs "
-            "ORDER BY similarity DESC "
-            "LIMIT 1",
-            (query.lower(),),
-        ) as cursor:
-            song = await cursor.fetchone()
-        assert song is not None
+            song, similarity = (await session.execute(stmt)).one()
 
-        similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
-        alias = None
-        if similarity < 0.9:
-            where_clause = "WHERE aliases.guild_id = -1 "
-            if guild_id is not None:
-                where_clause += "OR aliases.guild_id = :guild_id "
-            async with self.bot.db.execute(
-                "SELECT jwsim(lower(aliases.alias), :query) AS similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket, aliases.alias "
-                "FROM chunirec_songs "
-                "LEFT JOIN aliases ON aliases.song_id = chunirec_songs.id "
-                + where_clause
-                + "ORDER BY similarity DESC "
-                "LIMIT 1",
-                {"query": query.lower(), "guild_id": guild_id},
-            ) as cursor:
-                song = await cursor.fetchone()
-            assert song is not None
-            (
-                similarity,
-                id,
-                chunithm_id,
-                title,
-                genre,
-                artist,
-                release,
-                bpm,
-                jacket,
-                alias,
-            ) = song
-        return SongSearchResult(
-            similarity=similarity,
-            id=id,
-            chunithm_id=chunithm_id,
-            title=title,
-            genre=genre,
-            artist=artist,
-            release=datetime.strptime(release, "%Y-%m-%d"),
-            bpm=bpm,
-            jacket=jacket,
-            alias=alias,
-        )
+            # similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
+            alias: Alias | None = None
+            if similarity < 0.9:
+                guild_ids = [-1]
+                if guild_id is not None:
+                    guild_ids.append(guild_id)
+                stmt = (
+                    select(Alias, Alias.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
+                    .where(Alias.guild_id.in_(guild_ids))
+                    .order_by(text("similarity DESC"))
+                    .limit(1)
+                )
+                alias, similarity = (await session.execute(stmt)).one()
+
+                stmt = select(Song).where(Song.id == alias.song_id)  # type: ignore
+                song: Song = (await session.execute(stmt)).scalar_one()
+        return song, alias, similarity
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
     #
@@ -194,7 +221,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         # Disable all commands while updating the DB
         for cmd in self.bot.walk_commands():
             cmd.enabled = False
-        await update_db(self.bot.db)
+        # await update_db(self.bot.db)
         # Re-enable all commands
         for cmd in self.bot.walk_commands():
             cmd.enabled = True

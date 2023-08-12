@@ -406,6 +406,34 @@ async def update_db(db: aiosqlite.Connection):
     await db.commit()
 
 
+# async def update_cc_from_data(db: aiosqlite.Connection, music_paths: list[Path]):
+#     inserted_charts = []
+
+#     for music_path in music_paths:
+#         for item in music_path.iterdir():
+#             tree = ElementTree.parse(item / "Music.xml")
+#             root = tree.getroot()
+
+#             chunithm_id = int(root.find("./name/id").text)
+#             async with db.execute(
+#                 "SELECT id FROM chunirec_songs WHERE chunithm_id = ?",
+#                 (chunithm_id,),
+#             ) as cursor:
+#                 song = await cursor.fetchone()
+
+#             if song is None:
+#                 print(f"Could not find song with chunithm_id {chunithm_id}")
+#                 continue
+
+#             charts = await db.execute_fetchall("SELECT * FROM chunirec_charts WHERE song_id = ?", (song[0],))
+#             for chart in zip(charts, root.findall("./fumens/MusicFumenData[enable='true']")):
+#                 pass
+
+
+
+
+
+
 async def main():
     async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
         with (BOT_DIR / "database" / "schema.sql").open() as f:

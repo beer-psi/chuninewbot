@@ -3,9 +3,16 @@ from typing import cast
 
 from bs4 import BeautifulSoup, Tag
 
-from .enums import ClearType, Possession, Rank, SkillClass
-from .player_data import Currency, Nameplate, Overpower, PlayerData, Rating, UserAvatar
-from .record import (
+from .entities.enums import ClearType, Possession, Rank, SkillClass
+from .entities.player_data import (
+    Currency,
+    Nameplate,
+    Overpower,
+    PlayerData,
+    Rating,
+    UserAvatar,
+)
+from .entities.record import (
     DetailedParams,
     DetailedRecentRecord,
     Judgements,
@@ -26,7 +33,10 @@ from .utils import (
 
 
 def parse_player_card_and_avatar(soup: BeautifulSoup):
-    character = cast(str, soup.select_one(".player_chara_info img")["src"])
+    if (e := soup.select_one(".player_chara_info img")) is not None:
+        character = cast(str, e["src"])
+    else:
+        character = None
 
     name = soup.select_one(".player_name_in").get_text()
     lv = chuni_int(soup.select_one(".player_lv").get_text())

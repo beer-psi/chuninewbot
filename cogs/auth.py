@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING, Optional
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from sqlalchemy import delete
 
-from api import ChuniNet
-from views.login import LoginFlowView
+from chunithm_net import ChuniNet
+from database.models import Cookie
+from utils.views.login import LoginFlowView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -25,10 +27,9 @@ class AuthCog(commands.Cog, name="Auth"):
         description="Logs you out of the bot.",
     )
     async def logout(self, ctx: Context):
-        async with self.bot.db.execute(
-            "DELETE FROM cookies WHERE discord_id = ?", (ctx.author.id,)
-        ):
-            await self.bot.db.commit()
+        async with ctx.typing(), self.bot.begin_db_session() as session:
+            stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
+            await session.execute(stmt)
         await ctx.reply("Successfully logged out.", mention_author=False)
 
     async def _verify_and_login(self, id: int, clal: str) -> Optional[Exception]:
@@ -38,12 +39,9 @@ class AuthCog(commands.Cog, name="Auth"):
         async with ChuniNet(clal) as client:
             try:
                 await client.validate_cookie()
-                async with self.bot.db.execute(
-                    "INSERT INTO cookies VALUES (?, ?) ON CONFLICT(discord_id) DO UPDATE SET cookie=excluded.cookie",
-                    (id, clal),
-                ):
-                    await self.bot.db.commit()
-                return
+
+                async with self.bot.begin_db_session() as session, session.begin():
+                    await session.merge(Cookie(discord_id=id, cookie=clal))
             except Exception as e:
                 return e
 

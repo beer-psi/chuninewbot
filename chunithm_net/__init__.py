@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from yarl import URL
 
 from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
-from .enums import Difficulty, Genres, Rank
+from .entities.enums import Difficulty, Genres, Rank
+from .entities.record import MusicRecord, RecentRecord, Record
 from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
 from .parser import (
     parse_basic_recent_record,
@@ -16,7 +17,6 @@ from .parser import (
     parse_player_card_and_avatar,
     parse_player_data,
 )
-from .record import MusicRecord, RecentRecord, Record
 
 __all__ = ["ChuniNet"]
 
@@ -27,7 +27,7 @@ class ChuniNet:
     def __init__(
         self,
         clal: str,
-        user_id: Optional[int] = None,
+        user_id: Optional[str] = None,
         token: Optional[str] = None,
         base: URL = URL("https://chunithm-net-eng.com"),
     ) -> None:
@@ -40,7 +40,7 @@ class ChuniNet:
         )
 
         if user_id is not None:
-            self.session.cookie_jar.update_cookies({"userId": str(user_id)}, self.base)
+            self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
         if token is not None:
             self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
@@ -50,6 +50,9 @@ class ChuniNet:
     async def __aexit__(self, type, value, traceback):
         await self.session.close()
 
+    async def close(self):
+        await self.session.close()
+
     @property
     def user_id(self):
         cookie = self.session.cookie_jar.filter_cookies(self.base).get("userId")
@@ -57,12 +60,20 @@ class ChuniNet:
             return None
         return cookie.value
 
+    @user_id.setter
+    def set_user_id(self, user_id: str):
+        self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
+
     @property
     def token(self):
         cookie = self.session.cookie_jar.filter_cookies(self.base).get("_t")
         if cookie is None:
             return None
         return cookie.value
+
+    @token.setter
+    def set_token(self, token: str):
+        self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
@@ -73,17 +84,31 @@ class ChuniNet:
             return req.headers["Location"]
 
     async def authenticate(self):
-        uid_redemption_url = await self.validate_cookie()
-        async with self.session.get(uid_redemption_url) as req:
-            if req.status == HTTPStatus.SERVICE_UNAVAILABLE:
-                raise MaintenanceException("Service under maintenance")
-            if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-                raise InvalidTokenException("Invalid cookie: No userId cookie found")
+        if self.user_id is not None:
+            try:
+                # In some cases, the site token is refreshed automatically.
+                resp = await self._request("mobile/home/")
+            except ChuniNetError as e:
+                # In other cases, the token is invalidated and a relogin is required.
+                # Error code for when site token is invalidated
+                if e.code == 200004:
+                    uid_redemption_url = await self.validate_cookie()
+                    resp = await self.session.get(uid_redemption_url)
+                else:
+                    raise e
+        else:
+            uid_redemption_url = await self.validate_cookie()
+            resp = await self.session.get(uid_redemption_url)
 
-            return parse_player_card_and_avatar(BeautifulSoup(await req.text(), "lxml"))
+        if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
+            raise MaintenanceException("Service under maintenance")
+        if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
+            raise InvalidTokenException("Invalid cookie: No userId cookie found")
+
+        return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
-        if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
+        if self.user_id is None:
             await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)

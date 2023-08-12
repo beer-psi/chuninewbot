@@ -1,8 +1,9 @@
 from decimal import Decimal
+
+from chunithm_net.entities.enums import ClearType
 from utils import floor_to_ndp
 
-from api.enums import ClearType
-from api.record import MusicRecord
+from ..types.annotated_records import AnnotatedMusicRecord
 
 
 def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
@@ -32,11 +33,12 @@ def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
 
     return Decimal(floor_to_ndp(rating100 / 2_000, 2))
 
+
 def calculate_overpower_max(internal_level: float) -> Decimal:
     return Decimal(internal_level * 5 + 15)
 
 
-def calculate_play_overpower(score: MusicRecord) -> Decimal:
+def calculate_play_overpower(score: AnnotatedMusicRecord) -> Decimal:
     play_overpower = score.overpower_base
     if score.score == 1010000:
         play_overpower = score.overpower_max

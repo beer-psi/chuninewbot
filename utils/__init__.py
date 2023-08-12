@@ -8,7 +8,7 @@ from discord.utils import escape_markdown
 if TYPE_CHECKING:
     from typing import TypeVar
 
-    from .types import SongSearchResult
+    from database.models import Alias, Song
 
     T = TypeVar("T")
 
@@ -23,10 +23,10 @@ def format_level(level: float) -> str:
     return str(level).replace(".0", "").replace(".5", "+")
 
 
-def did_you_mean_text(result: "SongSearchResult") -> str:
+def did_you_mean_text(result: "Song", alias: "Alias | None") -> str:
     did_you_mean = f"**{escape_markdown(result.title)}**"
-    if result.alias is not None:
-        did_you_mean = f"**{escape_markdown(result.alias)}** (for {did_you_mean})"
+    if alias is not None:
+        did_you_mean = f"**{escape_markdown(alias.alias)}** (for {did_you_mean})"
     return (
         f"No songs found. Did you mean {did_you_mean}?\n"
         "(You can also use `addalias <title> <alias>` to add this alias for this guild.)"
@@ -35,7 +35,7 @@ def did_you_mean_text(result: "SongSearchResult") -> str:
 
 def yt_search_link(title: str, difficulty: str) -> str:
     return "https://www.youtube.com/results?search_query=" + quote(
-        f"{title} {difficulty}"
+        f"CHUNITHM {title} {difficulty}"
     )
 
 

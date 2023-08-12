@@ -5,7 +5,7 @@ from discord import Interaction
 from discord.ext.commands import Context
 
 if TYPE_CHECKING:
-    from api.player_data import PlayerData
+    from chunithm_net.entities.player_data import PlayerData
 
 
 class ProfileView(discord.ui.View):

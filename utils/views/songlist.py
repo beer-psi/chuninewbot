@@ -5,27 +5,28 @@ import discord.ui
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
-from utils import sdvxin_link, yt_search_link
+from database.models import Chart
+from utils import yt_search_link
 
 from .pagination import PaginationView
 
 
 class SonglistView(PaginationView):
     # tuple is (title, difficulty, sdvx.in id)
-    def __init__(self, ctx: Context, songs: Sequence[tuple[str, str, str | None]]):
-        super().__init__(ctx, items=songs, per_page=15)
+    def __init__(self, ctx: Context, charts: Sequence[Chart]):
+        super().__init__(ctx, items=charts, per_page=15)
 
     def format_songlist(
-        self, songs: Sequence[tuple[str, str, str | None]], start_index: int = 0
+        self, charts: Sequence[Chart], start_index: int = 0
     ) -> discord.Embed:
         songlist = ""
-        for idx, song in enumerate(songs):
+        for idx, chart in enumerate(charts):
             url = (
-                sdvxin_link(song[2], song[1])
-                if song[2]
-                else yt_search_link(song[0], song[1])
+                chart.sdvxin_chart_view.url
+                if chart.sdvxin_chart_view is not None
+                else yt_search_link(chart.song.title, chart.difficulty)
             )
-            songlist += f"{idx + start_index + 1}. {escape_markdown(song[0])} [[{song[1]}]]({url})\n"
+            songlist += f"{idx + start_index + 1}. {escape_markdown(chart.song.title)} [[{chart.difficulty}]]({url})\n"
         return discord.Embed(
             description=songlist,
         ).set_footer(text=f"Page {self.page + 1}/{self.max_index + 1}")

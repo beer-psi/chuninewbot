@@ -1,6 +1,6 @@
 .env
-database/*
-!database/schema.sql
+database/*.sqlite3
+database/*.sqlite3-*
 discord.log
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
