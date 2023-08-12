@@ -4,13 +4,21 @@ from html import unescape
 from typing import Optional
 
 import aiohttp
-import aiosqlite
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 from dataclasses_json import dataclass_json
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from bot import BOT_DIR, cfg
+from database.models import Alias, Chart, SdvxinChartView, Song
 
 
 @dataclass_json
@@ -76,23 +84,24 @@ CHUNITHM_CATCODES = {
 }
 
 MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
-    "1bc5d471609c4d10": {
+    "1bc5d471609c4d10": {  # folern【狂】
         "id": "8166",
         "catname": "ORIGINAL",
         "image": "0511952ab823d845.jpg",
     },
-    "7a561ab609a0629d": {
+    "7a561ab609a0629d": {  # Trackless wilderness【狂】
         "id": "8227",
         "catname": "ORIGINAL",
         "image": "168de844aeef254b.jpg",
     },
-    "e6605126a95c4c8d": {
+    "e6605126a95c4c8d": {  # Trrricksters!!【狂】
         "id": "8228",
         "catname": "ORIGINAL",
         "image": "1195656064a159f0.jpg",
     },
 }
 for idx, random in enumerate(
+    # Random WE, A through F
     [
         "d8b8af2016eec2f0",
         "5a0bc7702113a633",
@@ -135,34 +144,35 @@ def normalize_title(title: str, remove_we_kanji: bool = False) -> str:
     return title
 
 
-async def update_aliases(db: aiosqlite.Connection):
-    async with aiohttp.ClientSession() as client:
+async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
+    async with aiohttp.ClientSession() as client, async_session() as session, session.begin():
         resp = await client.get(
             "https://github.com/lomotos10/GCM-bot/raw/main/data/aliases/en/chuni.tsv"
         )
         aliases = [x.split("\t") for x in (await resp.text()).splitlines()]
 
-    inserted_aliases = []
-    for alias in aliases:
-        if len(alias) < 2:
-            continue
-        title = alias[0]
-        async with db.execute(
-            "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
-        ) as cursor:
-            song_id = await cursor.fetchone()
-        if song_id is None:
-            continue
-        inserted_aliases.extend([(x, song_id[0]) for x in alias[1:]])
-    await db.executemany(
-        "INSERT INTO aliases (alias, guild_id, song_id) VALUES (?, -1, ?)"
-        "ON CONFLICT (alias, guild_id) DO UPDATE SET song_id = excluded.song_id",
-        inserted_aliases,
-    )
-    await db.commit()
+        inserted_aliases = []
+        for alias in aliases:
+            if len(alias) < 2:
+                continue
+            title = alias[0]
+
+            song = (await session.execute(select(Song).where(Song.title == title))).scalar_one_or_none()
+            if song is None:
+                continue
+
+            inserted_aliases.extend([dict(alias=x, guild_id=-1, song_id=song.id, owner_id=None) for x in alias[1:]])
 
 
-async def update_sdvxin(db: aiosqlite.Connection):
+        insert_statement = insert(Alias).values(inserted_aliases)
+        upsert_statement = insert_statement.on_conflict_do_update(
+            index_elements=[Alias.alias, Alias.guild_id],
+            set_={"song_id": insert_statement.excluded.song_id}
+        )
+        await session.execute(upsert_statement)
+
+
+async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
     categories = [
         "pops",
         "niconico",
@@ -231,11 +241,11 @@ async def update_sdvxin(db: aiosqlite.Connection):
         "砂漠のハンティングガール": "砂漠のハンティングガール♡",
     }
     # sdvx.in ID, song_id, difficulty
-    inserted_data: list[tuple[str, str, str]] = []
+    inserted_data: list[dict] = []
     limiter = AsyncLimiter(3, 1)
     async with limiter, aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=600)
-    ) as client:
+    ) as client, async_session() as session, session.begin():
         for category in categories:
             resp = await client.get(f"https://sdvx.in/chunithm/sort/{category}.htm")
             soup = BeautifulSoup(await resp.text(), "lxml")
@@ -256,11 +266,9 @@ async def update_sdvxin(db: aiosqlite.Connection):
                 sdvx_in_id = str(script["src"]).split("/")[-1][
                     :5
                 ]  # FIXME: dont assume the ID is always 5 digits
-                async with db.execute(
-                    "SELECT id FROM chunirec_songs WHERE title = ?", (title,)
-                ) as cursor:
-                    song_id = await cursor.fetchone()
-                if song_id is None:
+
+                song = (await session.execute(select(Song).where(Song.title == title))).scalar_one_or_none()
+                if song is None:
                     print(f"Could not find song with title {title}")
                     continue
 
@@ -278,16 +286,13 @@ async def update_sdvxin(db: aiosqlite.Connection):
                     )
                     if value_soup.select_one("a") is None:
                         continue
-                    inserted_data.append((sdvx_in_id, song_id[0], difficulty))
-    await db.executemany(
-        "INSERT INTO sdvxin (id, song_id, difficulty) VALUES (?, ?, ?)"
-        "ON CONFLICT (id, difficulty) DO NOTHING",
-        inserted_data,
-    )
-    await db.commit()
+                    inserted_data.append(dict(id=sdvx_in_id, song_id=song.id, difficulty=difficulty))
+
+        stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
+        await session.execute(stmt)
 
 
-async def update_db(db: aiosqlite.Connection):
+async def update_db(async_session: async_sessionmaker[AsyncSession]):
     async with aiohttp.ClientSession() as client:
         resp = await client.get(
             f"https://api.chunirec.net/2.0/music/showall.json?token={cfg['CHUNIREC_TOKEN']}&region=jp2"
@@ -364,46 +369,62 @@ async def update_db(db: aiosqlite.Connection):
             zetaraku_jacket = ""
 
         inserted_songs.append(
-            (
-                song.meta.id,
-                chunithm_id,
-                song.meta.title,
-                chunithm_catcode,
-                song.meta.genre,
-                song.meta.artist,
-                song.meta.release,
-                song.meta.bpm,
-                jacket,
-                zetaraku_jacket,
+            dict(
+                id=song.meta.id,
+                chunithm_id=chunithm_id,
+                title=song.meta.title,
+                chunithm_catcode=chunithm_catcode,
+                genre=song.meta.genre,
+                artist=song.meta.artist,
+                release=song.meta.release,
+                bpm=None if song.meta.bpm == 0 else song.meta.bpm,
+                jacket=jacket,
+                zetaraku_jacket=zetaraku_jacket,
             )
         )
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT", "WE"]:
             if (chart := getattr(song.data, difficulty)) is not None:
-                if chart.level <= 9.5:
+                if 0 < chart.level <= 9.5:
                     chart.const = chart.level
                     chart.is_const_unknown = 0
 
                 inserted_charts.append(
-                    (
-                        song.meta.id,
-                        difficulty,
-                        chart.level,
-                        chart.const,
-                        chart.maxcombo,
-                        chart.is_const_unknown,
+                    dict(
+                        song_id=song.meta.id,
+                        difficulty=difficulty,
+                        level=chart.level,
+                        const=None if chart.is_const_unknown == 1 else chart.const,
+                        maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
                     )
                 )
-    await db.executemany(
-        "INSERT INTO chunirec_songs(id, chunithm_id, title, chunithm_catcode, genre, artist, release, bpm, jacket, zetaraku_jacket) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        "ON CONFLICT(id) DO UPDATE SET title=excluded.title,chunithm_catcode=excluded.chunithm_catcode,genre=excluded.genre,artist=excluded.artist,release=excluded.release,bpm=excluded.bpm,jacket=excluded.jacket,zetaraku_jacket=excluded.zetaraku_jacket",
-        inserted_songs,
-    )
-    await db.executemany(
-        "INSERT INTO chunirec_charts(song_id, difficulty, level, const, maxcombo, is_const_unknown) VALUES(?, ?, ?, ?, ?, ?)"
-        "ON CONFLICT(song_id, difficulty) DO UPDATE SET level=excluded.level,const=excluded.const,maxcombo=excluded.maxcombo,is_const_unknown=excluded.is_const_unknown",
-        inserted_charts,
-    )
-    await db.commit()
+
+    async with async_session() as session, session.begin():
+        insert_statement = insert(Song).values(inserted_songs)
+        upsert_statement = insert_statement.on_conflict_do_update(
+            index_elements=[Song.id],
+            set_=dict(
+                title=insert_statement.excluded.title,
+                chunithm_catcode=insert_statement.excluded.chunithm_catcode,
+                genre=insert_statement.excluded.genre,
+                artist=insert_statement.excluded.artist,
+                release=insert_statement.excluded.release,
+                bpm=insert_statement.excluded.bpm,
+                jacket=insert_statement.excluded.jacket,
+                zetaraku_jacket=insert_statement.excluded.zetaraku_jacket,
+            ),
+        )
+        await session.execute(upsert_statement)
+
+        insert_statement = insert(Chart).values(inserted_charts)
+        upsert_statement = insert_statement.on_conflict_do_update(
+            index_elements=[Chart.song_id, Chart.difficulty],
+            set_=dict(
+                level=insert_statement.excluded.level,
+                const=insert_statement.excluded.const,
+                maxcombo=insert_statement.excluded.maxcombo,
+            ),
+        )
+        await session.execute(upsert_statement)
 
 
 # async def update_cc_from_data(db: aiosqlite.Connection, music_paths: list[Path]):
@@ -435,12 +456,16 @@ async def update_db(db: aiosqlite.Connection):
 
 
 async def main():
-    async with aiosqlite.connect(BOT_DIR / "database" / "database.sqlite3") as db:
-        with (BOT_DIR / "database" / "schema.sql").open() as f:
-            await db.executescript(f.read())
-        await update_db(db)
-        # await update_aliases(db)
-        # await update_sdvxin(db)
+    engine: AsyncEngine = create_async_engine(
+        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
+    )
+    async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(engine, expire_on_commit=False)
+
+    # await update_db(db)
+    # await update_aliases(async_session)
+    await update_sdvxin(async_session)
+
+    await engine.dispose()
 
 
 if __name__ == "__main__":
