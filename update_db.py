@@ -517,7 +517,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
 
 async def main():
     engine: AsyncEngine = create_async_engine(
-        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "eee.sqlite3")
+        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
     )
     async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine, expire_on_commit=False
