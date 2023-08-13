@@ -1,13 +1,11 @@
 import re
-from dataclasses import dataclass
 from html import unescape
-from typing import Optional
+from typing import NotRequired, TypedDict
 
 import aiohttp
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import Comment
-from dataclasses_json import dataclass_json
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import (
@@ -19,11 +17,10 @@ from sqlalchemy.ext.asyncio import (
 
 from bot import BOT_DIR, cfg
 from database.models import Alias, Base, Chart, SdvxinChartView, Song
+from utils.types.errors import MissingConfiguration
 
 
-@dataclass_json
-@dataclass
-class ChunirecMeta:
+class ChunirecMeta(TypedDict):
     id: str
     title: str
     genre: str
@@ -32,43 +29,33 @@ class ChunirecMeta:
     bpm: int
 
 
-@dataclass_json
-@dataclass
-class ChunirecDifficulty:
+class ChunirecDifficulty(TypedDict):
     level: float
     const: float
     maxcombo: int
     is_const_unknown: int
 
 
-@dataclass_json
-@dataclass
-class ChunirecData:
-    BAS: Optional[ChunirecDifficulty] = None
-    ADV: Optional[ChunirecDifficulty] = None
-    EXP: Optional[ChunirecDifficulty] = None
-    MAS: Optional[ChunirecDifficulty] = None
-    ULT: Optional[ChunirecDifficulty] = None
-    WE: Optional[ChunirecDifficulty] = None
+class ChunirecData(TypedDict):
+    BAS: NotRequired[ChunirecDifficulty]
+    ADV: NotRequired[ChunirecDifficulty]
+    EXP: NotRequired[ChunirecDifficulty]
+    MAS: NotRequired[ChunirecDifficulty]
+    ULT: NotRequired[ChunirecDifficulty]
+    WE: NotRequired[ChunirecDifficulty]
 
 
-@dataclass_json
-@dataclass
-class ChunirecSong:
+class ChunirecSong(TypedDict):
     meta: ChunirecMeta
     data: ChunirecData
 
 
-@dataclass_json
-@dataclass
-class ZetarakuSong:
+class ZetarakuSong(TypedDict):
     title: str
     imageName: str
 
 
-@dataclass_json
-@dataclass
-class ZetarakuChunithmData:
+class ZetarakuChunithmData(TypedDict):
     songs: list[ZetarakuSong]
 
 
@@ -341,9 +328,14 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
 
 
 async def update_db(async_session: async_sessionmaker[AsyncSession]):
+    token = cfg["credentials"].get("chunirec_token")
+    if token is None:
+        msg = "credentials.chunirec_token"
+        raise MissingConfiguration(msg)
+
     async with aiohttp.ClientSession() as client:
         resp = await client.get(
-            f"https://api.chunirec.net/2.0/music/showall.json?token={cfg['CHUNIREC_TOKEN']}&region=jp2"
+            f"https://api.chunirec.net/2.0/music/showall.json?token={token}&region=jp2"
         )
         chuni_resp = await client.get(
             "https://chunithm.sega.jp/storage/json/music.json"
@@ -351,7 +343,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         zetaraku_resp = await client.get(
             "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/data.json"
         )
-        songs: list[ChunirecSong] = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore[reportGeneralTypeIssues]
+        songs: list[ChunirecSong] = await resp.json()
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
         zetaraku_songs: ZetarakuChunithmData = ZetarakuChunithmData.from_json(await zetaraku_resp.text())  # type: ignore[reportGeneralTypeIssues]
 
@@ -363,28 +355,29 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         jacket = ""
         chunithm_song: dict[str, str] = {}
         try:
-            if song.meta.id in MANUAL_MAPPINGS:
-                chunithm_song = MANUAL_MAPPINGS[song.meta.id]
-            elif song.data.WE is None:
+            if song["meta"]["id"] in MANUAL_MAPPINGS:
+                chunithm_song = MANUAL_MAPPINGS[song["meta"]["id"]]
+            elif song["data"].get("WE") is None:
                 chunithm_song = next(
                     x
                     for x in chuni_songs
-                    if normalize_title(x["title"]) == normalize_title(song.meta.title)
+                    if normalize_title(x["title"])
+                    == normalize_title(song["meta"]["title"])
                     and CHUNITHM_CATCODES[x["catname"]]
-                    == CHUNITHM_CATCODES[song.meta.genre]
+                    == CHUNITHM_CATCODES[song["meta"]["genre"]]
                 )
             else:
                 chunithm_song = next(
                     x
                     for x in chuni_songs
                     if normalize_title(f"{x['title']}【{x['we_kanji']}】")
-                    == normalize_title(song.meta.title)
+                    == normalize_title(song["meta"]["title"])
                 )
             chunithm_id = int(chunithm_song["id"])
             chunithm_catcode = int(CHUNITHM_CATCODES[chunithm_song["catname"]])
             jacket = chunithm_song["image"]
         except StopIteration:
-            print(f"Couldn't find {song.meta}")
+            print(f"Couldn't find {song['meta']}")
             return
 
         if not jacket:
@@ -394,9 +387,9 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                         x
                         for x in chuni_songs
                         if normalize_title(x["title"])
-                        == normalize_title(song.meta.title, remove_we_kanji=True)
+                        == normalize_title(song["meta"]["title"], remove_we_kanji=True)
                         and normalize_title(x["artist"])
-                        == normalize_title(song.meta.artist)
+                        == normalize_title(song["meta"]["artist"])
                     ),
                     {},
                 )
@@ -407,55 +400,63 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         zetaraku_song = next(
             (
                 x
-                for x in zetaraku_songs.songs
-                if normalize_title(x.title) == normalize_title(song.meta.title)
+                for x in zetaraku_songs["songs"]
+                if normalize_title(x["title"]) == normalize_title(song["meta"]["title"])
             ),
             None,
         )
-        zetaraku_jacket = zetaraku_song.imageName if zetaraku_song is not None else ""
+        zetaraku_jacket = (
+            zetaraku_song["imageName"] if zetaraku_song is not None else ""
+        )
 
         inserted_songs.append(
             {
-                "id": song.meta.id,
+                "id": song["meta"]["id"],
                 "chunithm_id": chunithm_id,
-                # Don't use song.meta.title
+                # Don't use song["meta"]["title"]
                 "title": chunithm_song["title"],
                 "chunithm_catcode": chunithm_catcode,
-                "genre": song.meta.genre,
-                "artist": song.meta.artist,
-                "release": song.meta.release,
-                "bpm": None if song.meta.bpm == 0 else song.meta.bpm,
+                "genre": song["meta"]["genre"],
+                "artist": song["meta"]["artist"],
+                "release": song["meta"]["release"],
+                "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
                 "jacket": jacket,
                 "zetaraku_jacket": zetaraku_jacket,
             }
         )
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
-            if (chart := getattr(song.data, difficulty)) is not None:
-                if 0 < chart.level <= 9.5:
-                    chart.const = chart.level
-                    chart.is_const_unknown = 0
+            if (chart := song["data"].get(difficulty)) is not None:
+                if 0 < chart["level"] <= 9.5:
+                    chart["const"] = chart["level"]
+                    chart["is_const_unknown"] = 0
 
                 inserted_charts.append(
                     {
-                        "song_id": song.meta.id,
+                        "song_id": song["meta"]["id"],
                         "difficulty": difficulty,
-                        "level": str(chart.level).replace(".5", "+").replace(".0", ""),
-                        "const": None if chart.is_const_unknown == 1 else chart.const,
-                        "maxcombo": chart.maxcombo if chart.maxcombo != 0 else None,
+                        "level": str(chart["level"])
+                        .replace(".5", "+")
+                        .replace(".0", ""),
+                        "const": None
+                        if chart["is_const_unknown"] == 1
+                        else chart["const"],
+                        "maxcombo": chart["maxcombo"]
+                        if chart["maxcombo"] != 0
+                        else None,
                     }
                 )
 
-        if (chart := song.data.WE) is not None:
+        if (chart := song["data"].get("WE")) is not None:
             we_stars = ""
             for _ in range(-1, int(chunithm_song["we_star"]), 2):
                 we_stars += "☆"
             inserted_charts.append(
                 {
-                    "song_id": song.meta.id,
+                    "song_id": song["meta"]["id"],
                     "difficulty": "WE",
                     "level": chunithm_song["we_kanji"] + we_stars,
                     "const": None,
-                    "maxcombo": chart.maxcombo if chart.maxcombo != 0 else None,
+                    "maxcombo": chart["maxcombo"] if chart["maxcombo"] != 0 else None,
                 }
             )
 

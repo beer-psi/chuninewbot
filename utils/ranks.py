@@ -7,4 +7,4 @@ if TYPE_CHECKING:
 
 
 def rank_icon(rank: "str | Rank") -> str:
-    return cfg.get(f"RANK_ICON_{str(rank).replace('+', 'P')}", str(rank))  # type: ignore[reportGeneralTypeIssues]
+    return cfg["icons"].get(str(rank).lower().replace("+", "p"), fallback=str(rank))

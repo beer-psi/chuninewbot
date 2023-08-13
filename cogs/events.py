@@ -99,7 +99,7 @@ class EventsCog(commands.Cog, name="Events"):
             mention_author=False,
         )
 
-        if webhook_url := self.bot.cfg.get("ERROR_REPORTING_WEBHOOK"):
+        if webhook_url := self.bot.cfg["bot"].get("error_reporting_webhook"):
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
 

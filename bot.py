@@ -1,15 +1,9 @@
-from pathlib import Path
-
-from dotenv import dotenv_values
-
-BOT_DIR = Path(__file__).absolute().parent
-cfg = dotenv_values(BOT_DIR / ".env")
-
-
 import asyncio
 import logging
 import logging.handlers
 import sys
+from configparser import ConfigParser
+from pathlib import Path
 from time import time
 from typing import TYPE_CHECKING, ClassVar, Optional
 
@@ -35,13 +29,16 @@ if TYPE_CHECKING:
     from aiohttp.web import Application
 
 
+BOT_DIR = Path(__file__).parent
+cfg = ConfigParser()
+cfg.read(BOT_DIR / "bot.ini")
+
+
 class ChuniBot(Bot):
-    cfg: dict[str, str | None]
+    cfg: ConfigParser
     dev: bool = False
 
-    engine: AsyncEngine = create_async_engine(
-        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
-    )
+    engine: AsyncEngine
     begin_db_session: async_sessionmaker[AsyncSession]
 
     launch_time: float
@@ -56,9 +53,15 @@ class ChuniBot(Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
-
     async def setup_hook(self) -> None:
+        connection_string = cfg["bot"].get(
+            "db_connection_string",
+            fallback=f"sqlite+aiosqlite:///{BOT_DIR / 'database' / 'database.sqlite3'}",
+        )
+        self.engine = create_async_engine(connection_string)
+        self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
+        sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
+
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
@@ -95,19 +98,19 @@ def setup_database(conn, _):
 
 
 async def startup():
-    if (token := cfg.get("TOKEN")) is None:
+    if (token := cfg["bot"].get("token")) is None:
         sys.exit(
             "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
         )
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore[reportGeneralTypeIssues]
+        command_prefix=guild_specific_prefix(cfg["bot"].get("default_prefix", fallback="c>")),  # type: ignore[reportGeneralTypeIssues]
         intents=intents,
         help_command=HelpCommand(),
     )
     bot.cfg = cfg
-    bot.dev = cfg.get("DEV", "0") == "1"
+    bot.dev = cfg.getboolean("dangerous", "dev", fallback=False)
 
     handler = logging.handlers.RotatingFileHandler(
         filename="discord.log",
@@ -147,10 +150,8 @@ async def startup():
                 f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
             )
 
-    sqlalchemy.event.listen(bot.engine.sync_engine, "connect", setup_database)
-
-    port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
-    if port is not None and port.isdigit() and int(port) > 0:
+    port = cfg["bot"].getint("login_server_port", fallback=None)
+    if port is not None and int(port) > 0:
         bot.app = init_app(bot)
         _ = asyncio.ensure_future(
             web._run_app(
