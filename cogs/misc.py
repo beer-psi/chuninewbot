@@ -1,9 +1,9 @@
-import subprocess
+import asyncio
 import sys
 import time
 from decimal import Decimal
 from random import random
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import discord
 from discord.ext import commands
@@ -15,7 +15,6 @@ from sqlalchemy.orm import joinedload
 from bot import ChuniBot
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
-from cogs.botutils import UtilsCog
 from database.models import Chart, Prefix, Song
 from utils import floor_to_ndp, yt_search_link
 from utils.calculation.overpower import (
@@ -25,11 +24,14 @@ from utils.calculation.overpower import (
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
 from utils.views.songlist import SonglistView
 
+if TYPE_CHECKING:
+    from cogs.botutils import UtilsCog
+
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
     def __init__(self, bot: ChuniBot) -> None:
         self.bot = bot
-        self.utils: UtilsCog = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.command("treesync", hidden=True)
     @commands.is_owner()
@@ -66,22 +68,23 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             read_message_history=True,
         )
 
-        await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore
+        await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("status")
     async def status(self, ctx: Context):
         """View the bot's status."""
 
         try:
-            revision = (
-                subprocess.run(
-                    ["git", "rev-parse", "--short", "HEAD"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                .stdout.decode("utf-8")
-                .replace("\n", "")
+            process = await asyncio.create_subprocess_exec(
+                "git",
+                "rev-parse",
+                "--short",
+                "HEAD",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
+            stdout, _ = await process.communicate()
+            revision = stdout.decode("utf-8").replace("\n", "")
         except FileNotFoundError:
             revision = "unknown"
         if not revision:
@@ -128,10 +131,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """
 
         if not 0 <= score <= 1010000:
-            raise commands.BadArgument("Score must be between 0 and 1010000.")
+            msg = "Score must be between 0 and 1010000."
+            raise commands.BadArgument(msg)
 
         if chart_constant is not None and chart_constant <= 0:
-            raise commands.BadArgument("Chart constant must be greater than 0.")
+            msg = "Chart constant must be greater than 0."
+            raise commands.BadArgument(msg)
 
         if chart_constant is None:
             rating = calculate_rating(score, 0)
@@ -151,7 +156,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)"
             else:
                 overpower_base = calculate_overpower_base(score, chart_constant)
-                res += f"\nOVER POWER:"
+                res += "\nOVER POWER:"
                 if score >= 1000000:
                     overpower = overpower_base + Decimal(1)
                     res += f"\n• AJ: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
@@ -177,7 +182,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """
 
         if chart_constant < 1 or chart_constant > 16:
-            raise commands.BadArgument("Chart constant must be between 1.0 and 16.0")
+            msg = "Chart constant must be between 1.0 and 16.0"
+            raise commands.BadArgument(msg)
 
         mode = mode.lower()
         if mode == "full":
@@ -337,7 +343,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """
 
         if not 1 <= rating <= 17.55:
-            raise commands.BadArgument("Play rating must be between 1.00 and 17.55.")
+            msg = "Play rating must be between 1.00 and 17.55."
+            raise commands.BadArgument(msg)
 
         res = "```Const |   Score\n---------------"
         chart_constant = floor_to_ndp(rating - 3, 0)
@@ -383,7 +390,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             else:
                 stmt = stmt.where(Chart.level == level)
         except ValueError:
-            raise commands.BadArgument("Please enter a valid level or chart constant.")
+            msg = "Please enter a valid level or chart constant."
+            raise commands.BadArgument(msg) from None
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
@@ -413,7 +421,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             if count > 4 or count < 1:
-                raise commands.BadArgument("Number of songs must be between 1 and 4.")
+                msg = "Number of songs must be between 1 and 4."
+                raise commands.BadArgument(msg)
 
             # Check whether input is level or constant
             stmt = (
@@ -429,9 +438,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 else:
                     stmt = stmt.where(Chart.level == level)
             except ValueError:
-                raise commands.BadArgument(
-                    "Please enter a valid level or chart constant."
-                )
+                msg = "Please enter a valid level or chart constant."
+                raise commands.BadArgument(msg) from None
 
             charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
 
@@ -482,7 +490,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             if count > 4 or count < 1:
-                raise commands.BadArgument("Number of songs must be between 1 and 4.")
+                msg = "Number of songs must be between 1 and 4."
+                raise commands.BadArgument(msg)
 
             if max_rating is None:
                 async with self.utils.chuninet(ctx) as client:
@@ -490,9 +499,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     max_rating = basic_player_data.rating.max
 
                     if max_rating is None:
-                        raise commands.BadArgument(
-                            "No rating data found. Please play a song first."
-                        )
+                        msg = "No rating data found. Please play a song first."
+                        raise commands.BadArgument(msg)
 
             # Determine min-max const to recommend based on user rating. Formula is intentionally confusing.
             min_level = max_rating * 1.05 - 3.05
@@ -603,12 +611,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 answer = await self.utils.guild_prefix(ctx)
                 await ctx.reply(f"Current prefix: `{answer}`", mention_author=False)
             else:
-                permissions = ctx.author.guild_permissions  # type: ignore
-                missing_permission = permissions.manage_guild != True
+                permissions = ctx.author.guild_permissions  # type: ignore[reportGeneralTypeIssues]
+                missing_permission = permissions.manage_guild is not True
                 if missing_permission:
                     raise commands.MissingPermissions(["manage_guild"])
 
-                default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+                default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore[reportGeneralTypeIssues]
                 async with self.bot.begin_db_session() as session, session.begin():
                     if new_prefix == default_prefix:
                         stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)

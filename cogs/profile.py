@@ -88,7 +88,7 @@ AVATAR_COORDS = {
 class ProfileCog(commands.Cog, name="Profile"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command(name="avatar")
     async def avatar(
@@ -182,7 +182,7 @@ class ProfileCog(commands.Cog, name="Profile"):
             view = ProfileView(ctx, player_data)
             view.message = await ctx.reply(
                 embed=embed,
-                view=view if user is None else None,  # type: ignore
+                view=view if user is None else None,  # type: ignore[reportGeneralTypeIssues]
                 mention_author=False,
             )
 
@@ -198,7 +198,7 @@ class ProfileCog(commands.Cog, name="Profile"):
             The username you want to change to.
             Your username can include up to 8 characters, excluding specific characters. You can also use the following symbols.
             ． ・ ： ； ？ ！ ～ ／ ＋ － × ÷ ＝ ♂ ♀ ∀ ＃ ＆ ＊ ＠ ☆ ○ ◎ ◇ □ △ ▽ ♪ † ‡ Σ α β γ θ φ ψ ω Д ё
-        """
+        """  # noqa: RUF002
 
         async with ctx.typing(), self.utils.chuninet(ctx) as client:
             await client.authenticate()
@@ -213,7 +213,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                         mention_author=False,
                     )
             except ValueError as e:
-                raise commands.BadArgument(str(e))
+                raise commands.BadArgument(str(e)) from None
 
 
 async def setup(bot: "ChuniBot"):

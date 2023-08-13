@@ -8,6 +8,7 @@ from discord.ext.commands import Context
 from sqlalchemy import delete
 
 from chunithm_net import ChuniNet
+from chunithm_net.exceptions import ChuniNetException
 from database.models import Cookie
 from utils.views.login import LoginFlowView
 
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 class AuthCog(commands.Cog, name="Auth"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
         self.random = SystemRandom()
 
     @commands.hybrid_command(
@@ -39,11 +40,12 @@ class AuthCog(commands.Cog, name="Auth"):
         async with ChuniNet(clal) as client:
             try:
                 await client.validate_cookie()
-
-                async with self.bot.begin_db_session() as session, session.begin():
-                    await session.merge(Cookie(discord_id=id, cookie=clal))
-            except Exception as e:
+            except ChuniNetException as e:
                 return e
+
+        async with self.bot.begin_db_session() as session, session.begin():
+            await session.merge(Cookie(discord_id=id, cookie=clal))
+            return None
 
     @commands.hybrid_command("login")
     async def login(self, ctx: Context, clal: Optional[str] = None):
@@ -79,8 +81,9 @@ class AuthCog(commands.Cog, name="Auth"):
         if clal is not None:
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:
                 return await channel.send("Successfully logged in.")
-            else:
-                raise commands.BadArgument(f"Invalid cookie: {e}")
+
+            msg = f"Invalid cookie: {e}"
+            raise commands.BadArgument(msg)
 
         passcode = (
             str(self.random.randrange(10**5, 10**6))
@@ -97,14 +100,14 @@ class AuthCog(commands.Cog, name="Auth"):
             try:
                 msg = view.message = await channel.send(embed=embed, view=view)
             except discord.errors.Forbidden:
-                return
+                return None
 
         if self.bot.app is None:
-            return
+            return None
 
         try:
             clal = await self.bot.wait_for(f"chunithm_login_{passcode}", timeout=300)
-            if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore
+            if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore[reportGeneralTypeIssues]
                 await msg.edit(
                     content=None,
                     embed=discord.Embed(

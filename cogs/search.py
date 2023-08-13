@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload
 from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, Chart, Song
 from utils import (
+    TOKYO_TZ,
     Arguments,
     did_you_mean_text,
     release_to_chunithm_version,
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 class SearchCog(commands.Cog, name="Search"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("addalias")
     @commands.guild_only()
@@ -108,6 +109,7 @@ class SearchCog(commands.Cog, name="Search"):
                 f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
                 mention_author=False,
             )
+            return None
 
     @commands.hybrid_command("removealias")
     @commands.guild_only()
@@ -140,13 +142,14 @@ class SearchCog(commands.Cog, name="Search"):
                 and ctx.author.guild_permissions.administrator
             ):
                 return await ctx.reply(
-                    f"You cannot delete an alias that you didn't add yourself.",
+                    "You cannot delete an alias that you didn't add yourself.",
                     mention_author=False,
                 )
 
             await session.delete(alias)
 
             await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
+            return None
 
     @commands.hybrid_command("info")
     async def info(self, ctx: Context, *, query: str):
@@ -166,7 +169,7 @@ class SearchCog(commands.Cog, name="Search"):
             query = " ".join(args.query)
         except RuntimeError as e:
             await ctx.reply(str(e), mention_author=False)
-            return
+            return None
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
@@ -179,7 +182,7 @@ class SearchCog(commands.Cog, name="Search"):
                     did_you_mean_text(song, alias), mention_author=False
                 )
 
-            release = datetime.strptime(song.release, "%Y-%m-%d")
+            release = datetime.strptime(song.release, "%Y-%m-%d").astimezone(TOKYO_TZ)
             version = release_to_chunithm_version(release)
 
             embed = discord.Embed(
@@ -217,9 +220,10 @@ class SearchCog(commands.Cog, name="Search"):
 
             if len(chart_level_desc) > 0:
                 # embed.description is already set above
-                embed.description += "\n" "**Level**:\n"  # type: ignore
+                embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
                 embed.description += " / ".join(chart_level_desc)
             await ctx.reply(embed=embed, mention_author=False)
+            return None
 
 
 async def setup(bot: "ChuniBot"):

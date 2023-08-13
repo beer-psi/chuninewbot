@@ -65,7 +65,7 @@ def parse_player_card_and_avatar(soup: BeautifulSoup):
 
     possession_elem = soup.select_one(".box_playerprofile")
     possession = (
-        Possession.from_str(extract_last_part(possession_elem["style"]))  # type: ignore
+        Possession.from_str(extract_last_part(possession_elem["style"]))  # type: ignore[reportGeneralTypeIssues]
         if possession_elem and possession_elem.has_attr("style")
         else Possession.NONE
     )
@@ -73,7 +73,7 @@ def parse_player_card_and_avatar(soup: BeautifulSoup):
     classemblem_base_elem = soup.select_one(".player_classemblem_base img")
     emblem = (
         SkillClass(
-            chuni_int(extract_last_part(classemblem_base_elem["src"]))  # type: ignore
+            chuni_int(extract_last_part(classemblem_base_elem["src"]))  # type: ignore[reportGeneralTypeIssues]
         )
         if classemblem_base_elem and classemblem_base_elem.has_attr("src")
         else None
@@ -82,7 +82,7 @@ def parse_player_card_and_avatar(soup: BeautifulSoup):
     classemblem_top_elem = soup.select_one(".player_classemblem_top img")
     medal = (
         SkillClass(
-            chuni_int(extract_last_part(classemblem_top_elem["src"]))  # type: ignore
+            chuni_int(extract_last_part(classemblem_top_elem["src"]))  # type: ignore[reportGeneralTypeIssues]
         )
         if classemblem_top_elem and classemblem_top_elem.has_attr("src")
         else None

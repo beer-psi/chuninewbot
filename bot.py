@@ -11,13 +11,13 @@ import logging
 import logging.handlers
 import sys
 from time import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import discord
 import sqlalchemy.event
 from aiohttp import web
 from discord.ext import commands
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, errors
 from jarowinkler import jarowinkler_similarity
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
@@ -51,7 +51,7 @@ class ChuniBot(Bot):
 
     # key: user discord ID
     # value: userId, _t cookies from CHUNITHM-NET
-    sessions: dict[int, tuple[str | None, str | None]] = {}
+    sessions: ClassVar[dict[int, tuple[str | None, str | None]]] = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,9 +82,9 @@ def guild_specific_prefix(default: str):
         when_mentioned = commands.when_mentioned(bot, msg)
 
         if msg.guild is None:
-            return when_mentioned + [default]
-        else:
-            return when_mentioned + [bot.prefixes.get(msg.guild.id, default)]
+            return [*when_mentioned, default]
+
+        return [*when_mentioned, bot.prefixes.get(msg.guild.id, default)]
 
     return inner
 
@@ -102,7 +102,7 @@ async def startup():
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore
+        command_prefix=guild_specific_prefix(cfg.get("DEFAULT_PREFIX", "c>")),  # type: ignore[reportGeneralTypeIssues]
         intents=intents,
         help_command=HelpCommand(),
     )
@@ -138,16 +138,21 @@ async def startup():
         try:
             await bot.load_extension(f"cogs.{file.stem}")
             print(f"Loaded cogs.{file.stem}")
-        except Exception as e:
-            print(f"Failed to load extension cogs.{file.stem}")
-            print(f"{type(e).__name__}: {e}")
+        except errors.ExtensionAlreadyLoaded:
+            print(f"cogs.{file.stem} already loaded")
+        except errors.NoEntryPointError:
+            print(f"cogs.{file.stem} has no `setup` function.")
+        except errors.ExtensionFailed as e:
+            print(
+                f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
+            )
 
     sqlalchemy.event.listen(bot.engine.sync_engine, "connect", setup_database)
 
     port = cfg.get("LOGIN_ENDPOINT_PORT", "5730")
     if port is not None and port.isdigit() and int(port) > 0:
         bot.app = init_app(bot)
-        asyncio.ensure_future(
+        _ = asyncio.ensure_future(
             web._run_app(
                 bot.app,
                 port=int(port),

@@ -18,13 +18,7 @@ pillow = "^9.5.0"
 jarowinkler = "^1.2.3"
 alembic = "^1.11.2"
 sqlalchemy = {version = "^2.0.19", extras = ["asyncio"]}
-
-[tool.isort]
-profile = "black"
-
-[tool.poetry.dev-dependencies]
-black = "^23.1.0"
-isort = "^5.12.0"
+tzdata = "^2023.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -32,6 +26,20 @@ isort = "^5.12.0"
 types-beautifulsoup4 = "^4.12.0.1"
 jishaku = "^2.5.1"
 pre-commit = "^3.3.3"
+ruff = "^0.0.284"
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+select = ["ASYNC", "B", "BLE", "C4", "DTZ", "E", "EM", "F", "FBT", "FLY", "ISC", "Q", "PERF", "PGH", "PIE", "PTH", "RET", "RSE", "RUF", "SIM", "TCH", "TRY", "TID252", "W"]
+ignore = ["E501"]
+unfixable = ["B"]
+
+[tool.ruff.extend-per-file-ignores]
+"__init__.py" = ["F401"]
+"bot.py" = ["E402"]
+"chunithm_net/consts.py" = ["RUF001"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

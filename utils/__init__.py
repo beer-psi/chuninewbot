@@ -3,6 +3,7 @@ import decimal
 from datetime import datetime
 from typing import TYPE_CHECKING
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from discord.utils import escape_markdown
 
@@ -14,6 +15,9 @@ if TYPE_CHECKING:
     T = TypeVar("T")
 
 
+TOKYO_TZ = ZoneInfo("Asia/Tokyo")
+
+
 class Arguments(argparse.ArgumentParser):
     def error(self, message):
         raise RuntimeError(message)
@@ -22,7 +26,7 @@ class Arguments(argparse.ArgumentParser):
 def floor_to_ndp(number: "T", dp: int) -> "T":
     with decimal.localcontext() as ctx:
         ctx.rounding = decimal.ROUND_FLOOR
-        return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore
+        return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore[reportGeneralTypeIssues]
 
 
 def did_you_mean_text(result: "Song | None", alias: "Alias | None") -> str:
@@ -55,38 +59,94 @@ def sdvxin_link(id: str, difficulty: str) -> str:
         elif difficulty == "BAS":
             difficulty = "BSC"
         return f"https://sdvx.in/chunithm/{id[:2]}/{id}{difficulty.lower()}.htm"
-    else:
-        difficulty = difficulty.replace("WE", "end")
-        return f"https://sdvx.in/chunithm/{difficulty.lower()[:3]}/{id}{difficulty.lower()}.htm"
+
+    difficulty = difficulty.replace("WE", "end")
+    return f"https://sdvx.in/chunithm/{difficulty.lower()[:3]}/{id}{difficulty.lower()}.htm"
 
 
 def release_to_chunithm_version(date: datetime) -> str:
-    if datetime(2015, 7, 16) <= date <= datetime(2016, 1, 21):
+    if (
+        datetime(2015, 7, 16, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2016, 1, 21, tzinfo=TOKYO_TZ)
+    ):
         return "CHUNITHM"
-    if datetime(2016, 2, 4) <= date <= datetime(2016, 7, 28):
+    if (
+        datetime(2016, 2, 4, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2016, 7, 28, tzinfo=TOKYO_TZ)
+    ):
         return "CHUNITHM PLUS"
-    if datetime(2016, 8, 25) <= date <= datetime(2017, 1, 26):
+    if (
+        datetime(2016, 8, 25, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2017, 1, 26, tzinfo=TOKYO_TZ)
+    ):
         return "AIR"
-    if datetime(2017, 2, 9) <= date <= datetime(2017, 8, 3):
+    if (
+        datetime(2017, 2, 9, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2017, 8, 3, tzinfo=TOKYO_TZ)
+    ):
         return "AIR PLUS"
-    if datetime(2017, 8, 24) <= date <= datetime(2018, 2, 22):
+    if (
+        datetime(2017, 8, 24, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2018, 2, 22, tzinfo=TOKYO_TZ)
+    ):
         return "STAR"
-    if datetime(2018, 3, 8) <= date <= datetime(2018, 10, 11):
+    if (
+        datetime(2018, 3, 8, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2018, 10, 11, tzinfo=TOKYO_TZ)
+    ):
         return "STAR PLUS"
-    if datetime(2018, 10, 25) <= date <= datetime(2019, 3, 20):
+    if (
+        datetime(2018, 10, 25, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2019, 3, 20, tzinfo=TOKYO_TZ)
+    ):
         return "AMAZON"
-    if datetime(2019, 4, 11) <= date <= datetime(2019, 10, 10):
+    if (
+        datetime(2019, 4, 11, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2019, 10, 10, tzinfo=TOKYO_TZ)
+    ):
         return "AMAZON PLUS"
-    if datetime(2019, 10, 24) <= date <= datetime(2020, 7, 2):
+    if (
+        datetime(2019, 10, 24, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2020, 7, 2, tzinfo=TOKYO_TZ)
+    ):
         return "CRYSTAL"
-    if datetime(2020, 7, 16) <= date <= datetime(2021, 1, 7):
+    if (
+        datetime(2020, 7, 16, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2021, 1, 7, tzinfo=TOKYO_TZ)
+    ):
         return "CRYSTAL PLUS"
-    if datetime(2021, 1, 21) <= date <= datetime(2021, 4, 28):
+    if (
+        datetime(2021, 1, 21, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2021, 4, 28, tzinfo=TOKYO_TZ)
+    ):
         return "PARADISE"
-    if datetime(2021, 5, 13) <= date <= datetime(2021, 10, 21):
+    if (
+        datetime(2021, 5, 13, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2021, 10, 21, tzinfo=TOKYO_TZ)
+    ):
         return "PARADISE LOST"
-    if datetime(2021, 11, 4) <= date <= datetime(2022, 4, 1):
+    if (
+        datetime(2021, 11, 4, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2022, 4, 1, tzinfo=TOKYO_TZ)
+    ):
         return "NEW"
-    if datetime(2022, 4, 14) <= date <= datetime(2022, 9, 29):
+    if (
+        datetime(2022, 4, 14, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2022, 9, 29, tzinfo=TOKYO_TZ)
+    ):
         return "NEW PLUS"
     return "SUN"

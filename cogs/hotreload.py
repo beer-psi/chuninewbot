@@ -1,7 +1,6 @@
 import os
 import pathlib
 
-import discord
 from discord.ext import commands, tasks
 
 # put your extension names in this list
@@ -31,7 +30,7 @@ class HotReload(commands.Cog):
             if extension in IGNORE_EXTENSIONS:
                 continue
             path = path_from_extension(extension)
-            time = os.path.getmtime(path)
+            time = path.stat().st_mtime
 
             try:
                 if self.last_modified_time[extension] == time:
@@ -53,11 +52,11 @@ class HotReload(commands.Cog):
     async def cache_last_modified_time(self):
         self.last_modified_time = {}
         # Mapping = {extension: timestamp}
-        for extension in self.bot.extensions.keys():
+        for extension in self.bot.extensions:
             if extension in IGNORE_EXTENSIONS:
                 continue
             path = path_from_extension(extension)
-            time = os.path.getmtime(path)
+            time = path.stat().st_mtime
             self.last_modified_time[extension] = time
 
 

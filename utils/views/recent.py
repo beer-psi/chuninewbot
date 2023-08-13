@@ -4,16 +4,16 @@ from typing import TYPE_CHECKING, AsyncContextManager
 import discord.ui
 from discord.ext.commands import Context
 
-from bot import ChuniBot
+from utils.components import ScoreCardEmbed
 
-from ..components import ScoreCardEmbed
 from .pagination import PaginationView
 
 if TYPE_CHECKING:
+    from bot import ChuniBot
     from chunithm_net import ChuniNet
     from chunithm_net.entities.player_data import PlayerData
-
-    from ..types.annotated_records import AnnotatedRecentRecord
+    from cogs.botutils import UtilsCog
+    from utils.types.annotated_records import AnnotatedRecentRecord
 
 
 def split_scores_into_credits(
@@ -48,7 +48,7 @@ class RecentRecordsView(PaginationView):
         self.page = 0
         self.max_index = len(self.items) - 1
 
-        self.utils: UtilsCog = bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
         self._dropdown_options = [
             discord.SelectOption(

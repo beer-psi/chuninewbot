@@ -5,10 +5,9 @@ from discord.utils import escape_markdown
 
 from chunithm_net.entities.enums import Difficulty
 from utils import floor_to_ndp
-
-from ..calculation.overpower import calculate_play_overpower
-from ..ranks import rank_icon
-from ..types.annotated_records import (
+from utils.calculation.overpower import calculate_play_overpower
+from utils.ranks import rank_icon
+from utils.types.annotated_records import (
     AnnotatedDetailedRecentRecord,
     AnnotatedMusicRecord,
     AnnotatedRecentRecord,
@@ -84,9 +83,7 @@ class ScoreCardEmbed(discord.Embed):
                 inline=True,
             )
 
-        if isinstance(record, AnnotatedRecentRecord) or isinstance(
-            record, AnnotatedDetailedRecentRecord
-        ):
+        if isinstance(record, (AnnotatedRecentRecord, AnnotatedDetailedRecentRecord)):
             self.timestamp = record.date
 
             self.set_author(name=f"TRACK {record.track}")

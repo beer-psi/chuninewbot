@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Optional, cast
+from zoneinfo import ZoneInfo
 
 from bs4.element import ResultSet, Tag
 
@@ -36,9 +37,7 @@ def parse_player_rating(soup: ResultSet[Tag]) -> float:
 
 
 def parse_time(time: str, format: str = "%Y/%m/%d %H:%M") -> datetime:
-    return (datetime.strptime(time, format) - timedelta(hours=9)).replace(
-        tzinfo=timezone.utc
-    )  # JP time
+    return datetime.strptime(time, format).replace(tzinfo=ZoneInfo("Asia/Tokyo"))
 
 
 def extract_last_part(url: str) -> str:
@@ -63,7 +62,8 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
             return Difficulty.ULTIMA
 
         case _:
-            raise ValueError(f"Unknown difficulty: {url}")
+            msg = f"Unknown difficulty: {url}"
+            raise ValueError(msg)
 
 
 def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:

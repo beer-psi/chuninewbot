@@ -42,7 +42,7 @@ def downgrade() -> None:
         schema=None,
     )
 
-    op.execute(songs.update().where(songs.c.bpm == None).values(bpm=0))
+    op.execute(songs.update().where(songs.c.bpm.is_(None)).values(bpm=0))
 
     with op.batch_alter_table("chunirec_songs", schema=None) as batch_op:
         batch_op.alter_column(

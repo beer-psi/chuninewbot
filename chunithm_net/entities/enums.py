@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Self
 
 
 class Difficulty(Enum):
@@ -13,8 +12,8 @@ class Difficulty(Enum):
     def __str__(self):
         if self.value == 5:
             return "WORLD'S END"
-        else:
-            return self.name
+
+        return self.name
 
     def color(self):
         match self.value:
@@ -34,42 +33,43 @@ class Difficulty(Enum):
     def short_form(self):
         if self.value == 5:
             return "WE"
-        else:
-            return self.name[:3]
+        return self.name[:3]
 
     @classmethod
     def from_embed_color(cls, color: int):
         if color == 0x009F7B:
             return cls.BASIC
-        elif color == 0xF47900:
+        if color == 0xF47900:
             return cls.ADVANCED
-        elif color == 0xE92829:
+        if color == 0xE92829:
             return cls.EXPERT
-        elif color == 0x8C1BE1:
+        if color == 0x8C1BE1:
             return cls.MASTER
-        elif color == 0x131313:
+        if color == 0x131313:
             return cls.ULTIMA
-        elif color == 0x0B6FF3:
+        if color == 0x0B6FF3:
             return cls.WORLDS_END
-        else:
-            raise ValueError(f"Unknown difficulty color: {color}")
+
+        msg = f"Unknown difficulty color: {color}"
+        raise ValueError(msg)
 
     @classmethod
     def from_short_form(cls, short_form: str):
         if short_form == "BAS":
             return cls.BASIC
-        elif short_form == "ADV":
+        if short_form == "ADV":
             return cls.ADVANCED
-        elif short_form == "EXP":
+        if short_form == "EXP":
             return cls.EXPERT
-        elif short_form == "MAS":
+        if short_form == "MAS":
             return cls.MASTER
-        elif short_form == "ULT":
+        if short_form == "ULT":
             return cls.ULTIMA
-        elif short_form == "WE":
+        if short_form == "WE":
             return cls.WORLDS_END
-        else:
-            raise ValueError(f"Unknown difficulty short form: {short_form}")
+
+        msg = f"Unknown difficulty short form: {short_form}"
+        raise ValueError(msg)
 
 
 class ClearType(Enum):
@@ -105,32 +105,31 @@ class Rank(Enum):
     def from_score(cls, score: int):
         if score >= 1009000:
             return cls.SSSp
-        elif score >= 1007500:
+        if score >= 1007500:
             return cls.SSS
-        elif score >= 1005000:
+        if score >= 1005000:
             return cls.SSp
-        elif score >= 1000000:
+        if score >= 1000000:
             return cls.SS
-        elif score >= 990000:
+        if score >= 990000:
             return cls.Sp
-        elif score >= 975000:
+        if score >= 975000:
             return cls.S
-        elif score >= 950000:
+        if score >= 950000:
             return cls.AAA
-        elif score >= 925000:
+        if score >= 925000:
             return cls.AA
-        elif score >= 900000:
+        if score >= 900000:
             return cls.A
-        elif score >= 800000:
+        if score >= 800000:
             return cls.BBB
-        elif score >= 700000:
+        if score >= 700000:
             return cls.BB
-        elif score >= 600000:
+        if score >= 600000:
             return cls.B
-        elif score >= 500000:
+        if score >= 500000:
             return cls.C
-        else:
-            return cls.D
+        return cls.D
 
 
 class Possession(Enum):
@@ -144,14 +143,14 @@ class Possession(Enum):
     def from_str(cls, s: str):
         if s == "silver":
             return cls.SILVER
-        elif s == "gold":
+        if s == "gold":
             return cls.GOLD
-        elif s == "platina" or s == "platinum":
+        if s == "platina" or s == "platinum":
             return cls.PLATINUM
-        elif s == "rainbow":
+        if s == "rainbow":
             return cls.RAINBOW
-        else:
-            return cls.NONE
+
+        return cls.NONE
 
     def color(self):
         match self.value:
@@ -168,7 +167,7 @@ class Possession(Enum):
 
 
 class SkillClass(Enum):
-    I = 1
+    I = 1  # noqa: E741
     II = 2
     III = 3
     IV = 4
@@ -178,8 +177,7 @@ class SkillClass(Enum):
     def __str__(self):
         if self.value == 6:
             return "∞"
-        else:
-            return self.name
+        return self.name
 
 
 class Genres(Enum):
@@ -209,3 +207,4 @@ class Genres(Enum):
             return "イロドリミドリ"
         if self.value == 9:
             return "ゲキマイ"
+        return None

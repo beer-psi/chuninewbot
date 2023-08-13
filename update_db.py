@@ -103,7 +103,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
     "c2d66153dca3823f": {
         "id": "8025",
         "catname": "イロドリミドリ",
-        "title": "Help me, あーりん！",
+        "title": "Help me, あーりん!",
         "we_kanji": "嘘",
         "we_star": "5",
         "image": "c1ff8df1757fedf4.jpg",
@@ -149,24 +149,24 @@ for idx, random in enumerate(
 WORLD_END_REGEX = re.compile(r"【(.{1,2})】$", re.MULTILINE)
 
 
-def normalize_title(title: str, remove_we_kanji: bool = False) -> str:
+def normalize_title(title: str, *, remove_we_kanji: bool = False) -> str:
     title = (
         title.lower()
         .replace(" ", " ")
         .replace("　", " ")
-        .replace(" ", " ")
-        .replace("：", ":")
-        .replace("（", "(")
-        .replace("）", ")")
-        .replace("！", "!")
-        .replace("？", "?")
+        .replace(" ", " ")
+        .replace(":", ":")
+        .replace("(", "(")
+        .replace(")", ")")
+        .replace("!", "!")
+        .replace("?", "?")
         .replace("`", "'")
-        .replace("’", "'")
+        .replace("`", "'")
         .replace("”", '"')
         .replace("“", '"')
-        .replace("～", "~")
-        .replace("－", "-")
-        .replace("＠", "@")
+        .replace("~", "~")
+        .replace("-", "-")
+        .replace("@", "@")
     )
     if remove_we_kanji:
         title = WORLD_END_REGEX.sub("", title)
@@ -199,7 +199,7 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
 
             inserted_aliases.extend(
                 [
-                    dict(alias=x, guild_id=-1, song_id=song.id, owner_id=None)
+                    {"alias": x, "guild_id": -1, "song_id": song.id, "owner_id": None}
                     for x in alias[1:]
                 ]
             )
@@ -235,39 +235,39 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "めいど・うぃず・どらごんず": "めいど・うぃず・どらごんず♥",
         "失礼しますが、RIP": "失礼しますが、RIP♡",
         "Ray ?はじまりのセカイ?": "Ray ―はじまりのセカイ― (クロニクルアレンジver.)",
-        "ラブって?ジュエリー♪えんじぇる☆ブレイク！！": "ラブって♡ジュエリー♪えんじぇる☆ブレイク！！",
+        "ラブって?ジュエリー♪えんじぇる☆ブレイク!!": "ラブって♡ジュエリー♪えんじぇる☆ブレイク!!",
         "Daydream cafe": "Daydream café",
         "多重未来のカルテット": "多重未来のカルテット -Quartet Theme-",
         "崩壊歌姫": "崩壊歌姫 -disruptive diva-",
-        "Seyana": "Seyana. ～何でも言うことを聞いてくれるアカネチャン～",
+        "Seyana": "Seyana. ~何でも言うことを聞いてくれるアカネチャン~",
         "ECHO-": "ECHO",
         "Little ”Sister” Bitch": 'Little "Sister" Bitch',
-        "ナイト・オブ・ナイツ (かめりあ’s“": "ナイト・オブ・ナイツ (かめりあ’s“ワンス・アポン・ア・ナイト”Remix)",
+        "ナイト・オブ・ナイツ (かめりあ`s“": "ナイト・オブ・ナイツ (かめりあ`s“ワンス・アポン・ア・ナイト”Remix)",
         "Pump": "Pump!n",
         "チルノおかん": "チルノおかんのさいきょう☆バイブスごはん",
-        "キュアリアス光吉古牌　?祭?": "キュアリアス光吉古牌　－祭－",
+        "キュアリアス光吉古牌　?祭?": "キュアリアス光吉古牌　-祭-",
         "Yet Another ''drizzly rain''": "Yet Another ”drizzly rain”",
         "DAZZLING SEASON": "DAZZLING♡SEASON",
         "Super Lovely": "Super Lovely (Heavenly Remix)",
         "Mass Destruction (''P3'' + ''P3F'' ver.)": 'Mass Destruction ("P3" + "P3F" ver.)',
         "ouroboros": "ouroboros -twin stroke of the end-",
-        "In The Blue Sky ’01": "In The Blue Sky '01",
+        "In The Blue Sky `01": "In The Blue Sky '01",
         "Aventyr": "Äventyr",
         "Reach for the Stars": "Reach For The Stars",
         "”STAR”T": '"STAR"T',
-        "一世嬉遊曲": "一世嬉遊曲‐ディヴェルティメント‐",
-        "光線チューニング～なずな": "光線チューニング ～なずな妄想海フェスイメージトレーニングVer.～",
+        "一世嬉遊曲": "一世嬉遊曲-ディヴェルティメント-",
+        "光線チューニング~なずな": "光線チューニング ~なずな妄想海フェスイメージトレーニングVer.~",
         "ウソテイ": "イロドリミドリ杯花映塚全一決定戦公式テーマソング『ウソテイ』",
-        "ＧＯ！ＧＯ！ラブリズム ～あーりん書類審査通過記念Ver.～": "ＧＯ！ＧＯ！ラブリズム♥ ～あーりん書類審査通過記念Ver.～",
+        "GO!GO!ラブリズム ~あーりん書類審査通過記念Ver.~": "GO!GO!ラブリズム♥ ~あーりん書類審査通過記念Ver.~",
         "Session High": "Session High⤴",
-        "Help,me あーりん！": "Help me, あーりん！",
+        "Help,me あーりん!": "Help me, あーりん!",
         "私の中の幻想的世界観": "私の中の幻想的世界観及びその顕現を想起させたある現実での出来事に関する一考察",
         "GRANDIR": "GRÄNDIR",
         "AstroNotes.": "AstrøNotes.",
-        "まっすぐ→→→ストリーム!": "まっすぐ→→→ストリーム！",
+        "まっすぐ→→→ストリーム!": "まっすぐ→→→ストリーム!",
         "GranFatalite": "GranFatalité",
-        "Excalibur": "Excalibur ～Revived resolution～",
-        "DON’T STOP ROCKIN’ ～[O_O] MIX～": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
+        "Excalibur": "Excalibur ~Revived resolution~",
+        "DON`T STOP ROCKIN` ~[O_O] MIX~": "D✪N`T ST✪P R✪CKIN` ~[✪_✪] MIX~",
         "L'epilogue": "L'épilogue",
         "Give me Love?": "Give me Love♡",
         "Athlete Killer ”Meteor”": 'Athlete Killer "Meteor"',
@@ -277,7 +277,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "Solstand": "Solstånd",
         "男装女形表裏一体発狂小娘": "男装女形表裏一体発狂小娘の詐称疑惑と苦悩と情熱。",
         "NYAN-NYA, More! ラブシャイン、Chu?": "NYAN-NYA, More! ラブシャイン、Chu♥",
-        "今ぞ崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～": "今ぞ♡崇め奉れ☆オマエらよ！！～姫の秘メタル渇望～",
+        "今ぞ崇め奉れ☆オマエらよ!!~姫の秘メタル渇望~": "今ぞ♡崇め奉れ☆オマエらよ!!~姫の秘メタル渇望~",
         "砂漠のハンティングガール": "砂漠のハンティングガール♡",
     }
     # sdvx.in ID, song_id, difficulty
@@ -305,7 +305,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                 title = title_mapping.get(title, unescape(title))
                 sdvx_in_id = str(script["src"]).split("/")[-1][
                     :5
-                ]  # FIXME: dont assume the ID is always 5 digits
+                ]  # TODO: dont assume the ID is always 5 digits
 
                 song = (
                     await session.execute(
@@ -333,7 +333,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     if value_soup.select_one("a") is None:
                         continue
                     inserted_data.append(
-                        dict(id=sdvx_in_id, song_id=song.id, difficulty=difficulty)
+                        {"id": sdvx_in_id, "song_id": song.id, "difficulty": difficulty}
                     )
 
         stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
@@ -351,9 +351,9 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         zetaraku_resp = await client.get(
             "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/data.json"
         )
-        songs = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore
+        songs: list[ChunirecSong] = ChunirecSong.schema().loads(await resp.text(), many=True)  # type: ignore[reportGeneralTypeIssues]
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
-        zetaraku_songs: ZetarakuChunithmData = ZetarakuChunithmData.from_json(await zetaraku_resp.text())  # type: ignore
+        zetaraku_songs: ZetarakuChunithmData = ZetarakuChunithmData.from_json(await zetaraku_resp.text())  # type: ignore[reportGeneralTypeIssues]
 
     inserted_songs = []
     inserted_charts = []
@@ -394,7 +394,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                         x
                         for x in chuni_songs
                         if normalize_title(x["title"])
-                        == normalize_title(song.meta.title, True)
+                        == normalize_title(song.meta.title, remove_we_kanji=True)
                         and normalize_title(x["artist"])
                         == normalize_title(song.meta.artist)
                     ),
@@ -412,25 +412,22 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             ),
             None,
         )
-        if zetaraku_song is not None:
-            zetaraku_jacket = zetaraku_song.imageName
-        else:
-            zetaraku_jacket = ""
+        zetaraku_jacket = zetaraku_song.imageName if zetaraku_song is not None else ""
 
         inserted_songs.append(
-            dict(
-                id=song.meta.id,
-                chunithm_id=chunithm_id,
+            {
+                "id": song.meta.id,
+                "chunithm_id": chunithm_id,
                 # Don't use song.meta.title
-                title=chunithm_song["title"],
-                chunithm_catcode=chunithm_catcode,
-                genre=song.meta.genre,
-                artist=song.meta.artist,
-                release=song.meta.release,
-                bpm=None if song.meta.bpm == 0 else song.meta.bpm,
-                jacket=jacket,
-                zetaraku_jacket=zetaraku_jacket,
-            )
+                "title": chunithm_song["title"],
+                "chunithm_catcode": chunithm_catcode,
+                "genre": song.meta.genre,
+                "artist": song.meta.artist,
+                "release": song.meta.release,
+                "bpm": None if song.meta.bpm == 0 else song.meta.bpm,
+                "jacket": jacket,
+                "zetaraku_jacket": zetaraku_jacket,
+            }
         )
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
             if (chart := getattr(song.data, difficulty)) is not None:
@@ -439,54 +436,54 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     chart.is_const_unknown = 0
 
                 inserted_charts.append(
-                    dict(
-                        song_id=song.meta.id,
-                        difficulty=difficulty,
-                        level=str(chart.level).replace(".5", "+").replace(".0", ""),
-                        const=None if chart.is_const_unknown == 1 else chart.const,
-                        maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
-                    )
+                    {
+                        "song_id": song.meta.id,
+                        "difficulty": difficulty,
+                        "level": str(chart.level).replace(".5", "+").replace(".0", ""),
+                        "const": None if chart.is_const_unknown == 1 else chart.const,
+                        "maxcombo": chart.maxcombo if chart.maxcombo != 0 else None,
+                    }
                 )
 
-        if (chart := getattr(song.data, "WE")) is not None:
+        if (chart := song.data.WE) is not None:
             we_stars = ""
             for _ in range(-1, int(chunithm_song["we_star"]), 2):
                 we_stars += "☆"
             inserted_charts.append(
-                dict(
-                    song_id=song.meta.id,
-                    difficulty="WE",
-                    level=chunithm_song["we_kanji"] + we_stars,
-                    const=None,
-                    maxcombo=chart.maxcombo if chart.maxcombo != 0 else None,
-                )
+                {
+                    "song_id": song.meta.id,
+                    "difficulty": "WE",
+                    "level": chunithm_song["we_kanji"] + we_stars,
+                    "const": None,
+                    "maxcombo": chart.maxcombo if chart.maxcombo != 0 else None,
+                }
             )
 
     async with async_session() as session, session.begin():
         insert_statement = insert(Song).values(inserted_songs)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Song.id],
-            set_=dict(
-                title=insert_statement.excluded.title,
-                chunithm_catcode=insert_statement.excluded.chunithm_catcode,
-                genre=insert_statement.excluded.genre,
-                artist=insert_statement.excluded.artist,
-                release=insert_statement.excluded.release,
-                bpm=insert_statement.excluded.bpm,
-                jacket=insert_statement.excluded.jacket,
-                zetaraku_jacket=insert_statement.excluded.zetaraku_jacket,
-            ),
+            set_={
+                "title": insert_statement.excluded.title,
+                "chunithm_catcode": insert_statement.excluded.chunithm_catcode,
+                "genre": insert_statement.excluded.genre,
+                "artist": insert_statement.excluded.artist,
+                "release": insert_statement.excluded.release,
+                "bpm": insert_statement.excluded.bpm,
+                "jacket": insert_statement.excluded.jacket,
+                "zetaraku_jacket": insert_statement.excluded.zetaraku_jacket,
+            },
         )
         await session.execute(upsert_statement)
 
         insert_statement = insert(Chart).values(inserted_charts)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Chart.song_id, Chart.difficulty],
-            set_=dict(
-                level=insert_statement.excluded.level,
-                const=insert_statement.excluded.const,
-                maxcombo=insert_statement.excluded.maxcombo,
-            ),
+            set_={
+                "level": insert_statement.excluded.level,
+                "const": insert_statement.excluded.const,
+                "maxcombo": insert_statement.excluded.maxcombo,
+            },
         )
         await session.execute(upsert_statement)
 

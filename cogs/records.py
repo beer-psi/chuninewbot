@@ -50,7 +50,7 @@ class SelectToCompareView(discord.ui.View):
 class RecordsCog(commands.Cog, name="Records"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(
@@ -112,11 +112,8 @@ class RecordsCog(commands.Cog, name="Records"):
                     async for message in ctx.channel.history(limit=50)
                     if message.author == self.bot.user
                     and any(
-                        [
-                            x.thumbnail.url is not None
-                            and JACKET_BASE in x.thumbnail.url
-                            for x in message.embeds
-                        ]
+                        x.thumbnail.url is not None and JACKET_BASE in x.thumbnail.url
+                        for x in message.embeds
                     )
                 ]
                 if len(bot_messages) == 0:
@@ -136,14 +133,13 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
             ]
             if not embeds:
-                raise commands.BadArgument(
-                    "The message replied to does not contain any charts/scores."
-                )
+                msg = "The message replied to does not contain any charts/scores."
+                raise commands.BadArgument(msg)
             if len(embeds) == 1:
                 embed = embeds[0]
                 compare_message = None
             else:
-                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]  # type: ignore
+                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]  # type: ignore[reportGeneralTypeIssues]
                 stmt = select(Song).where(
                     (Song.jacket.in_(jackets)) | (Song.zetaraku_jacket.in_(jackets))
                 )
@@ -162,7 +158,7 @@ class RecordsCog(commands.Cog, name="Records"):
                     await compare_message.edit(
                         content="Timed out before selecting a score.", view=None
                     )
-                    return
+                    return None
                 embed = embeds[int(view.value)]
 
             thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
@@ -174,7 +170,7 @@ class RecordsCog(commands.Cog, name="Records"):
             song = (await session.execute(stmt)).scalar_one_or_none()
             if song is None:
                 await ctx.reply("No song found.", mention_author=False)
-                return
+                return None
 
             userinfo = await client.authenticate()
             records = await client.music_record(song.chunithm_id)
@@ -183,7 +179,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 await ctx.reply(
                     f"No records found for {userinfo.name}.", mention_author=False
                 )
-                return
+                return None
 
             futures = [self.utils.annotate_song(record) for record in records]
             records = await asyncio.gather(*futures)
@@ -215,12 +211,13 @@ class RecordsCog(commands.Cog, name="Records"):
                     embed=ScoreCardEmbed(view.items[view.page]),
                     view=view,
                 )
-            else:
-                view.message = await ctx.reply(
-                    embed=ScoreCardEmbed(view.items[view.page]),
-                    view=view,
-                    mention_author=False,
-                )
+                return None
+            view.message = await ctx.reply(
+                embed=ScoreCardEmbed(view.items[view.page]),
+                view=view,
+                mention_author=False,
+            )
+            return None
 
     @commands.command("scores")
     async def scores(
@@ -245,7 +242,7 @@ class RecordsCog(commands.Cog, name="Records"):
             args = parser.parse_intermixed_args(shlex.split(query))
         except RuntimeError as e:
             await ctx.reply(str(e), mention_author=False)
-            return
+            return None
 
         user = None
         query = " ".join(args.query)
@@ -253,7 +250,9 @@ class RecordsCog(commands.Cog, name="Records"):
             try:
                 user = await converter().convert(ctx, args.query[0])
                 query = " ".join(args.query[1:])
-            except commands.BadArgument:
+            # We need to iterate over all converters, so PERF203 does not
+            # apply here.
+            except commands.BadArgument:  # noqa: PERF203
                 pass
 
         async with ctx.typing(), self.utils.chuninet(
@@ -276,7 +275,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 await ctx.reply(
                     f"No records found for {userinfo.name}.", mention_author=False
                 )
-                return
+                return None
 
             futures = [self.utils.annotate_song(record) for record in records]
             records = await asyncio.gather(*futures)
@@ -287,6 +286,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 view=view,
                 mention_author=False,
             )
+            return None
 
     @commands.hybrid_command("best30", aliases=["b30"])
     async def best30(
@@ -360,10 +360,11 @@ class RecordsCog(commands.Cog, name="Records"):
         else:
             numeric_level = int(level[0:2])
 
+        msg = "Invalid level."
         if level[-1] == "+" and numeric_level not in range(7, 15):
-            raise commands.BadArgument("Invalid level.")
+            raise commands.BadArgument(msg)
         if numeric_level not in range(1, 16):
-            raise commands.BadArgument("Invalid level.")
+            raise commands.BadArgument(msg)
 
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
@@ -388,6 +389,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 view=view,
                 mention_author=False,
             )
+            return None
 
 
 async def setup(bot: "ChuniBot"):

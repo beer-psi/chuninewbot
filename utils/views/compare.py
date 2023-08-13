@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext.commands import Context
 
-from ..components import ScoreCardEmbed
+from utils.components import ScoreCardEmbed
+
 from .pagination import PaginationView
 
 if TYPE_CHECKING:
     from chunithm_net.entities.player_data import PlayerData
-
-    from ..types.annotated_records import AnnotatedMusicRecord
+    from utils.types.annotated_records import AnnotatedMusicRecord
 
 
 class CompareView(PaginationView):

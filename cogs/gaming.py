@@ -57,17 +57,18 @@ class NextGameButtonView(discord.ui.View):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         if (
-            interaction.channel_id in _current_sessions
+            isinstance(
+                interaction.channel, (discord.ForumChannel, discord.CategoryChannel)
+            )
+            or interaction.channel_id in _current_sessions
             or interaction.channel is None
-            or isinstance(interaction.channel, discord.ForumChannel)
-            or isinstance(interaction.channel, discord.CategoryChannel)
         ):
             return await interaction.response.defer()
 
         cursed_context = SimpleNamespace()
 
         # The class only calls .defer, which interaction.response also has.
-        cursed_context.typing = lambda: DeferTyping(interaction.response, ephemeral=True)  # type: ignore
+        cursed_context.typing = lambda: DeferTyping(interaction.response, ephemeral=True)  # type: ignore[reportGeneralTypeIssues]
 
         cursed_context.guild = interaction.guild
         cursed_context.channel = interaction.channel
@@ -75,13 +76,14 @@ class NextGameButtonView(discord.ui.View):
         cursed_context.send = interaction.channel.send
 
         # This has all the functions that guess() needs.
-        await self.cog.guess(cursed_context)  # type: ignore
+        await self.cog.guess(cursed_context)  # type: ignore[reportGeneralTypeIssues]
+        return None
 
 
 class GamingCog(commands.Cog, name="Games"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
-        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
         self.session = ClientSession()
 
@@ -150,17 +152,17 @@ class GamingCog(commands.Cog, name="Games"):
         def check(m: discord.Message):
             if mode == "strict":
                 return m.channel == ctx.channel and m.content in aliases
-            else:
-                return (
-                    m.channel == ctx.channel
-                    and max(
-                        [
-                            jaro_similarity(m.content.lower(), alias.lower())
-                            for alias in aliases
-                        ]
-                    )
-                    >= 0.9
+
+            return (
+                m.channel == ctx.channel
+                and max(
+                    [
+                        jaro_similarity(m.content.lower(), alias.lower())
+                        for alias in aliases
+                    ]
                 )
+                >= 0.9
+            )
 
         content = ""
         try:
@@ -197,7 +199,9 @@ class GamingCog(commands.Cog, name="Games"):
 
             with _current_sessions_lock:
                 del _current_sessions[ctx.channel.id]
-            return
+
+            # The whole point was to ignore exceptions.
+            return  # noqa: B012
 
     @commands.hybrid_command("skip")
     async def skip(self, ctx: Context):

@@ -6,12 +6,12 @@ import discord.ui
 from discord.ext.commands import Context
 
 from utils import floor_to_ndp
+from utils.components import ScoreCardEmbed
 
-from ..components import ScoreCardEmbed
 from .pagination import PaginationView
 
 if TYPE_CHECKING:
-    from ..types.annotated_records import AnnotatedMusicRecord
+    from utils.types.annotated_records import AnnotatedMusicRecord
 
 
 class B30View(PaginationView):
@@ -20,6 +20,7 @@ class B30View(PaginationView):
         ctx: Context,
         items: Sequence["AnnotatedMusicRecord"],
         per_page: int = 3,
+        *,
         show_average: bool = True,
     ):
         super().__init__(ctx, items, per_page)

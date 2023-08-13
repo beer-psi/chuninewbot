@@ -23,6 +23,7 @@ from utils.types import (
     AnnotatedDetailedRecentRecord,
     AnnotatedMusicRecord,
     AnnotatedRecentRecord,
+    MissingDetailedParams,
 )
 
 if TYPE_CHECKING:
@@ -34,7 +35,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
-        default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore
+        default_prefix: str = self.bot.cfg.get("DEFAULT_PREFIX", "c>")  # type: ignore[reportGeneralTypeIssues]
         if ctx.guild is None:
             return default_prefix
 
@@ -44,9 +45,8 @@ class UtilsCog(commands.Cog, name="Utils"):
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
         clal = await self.fetch_cookie(id)
         if clal is None:
-            raise commands.BadArgument(
-                "You are not logged in. Please send `c>login` in my DMs to log in."
-            )
+            msg = "You are not logged in. Please send `c>login` in my DMs to log in."
+            raise commands.BadArgument(msg)
         return clal
 
     @contextlib.asynccontextmanager
@@ -92,15 +92,11 @@ class UtilsCog(commands.Cog, name="Utils"):
         self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
     ) -> MusicRecord | AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
         async with self.bot.begin_db_session() as session:
-            if isinstance(song, Record) and not (
-                isinstance(song, MusicRecord)
-                or isinstance(song, DetailedRecentRecord)
-                or isinstance(song, RecentRecord)
+            if isinstance(song, Record) and not isinstance(
+                song, (MusicRecord, DetailedRecentRecord, RecentRecord)
             ):
                 if song.detailed is None:
-                    raise Exception(
-                        "Cannot fetch song details without song.detailed.idx"
-                    )
+                    raise MissingDetailedParams
 
                 stmt = select(Song).where(Song.chunithm_id == song.detailed.idx)
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
@@ -219,7 +215,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 )
                 alias, similarity = (await session.execute(stmt)).one()
 
-                stmt = select(Song).where(Song.id == alias.song_id)  # type: ignore
+                stmt = select(Song).where(Song.id == alias.song_id)  # type: ignore[reportGeneralTypeIssues]
                 song: Song | None = (await session.execute(stmt)).scalar_one()
 
                 if worlds_end:

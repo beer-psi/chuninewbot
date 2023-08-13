@@ -29,7 +29,7 @@ class EventsCog(commands.Cog, name="Events"):
         error: commands.errors.CommandInvokeError,
     ):
         if isinstance(error, commands.CommandNotFound):
-            return
+            return None
 
         if isinstance(error, commands.errors.HybridCommandError):
             exc = error.original
@@ -53,67 +53,72 @@ class EventsCog(commands.Cog, name="Events"):
                 "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
                 mention_author=False,
             )
-        elif isinstance(exc, InvalidTokenException):
+        if isinstance(exc, InvalidTokenException):
             message = f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in."
             if self.bot.dev:
                 message += f"\nDetailed error: {exc}"
             return await ctx.reply(message, mention_author=False)
-        elif isinstance(exc, ChuniNetException):
+        if isinstance(exc, ChuniNetException):
             message = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
             if self.bot.dev:
                 message += f"\nDetailed error: {exc}"
             return await ctx.reply(message, mention_author=False)
 
-        elif isinstance(exc, commands.errors.CommandOnCooldown):
+        if isinstance(exc, commands.errors.CommandOnCooldown):
             return await ctx.reply(
                 f"You're too fast. Take a break for {exc.retry_after:.2f} seconds.",
                 mention_author=False,
                 delete_after=exc.retry_after,
             )
-        elif isinstance(exc, commands.errors.ExpectedClosingQuoteError):
+        if isinstance(exc, commands.errors.ExpectedClosingQuoteError):
             return await ctx.reply(
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
-        elif isinstance(exc, commands.errors.NotOwner) or isinstance(
-            exc, commands.errors.MissingPermissions
+        if isinstance(
+            exc, (commands.errors.NotOwner, commands.errors.MissingPermissions)
         ):
             return await ctx.reply("Insufficient permissions.", mention_author=False)
-        elif (
-            isinstance(exc, commands.BadArgument)
-            or isinstance(exc, commands.BadUnionArgument)
-            or isinstance(exc, commands.MissingRequiredArgument)
-            or isinstance(exc, commands.MissingPermissions)
-            or isinstance(exc, commands.BotMissingPermissions)
-            or isinstance(exc, commands.MaxConcurrencyReached)
-            or isinstance(exc, commands.NoPrivateMessage)
-            or isinstance(exc, commands.PrivateMessageOnly)
+        if isinstance(
+            exc,
+            (
+                commands.BadArgument,
+                commands.BadUnionArgument,
+                commands.MissingRequiredArgument,
+                commands.MissingPermissions,
+                commands.BotMissingPermissions,
+                commands.MaxConcurrencyReached,
+                commands.NoPrivateMessage,
+                commands.PrivateMessageOnly,
+            ),
         ):
-            await ctx.reply(str(error), mention_author=False)
-        else:
-            await ctx.reply(
-                f"An error occurred while executing the command.",
-                mention_author=False,
-            )
+            return await ctx.reply(str(error), mention_author=False)
 
-            if webhook_url := self.bot.cfg.get("ERROR_REPORTING_WEBHOOK"):
-                async with aiohttp.ClientSession() as session:
-                    webhook = Webhook.from_url(webhook_url, session=session)
+        await ctx.reply(
+            "An error occurred while executing the command.",
+            mention_author=False,
+        )
 
-                    content = (
-                        f"## Exception in command {ctx.command}\n\n"
-                        "```python\n"
-                        f"{''.join(traceback.format_exception(exc))}"
-                        "```"
-                    )
-                    await webhook.send(
-                        username=cast(discord.ClientUser, self.bot.user).display_name,
-                        avatar_url=cast(
-                            discord.ClientUser, self.bot.user
-                        ).display_avatar.url,
-                        content=content,
-                        allowed_mentions=discord.AllowedMentions.none(),
-                    )
+        if webhook_url := self.bot.cfg.get("ERROR_REPORTING_WEBHOOK"):
+            async with aiohttp.ClientSession() as session:
+                webhook = Webhook.from_url(webhook_url, session=session)
+
+                content = (
+                    f"## Exception in command {ctx.command}\n\n"
+                    "```python\n"
+                    f"{''.join(traceback.format_exception(exc))}"
+                    "```"
+                )
+                await webhook.send(
+                    username=cast(discord.ClientUser, self.bot.user).display_name,
+                    avatar_url=cast(
+                        discord.ClientUser, self.bot.user
+                    ).display_avatar.url,
+                    content=content,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+                return None
+        return None
 
 
 async def setup(bot: "ChuniBot"):

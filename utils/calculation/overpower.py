@@ -2,8 +2,7 @@ from decimal import Decimal
 
 from chunithm_net.entities.enums import ClearType
 from utils import floor_to_ndp
-
-from ..types.annotated_records import AnnotatedMusicRecord
+from utils.types.annotated_records import AnnotatedMusicRecord
 
 
 def calculate_overpower_base(score: int, internal_level: float) -> Decimal:

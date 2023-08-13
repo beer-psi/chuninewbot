@@ -42,7 +42,10 @@ def upgrade() -> None:
         )
 
     op.execute(
-        charts.update().where(charts.c.is_const_unknown == True).values(const=None)
+        # SQL doesn't work like python, ignore E712
+        charts.update()
+        .where(charts.c.is_const_unknown == True)  # noqa: E712
+        .values(const=None)
     )
 
     op.execute(charts.update().where(charts.c.maxcombo == 0).values(maxcombo=None))
@@ -64,11 +67,11 @@ def downgrade() -> None:
         sa.Column("is_const_unknown", sa.BOOLEAN(), nullable=False),
     )
 
-    op.execute(charts.update().where(charts.c.maxcombo == None).values(maxcombo=0))
+    op.execute(charts.update().where(charts.c.maxcombo.is_(None)).values(maxcombo=0))
 
     op.execute(
         charts.update()
-        .where(charts.c.const == None)
+        .where(charts.c.const.is_(None))
         .values(const=0, is_const_unknown=True)
     )
 

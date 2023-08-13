@@ -21,7 +21,7 @@ class ProfileView(discord.ui.View):
     async def on_timeout(self) -> None:
         for item in self.children:
             if hasattr(item, "disabled"):
-                item.disabled = True  # type: ignore
+                item.disabled = True  # type: ignore[reportGeneralTypeIssues]
         self.clear_items()
         await self.message.edit(view=self)
 

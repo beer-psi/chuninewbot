@@ -16,10 +16,12 @@ class HelpCommand(commands.HelpCommand):
 
         assert bot.user is not None
 
-        prefix = list(
-            set(await bot.get_prefix(ctx.message))
-            - set(when_mentioned(bot, ctx.message))
-        )[0]
+        prefix = next(
+            iter(
+                set(await bot.get_prefix(ctx.message))
+                - set(when_mentioned(bot, ctx.message))
+            )
+        )
 
         embed = (
             discord.Embed(color=self.COLOUR)
@@ -27,14 +29,14 @@ class HelpCommand(commands.HelpCommand):
             .set_author(
                 name=f"Command list for {bot.user.display_name}:",
                 icon_url=bot.user.avatar.url if bot.user.avatar else None,
-            ).set_footer(  # type: ignore
+            ).set_footer(  # type: ignore[reportGeneralTypeIssues]
                 text=f"Use {prefix}help <command> for more info on a command.\nSource code: https://github.com/beerpiss/chuninewbot"
             )
         )
         description = ""
-        for cogs, commands in mapping.items():
+        for cogs, cmd in mapping.items():
             name = "No category" if cogs is None else cogs.qualified_name
-            filtered = await self.filter_commands(commands, sort=True)
+            filtered = await self.filter_commands(cmd, sort=True)
             if filtered:
                 description += f"**{name}** - "
                 description += " ".join([f"`{c.name}`" for c in filtered])
@@ -48,15 +50,15 @@ class HelpCommand(commands.HelpCommand):
         ctx = self.context
         bot = ctx.bot
 
-        prefix = list(
-            set(await bot.get_prefix(ctx.message))
-            - set(when_mentioned(bot, ctx.message))
-        )[0]
+        prefix = next(
+            iter(
+                set(await bot.get_prefix(ctx.message))
+                - set(when_mentioned(bot, ctx.message))
+            )
+        )
 
         embed = discord.Embed(color=self.COLOUR)
-        embed.description = (
-            f"```{prefix}{command.qualified_name}```\n" f"{command.help}"
-        )
+        embed.description = f"```{prefix}{command.qualified_name}```\n{command.help}"
 
         params = command.clean_params.values()
         if params:

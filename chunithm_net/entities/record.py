@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from ..consts import JACKET_BASE
-from .enums import ClearType, Difficulty, Rank
+from chunithm_net.consts import JACKET_BASE
+from chunithm_net.entities.enums import ClearType, Difficulty, Rank
 
 
 @dataclass

@@ -29,9 +29,12 @@ class ChuniNet:
         clal: str,
         user_id: Optional[str] = None,
         token: Optional[str] = None,
-        base: URL = URL("https://chunithm-net-eng.com"),
+        base: Optional[URL] = None,
     ) -> None:
-        self.base = base
+        if base is None:
+            self.base = URL("https://chunithm-net-eng.com")
+        else:
+            self.base = base
         self.clal = clal
 
         self.session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar())
@@ -78,9 +81,8 @@ class ChuniNet:
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
             if req.status != HTTPStatus.FOUND:
-                raise InvalidTokenException(
-                    f"Invalid cookie. Received status code was {req.status}"
-                )
+                msg = f"Invalid cookie. Received status code was {req.status}"
+                raise InvalidTokenException(msg)
             return req.headers["Location"]
 
     async def authenticate(self):
@@ -95,15 +97,17 @@ class ChuniNet:
                     uid_redemption_url = await self.validate_cookie()
                     resp = await self.session.get(uid_redemption_url)
                 else:
-                    raise e
+                    raise
         else:
             uid_redemption_url = await self.validate_cookie()
             resp = await self.session.get(uid_redemption_url)
 
         if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
-            raise MaintenanceException("Service under maintenance")
+            msg = "Service under maintenance"
+            raise MaintenanceException(msg)
         if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-            raise InvalidTokenException("Invalid cookie: No userId cookie found")
+            msg = "Invalid cookie: No userId cookie found"
+            raise InvalidTokenException(msg)
 
         return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
 
@@ -199,7 +203,7 @@ class ChuniNet:
             raise NotImplementedError
 
         if level is None:
-            return
+            return None
 
         plus_level = level[-1] == "+"
         level_num = int(level[:-1] if plus_level else level)
@@ -218,18 +222,18 @@ class ChuniNet:
 
     async def change_player_name(self, new_name: str) -> bool:
         if len(new_name) > 8:
-            raise ValueError("Player name must be 8 characters or less")
+            msg = "Player name must be 8 characters or less"
+            raise ValueError(msg)
         if any(
-            [
-                not (
-                    c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
-                    or c.isalnum()
-                    or c.isspace()
-                )
-                for c in new_name
-            ]
+            not (
+                c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
+                or c.isalnum()
+                or c.isspace()
+            )
+            for c in new_name
         ):
-            raise ValueError("Player name contains invalid characters")
+            msg = "Player name contains invalid characters"
+            raise ValueError(msg)
 
         resp = await self._request(
             "mobile/home/userOption/updateUserName/update/",
