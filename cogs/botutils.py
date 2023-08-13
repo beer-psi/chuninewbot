@@ -225,8 +225,12 @@ class UtilsCog(commands.Cog, name="Utils"):
                 song: Song = (await session.execute(stmt)).scalar_one()
 
                 if worlds_end:
-                    # HACK: Allow alias search for WORLD'S END
-                    return await self.find_song(song.title, guild_id=guild_id, worlds_end=worlds_end)
+                    stmt = (
+                        select(Song)
+                        .where((Song.title == song.title) & (Song.genre == "WORLD'S END"))
+                        .limit(1)
+                    )
+                    song: Song = (await session.execute(stmt)).scalar_one()
         return song, alias, similarity
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
