@@ -1,5 +1,4 @@
 import contextlib
-from math import floor
 from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
@@ -15,7 +14,6 @@ from chunithm_net.entities.record import (
     Record,
 )
 from database.models import Alias, Chart, Cookie, Song
-from update_db import update_db
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -118,7 +116,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 annotated_song.rank = Rank.from_score(song.score)
             else:
                 stmt = select(Song)
-                if song.detailed is None:
+                if song.detailed is None or isinstance(song, RecentRecord):
                     stmt = stmt.where(
                         (Song.title == song.title) & (Song.jacket == song.jacket)
                     )
@@ -155,7 +153,7 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         internal_level = (
             annotated_song.internal_level
-            if annotated_song.internal_level != None
+            if annotated_song.internal_level is not None
             else numeric_level
         )
 
