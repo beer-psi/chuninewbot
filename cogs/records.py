@@ -207,12 +207,13 @@ class RecordsCog(commands.Cog, name="Records"):
             if compare_message is not None:
                 view.message = compare_message
                 await compare_message.edit(
-                    content="",
+                    content=f"Top play for {userinfo.name}",
                     embed=ScoreCardEmbed(view.items[view.page]),
                     view=view,
                 )
                 return None
             view.message = await ctx.reply(
+                content=f"Top play for {userinfo.name}",
                 embed=ScoreCardEmbed(view.items[view.page]),
                 view=view,
                 mention_author=False,
@@ -282,6 +283,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             view = CompareView(ctx, userinfo, records)
             view.message = await ctx.reply(
+                content=f"Top play for {userinfo.name}",
                 embed=ScoreCardEmbed(view.items[view.page]),
                 view=view,
                 mention_author=False,
