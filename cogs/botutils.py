@@ -177,7 +177,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         *,
         guild_id: Optional[int] = None,
         worlds_end: bool = False,
-    ) -> tuple[Song, Alias | None, float]:
+    ) -> tuple[Song | None, Alias | None, float]:
         """Finds the song that best matches a given query.
 
         Parameters
@@ -222,7 +222,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 alias, similarity = (await session.execute(stmt)).one()
 
                 stmt = select(Song).where(Song.id == alias.song_id)  # type: ignore
-                song: Song = (await session.execute(stmt)).scalar_one()
+                song: Song | None = (await session.execute(stmt)).scalar_one()
 
                 if worlds_end:
                     stmt = (
@@ -230,7 +230,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                         .where((Song.title == song.title) & (Song.genre == "WORLD'S END"))
                         .limit(1)
                     )
-                    song: Song = (await session.execute(stmt)).scalar_one()
+                    song: Song | None = (await session.execute(stmt)).scalar_one_or_none()
         return song, alias, similarity
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then

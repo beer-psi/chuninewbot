@@ -25,14 +25,19 @@ def floor_to_ndp(number: "T", dp: int) -> "T":
         return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore
 
 
-def did_you_mean_text(result: "Song", alias: "Alias | None") -> str:
-    did_you_mean = f"**{escape_markdown(result.title)}**"
-    if alias is not None:
-        did_you_mean = f"**{escape_markdown(alias.alias)}** (for {did_you_mean})"
-    return (
-        f"No songs found. Did you mean {did_you_mean}?\n"
-        "(You can also use `addalias <title> <alias>` to add this alias for this guild.)"
-    )
+def did_you_mean_text(result: "Song | None", alias: "Alias | None") -> str:
+    did_you_mean = ""
+    if result is not None:
+        did_you_mean = f"Did you mean **{escape_markdown(result.title)}**"
+        if alias is not None:
+            did_you_mean = f"**{escape_markdown(alias.alias)}** (for {did_you_mean})"
+        did_you_mean += "?"
+
+    reply = f"No songs found. {did_you_mean}".strip()
+    if did_you_mean:
+        reply += "\n(You can also use `addalias <title> <alias>` to add the alias for this server.)"
+
+    return reply
 
 
 def yt_search_link(title: str, difficulty: str) -> str:
