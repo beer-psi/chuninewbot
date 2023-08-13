@@ -227,10 +227,14 @@ class UtilsCog(commands.Cog, name="Utils"):
                 if worlds_end:
                     stmt = (
                         select(Song)
-                        .where((Song.title == song.title) & (Song.genre == "WORLD'S END"))
+                        .where(
+                            (Song.title == song.title) & (Song.genre == "WORLD'S END")
+                        )
                         .limit(1)
                     )
-                    song: Song | None = (await session.execute(stmt)).scalar_one_or_none()
+                    song: Song | None = (
+                        await session.execute(stmt)
+                    ).scalar_one_or_none()
         return song, alias, similarity
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then

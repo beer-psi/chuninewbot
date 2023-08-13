@@ -21,9 +21,9 @@ from discord.ext.commands import Bot
 from jarowinkler import jarowinkler_similarity
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
-    async_sessionmaker,
     AsyncEngine,
     AsyncSession,
+    async_sessionmaker,
     create_async_engine,
 )
 

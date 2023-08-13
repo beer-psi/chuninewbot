@@ -1,5 +1,5 @@
 # pyright: reportOptionalMemberAccess=false, reportOptionalSubscript=false
-from typing import cast, Optional
+from typing import Optional, cast
 
 from bs4 import BeautifulSoup, Tag
 
@@ -190,14 +190,22 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     )
 
 
-def parse_music_record(soup: BeautifulSoup, detailed: Optional[DetailedParams] = None) -> list[MusicRecord]:
+def parse_music_record(
+    soup: BeautifulSoup, detailed: Optional[DetailedParams] = None
+) -> list[MusicRecord]:
     jacket = (
         str(elem["src"]).split("/")[-1]
         if (elem := soup.select_one(".play_jacket_img img"))
         else ""
     )
     title = (
-        elem.get_text(strip=True) if (elem := soup.select_one(".play_musicdata_title, .play_musicdata_worldsend_title")) else ""
+        elem.get_text(strip=True)
+        if (
+            elem := soup.select_one(
+                ".play_musicdata_title, .play_musicdata_worldsend_title"
+            )
+        )
+        else ""
     )
     records = []
     for block in soup.select(".music_box"):

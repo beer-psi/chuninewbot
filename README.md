@@ -31,6 +31,3 @@ Set to `-1` to disable.
 Thanks to these projects for making this bot possible and less miserable to make:
 - [chunirec](https://twitter.com/chunirec) for the wonderful [Chunirec DB](https://db.chunirec.net), which is the bot's primary data source
 - [lomotos10](https://github.com/lomotos10) for [CHUNITHM's song alias list](https://github.com/lomotos10/GCM-bot/blob/main/data/aliases/en/chuni.tsv)
-
-
-

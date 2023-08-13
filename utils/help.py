@@ -55,8 +55,7 @@ class HelpCommand(commands.HelpCommand):
 
         embed = discord.Embed(color=self.COLOUR)
         embed.description = (
-            f"```{prefix}{command.qualified_name}```\n"
-            f"{command.help}"
+            f"```{prefix}{command.qualified_name}```\n" f"{command.help}"
         )
 
         params = command.clean_params.values()

@@ -1,6 +1,5 @@
 from collections.abc import Sequence
-from typing import AsyncContextManager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncContextManager
 
 import discord.ui
 from discord.ext.commands import Context

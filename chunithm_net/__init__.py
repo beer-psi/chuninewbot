@@ -170,7 +170,7 @@ class ChuniNet:
             data={
                 "idx": idx,
                 "token": self.token,
-            }
+            },
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
         return parse_music_record(soup, DetailedParams(idx, self.token))

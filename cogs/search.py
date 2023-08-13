@@ -55,7 +55,9 @@ class SearchCog(commands.Cog, name="Search"):
         song_title_or_alias_lower = song_title_or_alias.strip().lower()
 
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
-            stmt = select(Song).where(func.lower(Song.title) == added_alias_lower).limit(1)
+            stmt = (
+                select(Song).where(func.lower(Song.title) == added_alias_lower).limit(1)
+            )
             song = (await session.execute(stmt)).scalar_one_or_none()
             if song is not None:
                 return await ctx.reply(
@@ -72,13 +74,11 @@ class SearchCog(commands.Cog, name="Search"):
                     f"**{added_alias}** already exists.", mention_author=False
                 )
 
-            stmt = (
-                select(Song)
-                .where(
-                    # Limit to non-WE entries. WE entries are redirected to
-                    # their non-WE respectives when song-searching anyways.
-                    (func.lower(Song.title) == song_title_or_alias_lower) & (Song.chunithm_id < 8000)
-                )
+            stmt = select(Song).where(
+                # Limit to non-WE entries. WE entries are redirected to
+                # their non-WE respectives when song-searching anyways.
+                (func.lower(Song.title) == song_title_or_alias_lower)
+                & (Song.chunithm_id < 8000)
             )
             song = (await session.execute(stmt)).scalar_one_or_none()
 
@@ -210,7 +210,7 @@ class SearchCog(commands.Cog, name="Search"):
                     else yt_search_link(song.title, chart.difficulty)
                 )
                 worlds_end = "WORLD'S END"
-                desc = f'[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}'
+                desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
                 if chart.const is not None:
                     desc += f" ({chart.const:.1f})"
                 chart_level_desc.append(desc)

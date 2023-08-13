@@ -43,7 +43,9 @@ class ScoreCardEmbed(discord.Embed):
             footer_sections = []
             if record.difficulty != Difficulty.WORLDS_END:
                 if show_clear_type:
-                    footer_sections.append(f"Rating: {floor_to_ndp(record.play_rating, 2)}")
+                    footer_sections.append(
+                        f"Rating: {floor_to_ndp(record.play_rating, 2)}"
+                    )
                 else:
                     score_data += f" ▸ **{record.play_rating:.2f}**"
 

@@ -123,7 +123,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "we_kanji": "嘘",
         "we_star": "7",
         "image": "43bd6cbc31e4c02c.jpg",
-    }
+    },
 }
 for idx, random in enumerate(
     # Random WE, A through F
@@ -454,7 +454,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 we_stars += "☆"
             inserted_charts.append(
                 dict(
-                    song_id = song.meta.id,
+                    song_id=song.meta.id,
                     difficulty="WE",
                     level=chunithm_song["we_kanji"] + we_stars,
                     const=None,
