@@ -93,11 +93,10 @@ class ChuniNet:
             except ChuniNetError as e:
                 # In other cases, the token is invalidated and a relogin is required.
                 # Error code for when site token is invalidated
-                if e.code == 200004:
-                    uid_redemption_url = await self.validate_cookie()
-                    resp = await self.session.get(uid_redemption_url)
-                else:
+                if e.code != 200004:
                     raise
+                uid_redemption_url = await self.validate_cookie()
+                resp = await self.session.get(uid_redemption_url)
         else:
             uid_redemption_url = await self.validate_cookie()
             resp = await self.session.get(uid_redemption_url)
