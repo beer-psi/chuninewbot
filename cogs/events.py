@@ -54,7 +54,9 @@ class EventsCog(commands.Cog, name="Events"):
                 mention_author=False,
             )
         if isinstance(exc, InvalidTokenException):
-            message = f"CHUNITHM-NET cookie is invalid. Please use `{ctx.prefix or 'c>'}login` in DMs to log in."
+            message = (
+                "CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in."
+            )
             if self.bot.dev:
                 message += f"\nDetailed error: {exc}"
             return await ctx.reply(message, mention_author=False)
@@ -99,7 +101,7 @@ class EventsCog(commands.Cog, name="Events"):
             mention_author=False,
         )
 
-        if webhook_url := self.bot.cfg["bot"].get("error_reporting_webhook"):
+        if webhook_url := self.bot.cfg.bot.error_reporting_webhook:
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
 

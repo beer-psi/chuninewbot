@@ -35,7 +35,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
-        default_prefix: str = self.bot.cfg["bot"].get("default_prefix", fallback="c>")
+        default_prefix: str = self.bot.cfg.bot.default_prefix
         if ctx.guild is None:
             return default_prefix
 

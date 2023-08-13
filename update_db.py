@@ -328,7 +328,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
 
 
 async def update_db(async_session: async_sessionmaker[AsyncSession]):
-    token = cfg["credentials"].get("chunirec_token")
+    token = cfg.credentials.chunirec_token
     if token is None:
         msg = "credentials.chunirec_token"
         raise MissingConfiguration(msg)

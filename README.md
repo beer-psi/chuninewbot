@@ -18,11 +18,7 @@ Discord bot for CHUNITHM International version.
 - [x] Minigames (song quiz)
 
 ### Setup instructions
-1. Copy `.env.example` to `.env` and fill in:
-- `TOKEN` with the bot's token
-- `CHUNIREC_TOKEN` with a token obtained from [Chunirec Developer Portal](https://developer.chunirec.net/)
-- `LOGIN_ENDPOINT_PORT` with an unprivileged, available port (>1024). This will be used by the web server to handle logins.
-Set to `-1` to disable.
+1. Copy `bot.example.ini` to `bot.ini` and fill in the values based on the comments.
 2. `poetry install`
 3. Run `update_db.py` to populate the song database. For your convenience, a pre-populated database is also provided [here](https://cdn.discordapp.com/attachments/1041530799704526961/1139868803359060088/database.sqlite3).
 4. `python bot.py`

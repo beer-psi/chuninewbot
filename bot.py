@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from database.models import Base, Prefix
+from utils.config import Config
 from utils.help import HelpCommand
 from web import init_app
 
@@ -30,12 +31,13 @@ if TYPE_CHECKING:
 
 
 BOT_DIR = Path(__file__).parent
-cfg = ConfigParser()
-cfg.read(BOT_DIR / "bot.ini")
+_cfg = ConfigParser()
+_cfg.read(BOT_DIR / "bot.ini")
+cfg = Config(_cfg)
 
 
 class ChuniBot(Bot):
-    cfg: ConfigParser
+    cfg: Config
     dev: bool = False
 
     engine: AsyncEngine
@@ -54,10 +56,7 @@ class ChuniBot(Bot):
         super().__init__(*args, **kwargs)
 
     async def setup_hook(self) -> None:
-        connection_string = cfg["bot"].get(
-            "db_connection_string",
-            fallback=f"sqlite+aiosqlite:///{BOT_DIR / 'database' / 'database.sqlite3'}",
-        )
+        connection_string = cfg.bot.db_connection_string
         self.engine = create_async_engine(connection_string)
         self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
         sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
@@ -98,19 +97,19 @@ def setup_database(conn, _):
 
 
 async def startup():
-    if (token := cfg["bot"].get("token")) is None:
+    if (token := cfg.bot.token) is None:
         sys.exit(
             "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
         )
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg["bot"].get("default_prefix", fallback="c>")),  # type: ignore[reportGeneralTypeIssues]
+        command_prefix=guild_specific_prefix(cfg.bot.default_prefix),  # type: ignore[reportGeneralTypeIssues]
         intents=intents,
         help_command=HelpCommand(),
     )
     bot.cfg = cfg
-    bot.dev = cfg.getboolean("dangerous", "dev", fallback=False)
+    bot.dev = cfg.dangerous.dev
 
     handler = logging.handlers.RotatingFileHandler(
         filename="discord.log",
@@ -150,7 +149,7 @@ async def startup():
                 f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
             )
 
-    port = cfg["bot"].getint("login_server_port", fallback=None)
+    port = cfg.bot.login_server_port
     if port is not None and int(port) > 0:
         bot.app = init_app(bot)
         _ = asyncio.ensure_future(
