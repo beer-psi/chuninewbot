@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
+from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
 if TYPE_CHECKING:
@@ -21,6 +22,24 @@ TOKYO_TZ = ZoneInfo("Asia/Tokyo")
 class Arguments(argparse.ArgumentParser):
     def error(self, message):
         raise RuntimeError(message)
+
+
+def shlex_split(s: str) -> list[str]:
+    view = StringView(s)
+    result = []
+
+    while not view.eof:
+        view.skip_ws()
+        if view.eof:
+            break
+
+        word = view.get_quoted_word()
+        if word is None:
+            break
+
+        result.append(word)
+
+    return result
 
 
 def floor_to_ndp(number: "T", dp: int) -> "T":

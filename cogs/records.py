@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import shlex
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
@@ -11,7 +10,7 @@ from sqlalchemy import select
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from database.models import Song
-from utils import Arguments, did_you_mean_text
+from utils import Arguments, did_you_mean_text, shlex_split
 from utils.components import ScoreCardEmbed
 from utils.views.b30 import B30View
 from utils.views.compare import CompareView
@@ -240,7 +239,7 @@ class RecordsCog(commands.Cog, name="Records"):
         parser.add_argument("-we", "--worlds-end", action="store_true")
 
         try:
-            args = parser.parse_intermixed_args(shlex.split(query))
+            args = parser.parse_intermixed_args(shlex_split(query))
         except RuntimeError as e:
             await ctx.reply(str(e), mention_author=False)
             return None

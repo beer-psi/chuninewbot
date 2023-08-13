@@ -1,4 +1,3 @@
-import shlex
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -16,6 +15,7 @@ from utils import (
     Arguments,
     did_you_mean_text,
     release_to_chunithm_version,
+    shlex_split,
     yt_search_link,
 )
 
@@ -165,7 +165,7 @@ class SearchCog(commands.Cog, name="Search"):
         parser.add_argument("-we", "--worlds-end", action="store_true")
 
         try:
-            args = parser.parse_intermixed_args(shlex.split(query))
+            args = parser.parse_intermixed_args(shlex_split(query))
             query = " ".join(args.query)
         except RuntimeError as e:
             await ctx.reply(str(e), mention_author=False)
