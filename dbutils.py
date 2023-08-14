@@ -3,7 +3,7 @@ import csv
 import re
 from html import unescape
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import NotRequired, Optional, TypedDict
 from xml.etree import ElementTree
 
 import aiohttp
@@ -55,9 +55,30 @@ class ChunirecSong(TypedDict):
     data: ChunirecData
 
 
+class ZetarakuNoteCounts(TypedDict):
+    tap: int
+    hold: int
+    slide: int
+    air: int
+    flick: Optional[int]
+    total: int
+
+
+class ZetarakuSheet(TypedDict):
+    difficulty: str
+    level: str
+    levelValue: float
+    internalLevel: Optional[str]
+    internalLevelValue: float
+    noteDesigner: Optional[str]
+    noteCounts: ZetarakuNoteCounts
+
+
 class ZetarakuSong(TypedDict):
     title: str
     imageName: str
+    bpm: Optional[int]
+    sheets: list[ZetarakuSheet]
 
 
 class ZetarakuChunithmData(TypedDict):
@@ -414,42 +435,55 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             zetaraku_song["imageName"] if zetaraku_song is not None else ""
         )
 
-        inserted_songs.append(
-            {
-                "id": song["meta"]["id"],
-                "chunithm_id": chunithm_id,
-                # Don't use song["meta"]["title"]
-                "title": chunithm_song["title"],
-                "chunithm_catcode": chunithm_catcode,
-                "genre": song["meta"]["genre"],
-                "artist": song["meta"]["artist"],
-                "release": song["meta"]["release"],
-                "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
-                "jacket": jacket,
-                "zetaraku_jacket": zetaraku_jacket,
-            }
-        )
-        for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
+        inserted_song = {
+            "id": song["meta"]["id"],
+            "chunithm_id": chunithm_id,
+            # Don't use song["meta"]["title"]
+            "title": chunithm_song["title"],
+            "chunithm_catcode": chunithm_catcode,
+            "genre": song["meta"]["genre"],
+            "artist": song["meta"]["artist"],
+            "release": song["meta"]["release"],
+            "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
+            "jacket": jacket,
+            "zetaraku_jacket": zetaraku_jacket,
+        }
+
+        if inserted_song["bpm"] is None and zetaraku_song is not None:
+            inserted_song["bpm"] = zetaraku_song["bpm"]
+
+        inserted_songs.append(inserted_song)
+
+        for idx, difficulty in enumerate(["BAS", "ADV", "EXP", "MAS", "ULT"]):
             if (chart := song["data"].get(difficulty)) is not None:
                 if 0 < chart["level"] <= 9.5:
                     chart["const"] = chart["level"]
                     chart["is_const_unknown"] = 0
 
-                inserted_charts.append(
-                    {
-                        "song_id": song["meta"]["id"],
-                        "difficulty": difficulty,
-                        "level": str(chart["level"])
-                        .replace(".5", "+")
-                        .replace(".0", ""),
-                        "const": None
-                        if chart["is_const_unknown"] == 1
-                        else chart["const"],
-                        "maxcombo": chart["maxcombo"]
-                        if chart["maxcombo"] != 0
-                        else None,
-                    }
-                )
+                inserted_chart = {
+                    "song_id": song["meta"]["id"],
+                    "difficulty": difficulty,
+                    "level": str(chart["level"]).replace(".5", "+").replace(".0", ""),
+                    "const": None if chart["is_const_unknown"] == 1 else chart["const"],
+                    "maxcombo": chart["maxcombo"] if chart["maxcombo"] != 0 else None,
+                }
+
+                if zetaraku_song is not None:
+                    zetaraku_sheet = zetaraku_song["sheets"][idx]
+
+                    total = 0
+                    for note_type in ["tap", "hold", "slide", "air", "flick"]:
+                        inserted_chart[note_type] = zetaraku_sheet["noteCounts"][
+                            note_type
+                        ]
+                        total += zetaraku_sheet["noteCounts"][note_type]
+
+                    if inserted_chart["maxcombo"] is None:
+                        inserted_chart["maxcombo"] = total
+
+                    inserted_chart["charter"] = zetaraku_sheet["noteDesigner"]
+
+                inserted_charts.append(inserted_chart)
 
         if (chart := song["data"].get("WE")) is not None:
             we_stars = ""
@@ -489,6 +523,12 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "level": insert_statement.excluded.level,
                 "const": insert_statement.excluded.const,
                 "maxcombo": insert_statement.excluded.maxcombo,
+                "tap": insert_statement.excluded.tap,
+                "hold": insert_statement.excluded.hold,
+                "slide": insert_statement.excluded.slide,
+                "air": insert_statement.excluded.air,
+                "flick": insert_statement.excluded.flick,
+                "charter": insert_statement.excluded.charter,
             },
         )
         await session.execute(upsert_statement)

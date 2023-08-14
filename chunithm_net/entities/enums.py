@@ -35,6 +35,21 @@ class Difficulty(Enum):
             return "WE"
         return self.name[:3]
 
+    def emoji(self):
+        match self.value:
+            case 0:
+                return ":green_square:"
+            case 1:
+                return ":yellow_square:"  # yellow square
+            case 2:
+                return ":red_square:"  # red square
+            case 3:
+                return ":purple_square:"  # purple square
+            case 4:
+                return ":black_large_square:"  # black large square
+            case 5:
+                return ":blue_square:"  # blue square
+
     @classmethod
     def from_embed_color(cls, color: int):
         if color == 0x009F7B:

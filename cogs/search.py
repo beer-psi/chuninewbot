@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import JACKET_BASE
+from chunithm_net.entities.enums import Difficulty
 from database.models import Alias, Chart, Song
 from utils import (
     TOKYO_TZ,
@@ -155,14 +156,15 @@ class SearchCog(commands.Cog, name="Search"):
     async def info(self, ctx: Context, *, query: str):
         """Search for a song.
 
-        Parameters
-        ----------
-        query: str
-            The song title or alias to search for.
+        **Parameters**
+        `query`: Song title to search for. You don't have to be exact; try things out!
+        `-we`: Search for WORLD'S END songs instead of normal songs.
+        `-d`: Show detailed info, such as note counts and charter.
         """
         parser = Arguments()
         parser.add_argument("query", nargs="+")
         parser.add_argument("-we", "--worlds-end", action="store_true")
+        parser.add_argument("-d", "--detailed", action="store_true")
 
         try:
             args = parser.parse_intermixed_args(shlex_split(query))
@@ -191,7 +193,7 @@ class SearchCog(commands.Cog, name="Search"):
                     f"**Artist**: {emd(song.artist)}\n"
                     f"**Category**: {song.genre}\n"
                     f"**Version**: {version} ({song.release})\n"
-                    f"**BPM**: {song.bpm if song.bpm else 'Unknown'}\n"
+                    f"**BPM**: {song.bpm if song.bpm is not None else 'Unknown'}\n"
                 ),
                 color=discord.Color.yellow(),
             ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
@@ -213,15 +215,44 @@ class SearchCog(commands.Cog, name="Search"):
                     else yt_search_link(song.title, chart.difficulty)
                 )
                 worlds_end = "WORLD'S END"
-                desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
-                if chart.const is not None:
-                    desc += f" ({chart.const:.1f})"
+
+                if args.detailed:
+                    difficulty = Difficulty.from_short_form(chart.difficulty)
+
+                    link_text = f"{difficulty.emoji()} Lv.{chart.level}"
+                    if chart.const is not None:
+                        link_text += f" ({chart.const:.1f})"
+                    desc = f"[{link_text}]({url})"
+                else:
+                    desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
+                    if chart.const is not None:
+                        desc += f" ({chart.const:.1f})"
+
+                if args.detailed and chart.charter is not None:
+                    desc += f" Designer: {chart.charter}"
+
+                if args.detailed:
+                    maxcombo = chart.maxcombo or "-"
+                    tap = chart.tap or "-"
+                    hold = chart.hold or "-"
+                    slide = chart.slide or "-"
+                    air = chart.air or "-"
+                    flick = chart.flick or "-"
+                    desc += (
+                        f"\n**{maxcombo}** / {tap} / {hold} / {slide} / {air} / {flick}"
+                    )
                 chart_level_desc.append(desc)
 
             if len(chart_level_desc) > 0:
                 # embed.description is already set above
                 embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
-                embed.description += " / ".join(chart_level_desc)
+                if args.detailed:
+                    embed.description += (
+                        "**CHAIN** / TAP / HOLD / SLIDE / AIR / FLICK\n\n"
+                    )
+                    embed.description += "\n".join(chart_level_desc)
+                else:
+                    embed.description += " / ".join(chart_level_desc)
             await ctx.reply(embed=embed, mention_author=False)
             return None
 
