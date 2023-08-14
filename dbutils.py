@@ -1,6 +1,10 @@
+import argparse
+import csv
 import re
 from html import unescape
+from pathlib import Path
 from typing import NotRequired, TypedDict
+from xml.etree import ElementTree
 
 import aiohttp
 from aiolimiter import AsyncLimiter
@@ -14,8 +18,9 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import joinedload
 
-from bot import BOT_DIR, cfg
+from bot import cfg
 from database.models import Alias, Base, Chart, SdvxinChartView, Song
 from utils.types.errors import MissingConfiguration
 
@@ -489,44 +494,137 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         await session.execute(upsert_statement)
 
 
-# async def update_cc_from_data(db: aiosqlite.Connection, music_paths: list[Path]):
-#     inserted_charts = []
+async def update_cc_from_data(
+    async_session: async_sessionmaker[AsyncSession], music_paths: list[Path]
+):
+    async def thread(item: Path, semaphore: asyncio.BoundedSemaphore):
+        async with semaphore, asyncio.TaskGroup() as tg, async_session() as session, session.begin():
+            tree = ElementTree.parse(item / "Music.xml")
+            root = tree.getroot()
 
-#     for music_path in music_paths:
-#         for item in music_path.iterdir():
-#             tree = ElementTree.parse(item / "Music.xml")
-#             root = tree.getroot()
+            chunithm_id = int(root.find("./name/id").text)  # type: ignore[reportOptionalMemberAccess]
 
-#             chunithm_id = int(root.find("./name/id").text)
-#             async with db.execute(
-#                 "SELECT id FROM chunirec_songs WHERE chunithm_id = ?",
-#                 (chunithm_id,),
-#             ) as cursor:
-#                 song = await cursor.fetchone()
+            stmt = (
+                select(Song)
+                .where(Song.chunithm_id == chunithm_id)
+                .options(joinedload(Song.charts))
+            )
+            song = (await session.execute(stmt)).unique().scalar_one_or_none()
 
-#             if song is None:
-#                 print(f"Could not find song with chunithm_id {chunithm_id}")
-#                 continue
+            if song is None:
+                print(f"Could not find song with chunithm_id {chunithm_id}")
+                return
 
-#             charts = await db.execute_fetchall("SELECT * FROM chunirec_charts WHERE song_id = ?", (song[0],))
-#             for chart in zip(charts, root.findall("./fumens/MusicFumenData[enable='true']")):
-#                 pass
+            for chart in root.findall("./fumens/MusicFumenData[enable='true']"):
+                difficulty = chart.find("./type/data").text  # type: ignore[reportOptionalMemberAccess]
+                if difficulty is None:
+                    continue
+
+                db_chart = next(
+                    (
+                        chart
+                        for chart in song.charts
+                        if chart.difficulty == difficulty[:3]
+                        or (chart.difficulty == "WE" and difficulty == "WORLD'S END")
+                    ),
+                    None,
+                )
+
+                if db_chart is None:
+                    continue
+
+                if db_chart.difficulty != "WE":
+                    level: str = chart.find("./level").text  # type: ignore[reportOptionalMemberAccess]
+                    level_decimal: str = chart.find("./levelDecimal").text  # type: ignore[reportOptionalMemberAccess]
+
+                    db_chart.level = level + ("+" if int(level_decimal) >= 50 else "")
+                    db_chart.const = float(f"{level}.{level_decimal}")
+                else:
+                    we_tag: str = root.find("./worldsEndTagName/str").text  # type: ignore[reportOptionalMemberAccess]
+                    we_stars: int = int(root.find("./starDifType").text)  # type: ignore[reportOptionalMemberAccess]
+
+                    db_chart.const = None
+                    db_chart.level = we_tag
+                    for _ in range(-1, we_stars, 2):
+                        db_chart.level += "☆"
+
+                chart_file: Path = item / chart.find("./file/path").text  # type: ignore[reportOptionalMemberAccess]
+
+                with chart_file.open() as f:
+                    rd = csv.reader(f, delimiter="\t")
+                    for row in rd:
+                        if len(row) == 0:
+                            continue
+
+                        command = row[0]
+                        if command == "T_JUDGE_ALL":
+                            db_chart.maxcombo = int(row[1])
+                        if command == "T_JUDGE_TAP":
+                            db_chart.tap = int(row[1])
+                        if command == "T_JUDGE_HLD":
+                            db_chart.hold = int(row[1])
+                        if command == "T_JUDGE_SLD":
+                            db_chart.slide = int(row[1])
+                        if command == "T_JUDGE_AIR":
+                            db_chart.air = int(row[1])
+                        if command == "T_JUDGE_FLK":
+                            db_chart.flick = int(row[1])
+                        if command == "CREATOR":
+                            db_chart.charter = row[1]
+
+                tg.create_task(session.merge(db_chart))
+
+    semaphore = asyncio.BoundedSemaphore(10)
+    futures = [
+        thread(item, semaphore)
+        for music_path in music_paths
+        for item in music_path.iterdir()
+        if item.is_dir()
+    ]
+    await asyncio.gather(*futures)
 
 
 async def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(
+        title="subcommands", dest="command", required=True
+    )
+
+    subparsers.add_parser("create", help="Initializes the database")
+
+    update = subparsers.add_parser(
+        "update", help="Fill the database with data from various sources"
+    )
+    update.add_argument("source", choices=["chunirec", "sdvxin", "alias", "dump"])
+    update.add_argument(
+        "paths",
+        nargs="*",
+        type=Path,
+        help="If updating from dump, provide paths to the `music` folder.",
+    )
+
+    args = parser.parse_args()
+
     engine: AsyncEngine = create_async_engine(
-        "sqlite+aiosqlite:///" + str(BOT_DIR / "database" / "database.sqlite3")
-    )
-    async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
-        engine, expire_on_commit=False
+        cfg.bot.db_connection_string,
+        # Should be ridiculous even for multi-threading
+        connect_args={"timeout": 20},
     )
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    if args.command == "create":
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-    await update_db(async_session)
-    await update_aliases(async_session)
-    await update_sdvxin(async_session)
+    if args.command == "update":
+        async_session = async_sessionmaker(engine, expire_on_commit=False)
+        if args.source == "chunirec":
+            await update_db(async_session)
+        if args.source == "sdvxin":
+            await update_sdvxin(async_session)
+        if args.source == "alias":
+            await update_aliases(async_session)
+        if args.source == "dump":
+            await update_cc_from_data(async_session, args.paths)
 
     await engine.dispose()
 

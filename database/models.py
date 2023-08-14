@@ -79,6 +79,13 @@ class Chart(Base):
     const: Mapped[Optional[float]] = mapped_column(nullable=True)
 
     maxcombo: Mapped[Optional[int]] = mapped_column(nullable=True)
+    tap: Mapped[Optional[int]] = mapped_column(nullable=True)
+    hold: Mapped[Optional[int]] = mapped_column(nullable=True)
+    slide: Mapped[Optional[int]] = mapped_column(nullable=True)
+    air: Mapped[Optional[int]] = mapped_column(nullable=True)
+    flick: Mapped[Optional[int]] = mapped_column(nullable=True)
+
+    charter: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     song: Mapped["Song"] = relationship(back_populates="charts")
     sdvxin_chart_view: Mapped[Optional["SdvxinChartView"]] = relationship(
