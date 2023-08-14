@@ -51,10 +51,9 @@ def floor_to_ndp(number: "T", dp: int) -> "T":
 def did_you_mean_text(result: "Song | None", alias: "Alias | None") -> str:
     did_you_mean = ""
     if result is not None:
-        did_you_mean = f"Did you mean **{escape_markdown(result.title)}**"
+        did_you_mean = f"Did you mean **{escape_markdown(result.title)}**?"
         if alias is not None:
-            did_you_mean = f"**{escape_markdown(alias.alias)}** (for {did_you_mean})"
-        did_you_mean += "?"
+            did_you_mean = f"Did you mean **{escape_markdown(alias.alias)}** (for **{escape_markdown(result.title)}**)?"
 
     reply = f"No songs found. {did_you_mean}".strip()
     if did_you_mean:
