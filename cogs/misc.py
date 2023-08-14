@@ -8,20 +8,19 @@ from typing import TYPE_CHECKING, Optional, Sequence
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.utils import escape_markdown, oauth_url
+from discord.utils import oauth_url
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import joinedload
 
 from bot import ChuniBot
-from chunithm_net.consts import JACKET_BASE
-from chunithm_net.entities.enums import Difficulty
 from database.models import Chart, Prefix, Song
-from utils import floor_to_ndp, yt_search_link
+from utils import floor_to_ndp
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
 )
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
+from utils.components import ChartCardEmbed
 from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
@@ -447,28 +446,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 await ctx.reply("No charts found.", mention_author=False)
                 return
 
-            embeds: list[discord.Embed] = []
-            for chart in charts:
-                difficulty = Difficulty.from_short_form(chart.difficulty)
-
-                if chart.sdvxin_chart_view is not None:
-                    url = chart.sdvxin_chart_view.url
-                else:
-                    url = yt_search_link(chart.song.title, difficulty.short_form())
-
-                embeds.append(
-                    discord.Embed(
-                        title=escape_markdown(chart.song.title),
-                        description=escape_markdown(chart.song.artist),
-                        color=difficulty.color(),
-                    )
-                    .set_thumbnail(url=f"{JACKET_BASE}/{chart.song.jacket}")
-                    .add_field(name="Category", value=chart.song.genre)
-                    .add_field(
-                        name=str(difficulty),
-                        value=f"[{chart.level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
-                    )
-                )
+            embeds: list[discord.Embed] = [ChartCardEmbed(chart) for chart in charts]
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("recommend")
@@ -528,8 +506,6 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             embeds: list[discord.Embed] = []
             for chart in charts:
                 assert chart.const is not None
-
-                difficulty = Difficulty.from_short_form(chart.difficulty)
                 rating_diff = max_rating - chart.const
 
                 # if-else intentionally used to ensure State-of-the-Art Shitcode compliance
@@ -562,30 +538,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 else:
                     target_score = 1_009_000
 
-                target_rating = calculate_rating(target_score, chart.const)
-
-                if chart.sdvxin_chart_view is not None:
-                    url = chart.sdvxin_chart_view.url
-                else:
-                    url = yt_search_link(chart.song.title, difficulty.short_form())
-
-                embeds.append(
-                    discord.Embed(
-                        title=escape_markdown(chart.song.title),
-                        description=escape_markdown(chart.song.artist),
-                        color=difficulty.color(),
-                    )
-                    .set_thumbnail(url=f"{JACKET_BASE}/{chart.song.jacket}")
-                    .add_field(name="Category", value=chart.song.genre)
-                    .add_field(
-                        name=str(difficulty),
-                        value=f"[{chart.level}{f' ({chart.const})' if chart.const is not None else ''}]({url})",
-                    )
-                    .add_field(
-                        name="Target Score",
-                        value=f"{target_score} ({floor_to_ndp(target_rating, 2)})",
-                    )
-                )
+                embeds.append(ChartCardEmbed(chart, target_score=target_score))
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("prefix")
