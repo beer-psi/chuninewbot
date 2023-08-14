@@ -77,6 +77,14 @@ class EventsCog(commands.Cog, name="Events"):
                 "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
                 mention_author=False,
             )
+        if isinstance(exc, commands.errors.UnexpectedQuoteError):
+            return await ctx.reply(
+                (
+                    f"Unexpected quote mark, {exc.quote!r}, in non-quoted string. If this was intentional, "
+                    "escape the quote with a backslash (\\\\)."
+                ),
+                mention_author=False,
+            )
         if isinstance(
             exc, (commands.errors.NotOwner, commands.errors.MissingPermissions)
         ):
