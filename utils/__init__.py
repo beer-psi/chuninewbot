@@ -1,4 +1,3 @@
-import argparse
 import decimal
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -17,11 +16,6 @@ if TYPE_CHECKING:
 
 
 TOKYO_TZ = ZoneInfo("Asia/Tokyo")
-
-
-class Arguments(argparse.ArgumentParser):
-    def error(self, message):
-        raise RuntimeError(message)
 
 
 def shlex_split(s: str) -> list[str]:

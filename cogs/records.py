@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
@@ -10,7 +11,7 @@ from sqlalchemy import select
 from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from database.models import Song
-from utils import Arguments, did_you_mean_text, shlex_split
+from utils import did_you_mean_text, shlex_split
 from utils.components import ScoreCardEmbed
 from utils.views.b30 import B30View
 from utils.views.compare import CompareView
@@ -234,13 +235,16 @@ class RecordsCog(commands.Cog, name="Records"):
         `query`: Song title to search for.
         `-we`: Search for WORLD'S END songs instead of standard songs (no param).
         """
-        parser = Arguments()
-        parser.add_argument("query", nargs="+")
-        parser.add_argument("-we", "--worlds-end", action="store_true")
-
         try:
-            args = parser.parse_intermixed_args(shlex_split(query))
-        except RuntimeError as e:
+            args = SimpleNamespace(worlds_end=False, query=[])
+
+            argv = shlex_split(query)
+            for arg in argv:
+                if arg in ["-we", "--worlds-end"]:
+                    args.worlds_end = True
+                    argv.remove(arg)
+            args.query = argv
+        except ValueError as e:
             await ctx.reply(str(e), mention_author=False)
             return None
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import discord
@@ -13,7 +14,6 @@ from chunithm_net.entities.enums import Difficulty
 from database.models import Alias, Chart, Song
 from utils import (
     TOKYO_TZ,
-    Arguments,
     did_you_mean_text,
     release_to_chunithm_version,
     shlex_split,
@@ -161,15 +161,22 @@ class SearchCog(commands.Cog, name="Search"):
         `-we`: Search for WORLD'S END songs instead of normal songs.
         `-d`: Show detailed info, such as note counts and charter.
         """
-        parser = Arguments()
-        parser.add_argument("query", nargs="+")
-        parser.add_argument("-we", "--worlds-end", action="store_true")
-        parser.add_argument("-d", "--detailed", action="store_true")
-
         try:
-            args = parser.parse_intermixed_args(shlex_split(query))
+            args = SimpleNamespace(worlds_end=False, detailed=False, query=[])
+
+            argv = shlex_split(query)
+            for arg in argv:
+                if arg in ["-we", "--worlds-end"]:
+                    args.worlds_end = True
+                    argv.remove(arg)
+                if arg in ["-d", "--detailed"]:
+                    args.detailed = True
+                    argv.remove(arg)
+
+            args.query = argv
+
             query = " ".join(args.query)
-        except RuntimeError as e:
+        except ValueError as e:
             await ctx.reply(str(e), mention_author=False)
             return None
 
