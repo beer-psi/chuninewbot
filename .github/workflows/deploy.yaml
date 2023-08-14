@@ -5,6 +5,7 @@ on:
     branches:
       - trunk
     paths:
+      - ".github/workflows/deploy.yaml"
       - "chunithm_net/**"
       - "cogs/**"
       - "database/**"
@@ -21,15 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
           cache: poetry
           cache-dependency-path: poetry.lock
-
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v2
 
       - name: Install dependencies
         run: poetry install
