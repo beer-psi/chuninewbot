@@ -55,7 +55,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         cookie = await self.login_check(ctx_or_id)
         user_id, token = self.bot.sessions.get(id, (None, None))
 
-        session = ChuniNet(cookie, user_id, token)
+        session = ChuniNet(cookie, user_id=user_id, token=token)
         try:
             yield session
         finally:

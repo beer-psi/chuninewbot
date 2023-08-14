@@ -27,6 +27,7 @@ class ChuniNet:
     def __init__(
         self,
         clal: str,
+        *,
         user_id: Optional[str] = None,
         token: Optional[str] = None,
         base: Optional[URL] = None,
@@ -115,7 +116,7 @@ class ChuniNet:
             await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
-        if response.url.path == "/mobile/error/":
+        if response.url.path.startswith("/mobile/error"):
             soup = BeautifulSoup(await response.text(), "lxml")
             err = soup.select(".block.text_l .font_small")
 
