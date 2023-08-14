@@ -229,7 +229,7 @@ class SearchCog(commands.Cog, name="Search"):
                         desc += f" ({chart.const:.1f})"
 
                 if args.detailed and chart.charter is not None:
-                    desc += f" Designer: {chart.charter}"
+                    desc += f" Designer: {emd(chart.charter)}"
 
                 if args.detailed:
                     maxcombo = chart.maxcombo or "-"
