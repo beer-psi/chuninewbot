@@ -235,18 +235,14 @@ class RecordsCog(commands.Cog, name="Records"):
         `query`: Song title to search for.
         `-we`: Search for WORLD'S END songs instead of standard songs (no param).
         """
-        try:
-            args = SimpleNamespace(worlds_end=False, query=[])
+        args = SimpleNamespace(worlds_end=False, query=[])
 
-            argv = shlex_split(query)
-            for arg in argv:
-                if arg in ["-we", "--worlds-end"]:
-                    args.worlds_end = True
-                    argv.remove(arg)
-            args.query = argv
-        except ValueError as e:
-            await ctx.reply(str(e), mention_author=False)
-            return None
+        argv = shlex_split(query)
+        for arg in argv:
+            if arg in ["-we", "--worlds-end"]:
+                args.worlds_end = True
+            else:
+                args.query.append(arg)
 
         user = None
         query = " ".join(args.query)

@@ -161,24 +161,18 @@ class SearchCog(commands.Cog, name="Search"):
         `-we`: Search for WORLD'S END songs instead of normal songs.
         `-d`: Show detailed info, such as note counts and charter.
         """
-        try:
-            args = SimpleNamespace(worlds_end=False, detailed=False, query=[])
+        args = SimpleNamespace(worlds_end=False, detailed=False, query=[])
 
-            argv = shlex_split(query)
-            for arg in argv:
-                if arg in ["-we", "--worlds-end"]:
-                    args.worlds_end = True
-                    argv.remove(arg)
-                if arg in ["-d", "--detailed"]:
-                    args.detailed = True
-                    argv.remove(arg)
+        argv = shlex_split(query)
+        for arg in argv:
+            if arg in ["-we", "--worlds-end"]:
+                args.worlds_end = True
+            elif arg in ["-d", "--detailed"]:
+                args.detailed = True
+            else:
+                args.query.append(arg)
 
-            args.query = argv
-
-            query = " ".join(args.query)
-        except ValueError as e:
-            await ctx.reply(str(e), mention_author=False)
-            return None
+        query = " ".join(args.query)
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
