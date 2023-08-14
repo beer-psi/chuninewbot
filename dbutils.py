@@ -522,13 +522,6 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             set_={
                 "level": insert_statement.excluded.level,
                 "const": insert_statement.excluded.const,
-                "maxcombo": insert_statement.excluded.maxcombo,
-                "tap": insert_statement.excluded.tap,
-                "hold": insert_statement.excluded.hold,
-                "slide": insert_statement.excluded.slide,
-                "air": insert_statement.excluded.air,
-                "flick": insert_statement.excluded.flick,
-                "charter": insert_statement.excluded.charter,
             },
         )
         await session.execute(upsert_statement)
