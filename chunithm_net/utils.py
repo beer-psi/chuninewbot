@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, cast
+from typing import cast
 from zoneinfo import ZoneInfo
 
 from bs4.element import ResultSet, Tag
@@ -9,20 +9,6 @@ from .entities.enums import ClearType, Difficulty, Rank
 
 def chuni_int(s: str) -> int:
     return int(s.replace(",", ""))
-
-
-def get_attribute(soup: Optional[Tag], attr: str) -> str | list[str]:
-    if soup is None:
-        return ""
-    if (ret := soup.get(attr, "")) is None:
-        return ""
-    return ret
-
-
-def get_text(soup: Optional[Tag]) -> str:
-    if soup is None:
-        return ""
-    return soup.get_text()
 
 
 def parse_player_rating(soup: ResultSet[Tag]) -> float:

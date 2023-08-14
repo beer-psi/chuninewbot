@@ -151,7 +151,7 @@ class ChuniNet:
 
     async def music_record(self, idx: int) -> list[MusicRecord]:
         if idx >= 8000:
-            return await self.worlds_end_music_record(idx)
+            return await self._worlds_end_music_record(idx)
 
         resp = await self._request(
             "mobile/record/musicGenre/sendMusicDetail/",
@@ -164,10 +164,7 @@ class ChuniNet:
         soup = BeautifulSoup(await resp.text(), "lxml")
         return parse_music_record(soup, DetailedParams(idx, self.token))
 
-    async def worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
-        if idx < 8000:
-            return await self.music_record(idx)
-
+    async def _worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
         resp = await self._request(
             "mobile/record/worldsEndList/sendWorldsEndDetail/",
             method="POST",
@@ -221,13 +218,14 @@ class ChuniNet:
         return parse_music_for_rating(soup)
 
     async def change_player_name(self, new_name: str) -> bool:
-        if len(new_name) > 8:
-            msg = "Player name must be 8 characters or less"
+        if len(new_name) > 8 or len(new_name) < 1:
+            msg = "Player name must be between 1 and 8 characters"
             raise ValueError(msg)
         if any(
             not (
                 c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
-                or c.isalnum()
+                or c.isdigit()
+                or (c.isalpha() and c.isascii())
                 or c.isspace()
             )
             for c in new_name
