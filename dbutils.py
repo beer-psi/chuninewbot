@@ -235,6 +235,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "gekimai",
         "original",
         "ultima",
+        "end",
     ]
     difficulties = {
         "B": "BAS",
@@ -292,6 +293,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "NYAN-NYA, More! ラブシャイン、Chu?": "NYAN-NYA, More! ラブシャイン、Chu♥",
         "今ぞ崇め奉れ☆オマエらよ!!~姫の秘メタル渇望~": "今ぞ♡崇め奉れ☆オマエらよ!!~姫の秘メタル渇望~",
         "砂漠のハンティングガール": "砂漠のハンティングガール♡",
+        "The Metaverse": "The Metaverse -First story of the SeelischTact-",
     }
     # sdvx.in ID, song_id, difficulty
     inserted_data: list[dict] = []
@@ -299,8 +301,13 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
     async with limiter, aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=600)
     ) as client, async_session() as session, session.begin():
+        # standard categories
         for category in categories:
-            resp = await client.get(f"https://sdvx.in/chunithm/sort/{category}.htm")
+            if category == "end":
+                url = "https://sdvx.in/chunithm/end.htm"
+            else:
+                url = f"https://sdvx.in/chunithm/sort/{category}.htm"
+            resp = await client.get(url)
             soup = BeautifulSoup(await resp.text(), "lxml")
 
             table = soup.select_one("table:has(td.tbgl)")
@@ -320,13 +327,15 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     :5
                 ]  # TODO: dont assume the ID is always 5 digits
 
-                song = (
-                    await session.execute(
-                        select(Song)
-                        # Limit to non-WE charts. WE charts have their own section.
-                        .where((Song.title == title) & (Song.chunithm_id < 8000))
+                stmt = select(Song)
+                if category == "end":
+                    stmt = stmt.where(
+                        (Song.title == title) & (Song.chunithm_id >= 8000)
                     )
-                ).scalar_one_or_none()
+                else:
+                    stmt = stmt.where((Song.title == title) & (Song.chunithm_id < 8000))
+
+                song = (await session.execute(stmt)).scalar_one_or_none()
                 if song is None:
                     print(f"Could not find song with title {title}")
                     continue
@@ -339,7 +348,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                         continue
 
                     key, value = line.split("=", 1)
-                    difficulty = difficulties[key[-1]]
+                    difficulty = difficulties[key[11]]
                     value_soup = BeautifulSoup(
                         value.removeprefix('"').removesuffix('";'), "lxml"
                     )

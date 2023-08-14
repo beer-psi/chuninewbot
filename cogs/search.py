@@ -220,10 +220,11 @@ class SearchCog(commands.Cog, name="Search"):
                 if args.detailed:
                     difficulty = Difficulty.from_short_form(chart.difficulty)
 
-                    link_text = f"{difficulty.emoji()} Lv.{chart.level}"
+                    link_text = f"Lv.{chart.level}"
                     if chart.const is not None:
                         link_text += f" ({chart.const:.1f})"
-                    desc = f"[{link_text}]({url})"
+
+                    desc = f"{difficulty.emoji()} [{link_text}]({url})"
                 else:
                     desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
                     if chart.const is not None:
