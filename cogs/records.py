@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
@@ -219,6 +220,28 @@ class RecordsCog(commands.Cog, name="Records"):
                 mention_author=False,
             )
             return None
+
+    @app_commands.command(name="scores", description="Get scores for a specific song.")
+    @app_commands.describe(
+        query="Song title to search for. You don't have to be exact; try things out!",
+        user="Check scores of this Discord user. Yourself, if not provided.",
+        worlds_end="Search for WORLD'S END songs instead of standard songs.",
+    )
+    async def scores_slash(
+        self,
+        interaction: discord.Interaction,
+        query: str,
+        *,
+        user: Optional[discord.User | discord.Member] = None,
+        worlds_end: bool = True,
+    ):
+        if user is not None:
+            query = f"{user.mention} {query}"
+        if worlds_end:
+            query += " -we"
+
+        ctx = await Context.from_interaction(interaction)
+        return await self.scores(ctx, query=query)
 
     @commands.command("scores")
     async def scores(

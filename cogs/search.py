@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
@@ -152,7 +153,29 @@ class SearchCog(commands.Cog, name="Search"):
             await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
             return None
 
-    @commands.hybrid_command("info")
+    @app_commands.command(name="info", description="Search for a song.")
+    @app_commands.describe(
+        query="Song title to search for. You don't have to be exact; try things out!",
+        worlds_end="Whether to search for WORLD'S END songs instead of standard songs.",
+        detailed="Display detailed chart information (note counts and designer name)",
+    )
+    async def info_slash(
+        self,
+        interaction: discord.Interaction,
+        query: str,
+        *,
+        worlds_end: bool = False,
+        detailed: bool = False,
+    ):
+        if worlds_end:
+            query += " -we"
+        if detailed:
+            query += " -d"
+
+        ctx = await Context.from_interaction(interaction)
+        return await self.info(ctx, query=query)
+
+    @commands.command("info")
     async def info(self, ctx: Context, *, query: str):
         """Search for a song.
 
