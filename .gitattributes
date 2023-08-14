@@ -1,1 +1,4 @@
 tests/chunithm_net/assets/* linguist-vendored
+
+database/alembic/script.py.mako linguist-vendored
+database/alembic/env.py linguist-vendored
