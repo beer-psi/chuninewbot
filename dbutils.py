@@ -512,21 +512,15 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                             should_add_notecounts = False
                             break
 
-                        inserted_chart[note_type] = count
-                        total += count
+                        inserted_chart[note_type] = count or 0
+                        total += count or 0
 
                     if should_add_notecounts:
-                        # Usually affects flicks
-                        for note_type in NOTE_TYPES:
-                            inserted_chart[note_type] = inserted_chart[note_type] or 0
-
                         inserted_chart["maxcombo"] = inserted_chart["maxcombo"] or total
                     else:
                         # Unset everything that was set
                         for note_type in NOTE_TYPES:
                             inserted_chart[note_type] = None
-
-                        inserted_chart["maxcombo"] = None
 
                 inserted_charts.append(inserted_chart)
 
