@@ -3,7 +3,7 @@ import csv
 import re
 from html import unescape
 from pathlib import Path
-from typing import NotRequired, Optional, TypedDict
+from typing import TYPE_CHECKING, Optional, TypedDict
 from xml.etree import ElementTree
 
 import aiohttp
@@ -24,6 +24,9 @@ from bot import cfg
 from database.models import Alias, Base, Chart, SdvxinChartView, Song
 from utils.types.errors import MissingConfiguration
 
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
+
 
 class ChunirecMeta(TypedDict):
     id: str
@@ -42,12 +45,12 @@ class ChunirecDifficulty(TypedDict):
 
 
 class ChunirecData(TypedDict):
-    BAS: NotRequired[ChunirecDifficulty]
-    ADV: NotRequired[ChunirecDifficulty]
-    EXP: NotRequired[ChunirecDifficulty]
-    MAS: NotRequired[ChunirecDifficulty]
-    ULT: NotRequired[ChunirecDifficulty]
-    WE: NotRequired[ChunirecDifficulty]
+    BAS: "NotRequired[ChunirecDifficulty]"
+    ADV: "NotRequired[ChunirecDifficulty]"
+    EXP: "NotRequired[ChunirecDifficulty]"
+    MAS: "NotRequired[ChunirecDifficulty]"
+    ULT: "NotRequired[ChunirecDifficulty]"
+    WE: "NotRequired[ChunirecDifficulty]"
 
 
 class ChunirecSong(TypedDict):
