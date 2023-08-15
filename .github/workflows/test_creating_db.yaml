@@ -5,6 +5,7 @@ on:
     branches:
       - trunk
     paths:
+      - ".github/workflows/test_creating_db.yaml"
       - "utils/config.py"  # Contains default value for DB path
       - "database/**"
       - "dbutils.py"
@@ -48,3 +49,9 @@ jobs:
 
       - name: Update database aliases
         run: poetry run python dbutils.py update alias
+
+      - name: Upload created database
+        uses: actions/upload-artifact@v3
+        with:
+          name: database
+          path: database/database.sqlite3
