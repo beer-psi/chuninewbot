@@ -64,10 +64,6 @@ class ChuniNet:
             return None
         return cookie.value
 
-    @user_id.setter
-    def set_user_id(self, user_id: str):
-        self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
-
     @property
     def token(self):
         cookie = self.session.cookie_jar.filter_cookies(self.base).get("_t")
@@ -75,9 +71,8 @@ class ChuniNet:
             return None
         return cookie.value
 
-    @token.setter
-    def set_token(self, token: str):
-        self.session.cookie_jar.update_cookies({"_t": token}, self.base)
+    def clear_cookies(self):
+        self.session.cookie_jar.clear_domain(self.base.host or "chunithm-net-eng.com")
 
     async def validate_cookie(self):
         async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
@@ -116,6 +111,13 @@ class ChuniNet:
             await self.authenticate()
 
         response = await self.session.request(method, self.base / endpoint, **kwargs)
+        # We could be here because the client attempted to reauthenticate
+        # but the clal was invalid.
+        if response.url.path == "/mobile/" and self.AUTH_URL in (await response.text()):
+            self.clear_cookies()
+            await self.authenticate()
+            return await self._request(endpoint, method, **kwargs)
+
         if response.url.path.startswith("/mobile/error"):
             soup = BeautifulSoup(await response.text(), "lxml")
             err = soup.select(".block.text_l .font_small")
@@ -123,6 +125,7 @@ class ChuniNet:
             errcode = int(err[0].get_text().split(":")[1])
             description = err[1].get_text() if len(err) > 1 else ""
             raise ChuniNetError(errcode, description)
+
         return response
 
     async def player_data(self):

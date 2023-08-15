@@ -181,6 +181,36 @@ async def test_client_reauthenticates_on_error(
 
 
 @pytest.mark.asyncio
+async def test_client_handles_failed_reauthentication(
+    aioresponses: original_aioresponses,
+    clal: str,
+    user_id: str,
+    token: str,
+):
+    aioresponses.get(
+        "https://chunithm-net-eng.com/mobile/home",
+        status=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/"},
+    )
+
+    with (BASE_DIR / "assets" / "stupid_way_to_redirect.html").open("rb") as f:
+        aioresponses.get(
+            "https://chunithm-net-eng.com/mobile/", status=200, body=f.read()
+        )
+
+    aioresponses.get(
+        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
+        status=200,
+    )
+
+    with pytest.raises(
+        InvalidTokenException, match="Invalid cookie. Received status code was 200"
+    ):
+        async with ChuniNet(clal, user_id=user_id, token=token) as client:
+            await client.authenticate()
+
+
+@pytest.mark.asyncio
 async def test_client_throws_when_on_maintenance(
     aioresponses: original_aioresponses,
     clal: str,
