@@ -269,7 +269,7 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
     return records
 
 
-def parse_detailed_recent_record(idx: int, soup: BeautifulSoup) -> DetailedRecentRecord:
+def parse_detailed_recent_record(soup: BeautifulSoup) -> DetailedRecentRecord:
     def get_judgement_count(class_name):
         return chuni_int(soup.select_one(class_name).get_text().replace(",", ""))
 
@@ -279,8 +279,6 @@ def parse_detailed_recent_record(idx: int, soup: BeautifulSoup) -> DetailedRecen
     record = DetailedRecentRecord.from_basic(
         parse_basic_recent_record(cast("Tag", soup.select_one(".frame01_inside")))
     )
-    if record.detailed is not None:
-        record.detailed.idx = idx
 
     record.max_combo = chuni_int(
         soup.select_one(".play_data_detail_maxcombo_block").get_text()

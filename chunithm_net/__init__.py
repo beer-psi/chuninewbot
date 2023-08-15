@@ -150,7 +150,7 @@ class ChuniNet:
             },
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
-        return parse_detailed_recent_record(idx, soup)
+        return parse_detailed_recent_record(soup)
 
     async def music_record(self, idx: int) -> list[MusicRecord]:
         if idx >= 8000:

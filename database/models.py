@@ -27,6 +27,7 @@ class Cookie(Base):
 
     discord_id: Mapped[int] = mapped_column(BigInteger(), primary_key=True)
     cookie: Mapped[str] = mapped_column(String(64), nullable=False)
+    kamaitachi_token: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
 
 class Song(Base):
