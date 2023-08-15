@@ -86,6 +86,10 @@ class ChartCardEmbed(discord.Embed):
                 border_jus_sp = tolerance_sp - border_atk_sp * 51 - border_miss_sp * 101
                 border_jus_s = tolerance_s - border_atk_s * 51 - border_miss_s * 101
 
+                deduction_jus = floor_to_ndp(10_000 / chart.maxcombo, 2)
+                deduction_atk = floor_to_ndp(510_000 / chart.maxcombo, 2)
+                deduction_miss = floor_to_ndp(1_010_000 / chart.maxcombo, 2)
+
                 self.add_field(
                     name="Note Count",
                     value=field_value,
@@ -100,6 +104,15 @@ class ChartCardEmbed(discord.Embed):
                         f"▸ {rank_icon(Rank.SS)} ▸ {border_jus_ss:.0f}-{border_atk_ss:.0f}-{border_miss_ss:.0f}\n"
                         f"▸ {rank_icon(Rank.Sp)} ▸ {border_jus_sp:.0f}-{border_atk_sp:.0f}-{border_miss_sp:.0f}\n"
                         f"▸ {rank_icon(Rank.S)} ▸ {border_jus_s:.0f}-{border_atk_s:.0f}-{border_miss_s:.0f}"
+                    ),
+                )
+
+                self.add_field(
+                    name="Score Deduction",
+                    value=(
+                        f"▸ JUSTICE: -{deduction_jus:.2f}\n"
+                        f"▸ ATTACK: -{deduction_atk:.2f}\n"
+                        f"▸ MISS: -{deduction_miss:.2f}"
                     ),
                 )
 
