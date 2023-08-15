@@ -9,6 +9,7 @@ on:
       - "chunithm_net/**"
       - "cogs/**"
       - "database/**"
+      - "tests/**"
       - "utils/**"
       - "bot.py"
       - "poetry.lock"
