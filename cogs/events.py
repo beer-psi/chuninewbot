@@ -105,7 +105,11 @@ class EventsCog(commands.Cog, name="Events"):
             return await ctx.reply(str(error), mention_author=False)
 
         await ctx.reply(
-            "An error occurred while executing the command.",
+            (
+                "Something really terrible happened. "
+                f"The owner <@{self.bot.owner_id}> has been notified.\n"
+                "Please try again in a couple of hours."
+            ),
             mention_author=False,
         )
 
