@@ -466,7 +466,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
 
         inserted_songs.append(inserted_song)
 
-        for idx, difficulty in enumerate(["BAS", "ADV", "EXP", "MAS", "ULT"]):
+        for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
             if (chart := song["data"].get(difficulty)) is not None:
                 if 0 < chart["level"] <= 9.5:
                     chart["const"] = chart["level"]
@@ -480,8 +480,20 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     "maxcombo": chart["maxcombo"] if chart["maxcombo"] != 0 else None,
                 }
 
-                if zetaraku_song is not None:
-                    zetaraku_sheet = zetaraku_song["sheets"][idx]
+                if (
+                    zetaraku_song is not None
+                    and (
+                        zetaraku_sheet := next(
+                            (
+                                sheet
+                                for sheet in zetaraku_song["sheets"]
+                                if sheet["difficulty"][:3] == difficulty.lower()
+                            ),
+                            None,
+                        )
+                    )
+                    is not None
+                ):
                     inserted_chart["charter"] = zetaraku_sheet["noteDesigner"]
 
                     total = 0
