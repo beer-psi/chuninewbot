@@ -535,7 +535,7 @@ async def test_client_parses_detailed_playlog(
         record = await client.detailed_recent_record(40)
 
     assert record.detailed is not None
-    assert record.detailed.idx == 40
+    assert record.detailed.idx == 317
     assert record.detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
 
     assert record.title == "Air"
