@@ -88,6 +88,7 @@ class ZetarakuChunithmData(TypedDict):
     songs: list[ZetarakuSong]
 
 
+NOTE_TYPES = ["tap", "hold", "slide", "air", "flick"]
 CHUNITHM_CATCODES = {
     "POPS & ANIME": 0,
     "POPS&ANIME": 0,
@@ -498,20 +499,32 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     is not None
                 ):
                     inserted_chart["charter"] = zetaraku_sheet["noteDesigner"]
+                    if inserted_chart["charter"] == "-":
+                        inserted_chart["charter"] = None
 
                     total = 0
-                    should_add_maxcombo = True
-                    for note_type in ["tap", "hold", "slide", "air", "flick"]:
+                    should_add_notecounts = True
+                    for note_type in NOTE_TYPES:
                         count = zetaraku_sheet["noteCounts"][note_type]
                         if count is None:
-                            should_add_maxcombo = False
+                            should_add_notecounts = False
                             break
 
                         inserted_chart[note_type] = count
                         total += count
 
-                    if inserted_chart["maxcombo"] is None and should_add_maxcombo:
-                        inserted_chart["maxcombo"] = total
+                    if should_add_notecounts:
+                        # Usually affects flicks
+                        for note_type in NOTE_TYPES:
+                            inserted_chart[note_type] = inserted_chart[note_type] or 0
+
+                        inserted_chart["maxcombo"] = inserted_chart["maxcombo"] or total
+                    else:
+                        # Unset everything that was set
+                        for note_type in NOTE_TYPES:
+                            inserted_chart[note_type] = None
+
+                        inserted_chart["maxcombo"] = None
 
                 inserted_charts.append(inserted_chart)
 
