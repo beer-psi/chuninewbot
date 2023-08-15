@@ -94,7 +94,7 @@ class RecentRecordsView(PaginationView):
     async def dropdown(
         self, interaction: discord.Interaction, select: discord.ui.Select
     ):
-        if not isinstance(interaction.channel, discord.abc.MessageableChannel):
+        if not isinstance(interaction.channel, discord.abc.Messageable):
             return
         await interaction.response.defer()
 
