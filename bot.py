@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from database.models import Base, Prefix
+from database.models import Prefix
 from utils.config import Config
 from utils.help import HelpCommand
 from web import init_app
@@ -60,9 +60,6 @@ class ChuniBot(Bot):
         self.engine = create_async_engine(connection_string)
         self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
         sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
-
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
 
         async with self.begin_db_session() as session:
             prefixes = (await session.execute(select(Prefix))).scalars()
