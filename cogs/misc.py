@@ -13,7 +13,6 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.orm import joinedload
 
 from bot import ChuniBot
-from chunithm_net.entities.enums import Rank
 from database.models import Chart, Prefix, Song
 from utils import did_you_mean_text, floor_to_ndp
 from utils.calculation.overpower import (
