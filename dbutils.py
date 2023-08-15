@@ -10,7 +10,7 @@ import aiohttp
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import Comment
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -419,21 +419,18 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             return
 
         if not jacket:
-            try:
-                chunithm_song = next(
-                    (
-                        x
-                        for x in chuni_songs
-                        if normalize_title(x["title"])
-                        == normalize_title(song["meta"]["title"], remove_we_kanji=True)
-                        and normalize_title(x["artist"])
-                        == normalize_title(song["meta"]["artist"])
-                    ),
-                    {},
-                )
-                jacket = chunithm_song.get("image")
-            except StopIteration:
-                pass
+            chunithm_song = next(
+                (
+                    x
+                    for x in chuni_songs
+                    if normalize_title(x["title"])
+                    == normalize_title(song["meta"]["title"], remove_we_kanji=True)
+                    and normalize_title(x["artist"])
+                    == normalize_title(song["meta"]["artist"])
+                ),
+                {},
+            )
+            jacket = chunithm_song.get("image")
 
         zetaraku_song = next(
             (
@@ -478,6 +475,12 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     "level": str(chart["level"]).replace(".5", "+").replace(".0", ""),
                     "const": None if chart["is_const_unknown"] == 1 else chart["const"],
                     "maxcombo": chart["maxcombo"] if chart["maxcombo"] != 0 else None,
+                    "tap": None,
+                    "hold": None,
+                    "slide": None,
+                    "air": None,
+                    "flick": None,
+                    "charter": None,
                 }
 
                 if (
@@ -523,6 +526,12 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     "level": chunithm_song["we_kanji"] + we_stars,
                     "const": None,
                     "maxcombo": chart["maxcombo"] if chart["maxcombo"] != 0 else None,
+                    "tap": None,
+                    "hold": None,
+                    "slide": None,
+                    "air": None,
+                    "flick": None,
+                    "charter": None,
                 }
             )
 
@@ -536,9 +545,11 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "genre": insert_statement.excluded.genre,
                 "artist": insert_statement.excluded.artist,
                 "release": insert_statement.excluded.release,
-                "bpm": insert_statement.excluded.bpm,
-                "jacket": insert_statement.excluded.jacket,
-                "zetaraku_jacket": insert_statement.excluded.zetaraku_jacket,
+                "bpm": func.coalesce(insert_statement.excluded.bpm, Song.bpm),
+                "jacket": func.coalesce(insert_statement.excluded.jacket, Song.jacket),
+                "zetaraku_jacket": func.coalesce(
+                    insert_statement.excluded.zetaraku_jacket, Song.zetaraku_jacket
+                ),
             },
         )
         await session.execute(upsert_statement)
@@ -549,6 +560,17 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             set_={
                 "level": insert_statement.excluded.level,
                 "const": insert_statement.excluded.const,
+                "maxcombo": func.coalesce(
+                    insert_statement.excluded.maxcombo, Chart.maxcombo
+                ),
+                "tap": func.coalesce(insert_statement.excluded.tap, Chart.tap),
+                "hold": func.coalesce(insert_statement.excluded.hold, Chart.hold),
+                "slide": func.coalesce(insert_statement.excluded.slide, Chart.slide),
+                "air": func.coalesce(insert_statement.excluded.air, Chart.air),
+                "flick": func.coalesce(insert_statement.excluded.flick, Chart.flick),
+                "charter": func.coalesce(
+                    insert_statement.excluded.charter, Chart.charter
+                ),
             },
         )
         await session.execute(upsert_statement)
