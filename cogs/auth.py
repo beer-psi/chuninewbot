@@ -77,8 +77,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 f"Login instructions have been sent to your DMs. {please_delete_message}"
                 "(please **enable Privacy Settings -> Direct Messages** if you haven't received it.)"
             )
-
-        if clal is not None:
+        elif clal is not None:
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:
                 return await channel.send("Successfully logged in.")
 
