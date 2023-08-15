@@ -59,12 +59,12 @@ class ChunirecSong(TypedDict):
 
 
 class ZetarakuNoteCounts(TypedDict):
-    tap: int
-    hold: int
-    slide: int
-    air: int
+    tap: Optional[int]
+    hold: Optional[int]
+    slide: Optional[int]
+    air: Optional[int]
     flick: Optional[int]
-    total: int
+    total: Optional[int]
 
 
 class ZetarakuSheet(TypedDict):
@@ -482,18 +482,21 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
 
                 if zetaraku_song is not None:
                     zetaraku_sheet = zetaraku_song["sheets"][idx]
+                    inserted_chart["charter"] = zetaraku_sheet["noteDesigner"]
 
                     total = 0
+                    should_add_maxcombo = True
                     for note_type in ["tap", "hold", "slide", "air", "flick"]:
-                        inserted_chart[note_type] = zetaraku_sheet["noteCounts"][
-                            note_type
-                        ]
-                        total += zetaraku_sheet["noteCounts"][note_type]
+                        count = zetaraku_sheet["noteCounts"][note_type]
+                        if count is None:
+                            should_add_maxcombo = False
+                            break
 
-                    if inserted_chart["maxcombo"] is None:
+                        inserted_chart[note_type] = count
+                        total += count
+
+                    if inserted_chart["maxcombo"] is None and should_add_maxcombo:
                         inserted_chart["maxcombo"] = total
-
-                    inserted_chart["charter"] = zetaraku_sheet["noteDesigner"]
 
                 inserted_charts.append(inserted_chart)
 
