@@ -380,7 +380,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         )
         songs: list[ChunirecSong] = await resp.json()
         chuni_songs: list[dict[str, str]] = await chuni_resp.json()
-        zetaraku_songs: ZetarakuChunithmData = ZetarakuChunithmData.from_json(await zetaraku_resp.text())  # type: ignore[reportGeneralTypeIssues]
+        zetaraku_songs: ZetarakuChunithmData = await zetaraku_resp.json()
 
     inserted_songs = []
     inserted_charts = []

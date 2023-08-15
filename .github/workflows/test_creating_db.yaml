@@ -1,0 +1,50 @@
+name: Test DB generation
+
+on:
+  push:
+    branches:
+      - trunk
+    paths:
+      - "utils/config.py"  # Contains default value for DB path
+      - "database/**"
+      - "dbutils.py"
+      - "poetry.lock"
+      - "pyproject.toml"
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          cache: poetry
+          cache-dependency-path: poetry.lock
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Configuration
+        run: |
+           cp bot.example.ini bot.ini
+           sed -i 's/# chunirec_token = <token>/chunirec_token = ${{ secrets.CHUNIREC_TOKEN }}/' bot.ini
+
+      - name: Create database from schema
+        run: poetry run python dbutils.py create
+
+      - name: Update database with information from Chunirec + Zetaraku + Official website
+        run: poetry run python dbutils.py update chunirec
+
+      - name: Update sdvx.in chart views
+        run: poetry run python dbutils.py update sdvxin
+
+      - name: Update database aliases
+        run: poetry run python dbutils.py update alias
