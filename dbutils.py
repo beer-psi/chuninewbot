@@ -506,7 +506,9 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     should_add_notecounts = True
                     for note_type in NOTE_TYPES:
                         count = zetaraku_sheet["noteCounts"][note_type]
-                        if count is None:
+                        if count is None and (
+                            note_type != "flick" and difficulty not in ("MAS", "ULT")
+                        ):
                             should_add_notecounts = False
                             break
 
