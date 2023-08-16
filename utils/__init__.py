@@ -8,11 +8,11 @@ from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
 if TYPE_CHECKING:
-    from typing import TypeVar
+    from typing import Sequence, TypeVar
 
     from database.models import Alias, Song
 
-    T = TypeVar("T")
+    T = TypeVar("T", decimal.Decimal, float, str, int)
 
 
 TOKYO_TZ = ZoneInfo("Asia/Tokyo")
@@ -39,7 +39,18 @@ def shlex_split(s: str) -> list[str]:
 def floor_to_ndp(number: "T", dp: int) -> "T":
     with decimal.localcontext() as ctx:
         ctx.rounding = decimal.ROUND_FLOOR
-        return type(number)(round(decimal.Decimal(str(number)), dp))  # type: ignore[reportGeneralTypeIssues]
+        return type(number)(round(decimal.Decimal(number), dp))
+
+
+def round_to_nearest(number: "T", value: int) -> "T":
+    digit_count = len(str(value))
+
+    multiplier: int = 10**digit_count // value
+    round_dp = -digit_count
+
+    return type(number)(
+        round(decimal.Decimal(number * multiplier), round_dp) / multiplier
+    )
 
 
 def did_you_mean_text(result: "Song | None", alias: "Alias | None") -> str:

@@ -1,6 +1,6 @@
 from datetime import datetime
 from types import SimpleNamespace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import discord
 from discord import app_commands
@@ -20,6 +20,7 @@ from utils import (
     shlex_split,
     yt_search_link,
 )
+from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -30,6 +31,47 @@ class SearchCog(commands.Cog, name="Search"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
+
+    @commands.hybrid_command("find")
+    async def find(self, ctx: Context, level: str):
+        """Find charts by level or chart constant.
+
+        Parameters
+        ----------
+        query: float
+            Chart constant to search for.
+        """
+
+        stmt = (
+            select(Chart)
+            .options(joinedload(Chart.sdvxin_chart_view), joinedload(Chart.song))
+            .join(Song, Chart.song)
+            .order_by(Song.title)
+        )
+
+        try:
+            if "." in level:
+                query_level = float(level)
+                stmt = stmt.where(Chart.const == query_level)
+            else:
+                stmt = stmt.where(Chart.level == level)
+        except ValueError:
+            msg = "Please enter a valid level or chart constant."
+            raise commands.BadArgument(msg) from None
+
+        async with ctx.typing(), self.bot.begin_db_session() as session:
+            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
+
+            if len(charts) == 0:
+                await ctx.reply("No charts found.", mention_author=False)
+                return
+
+            view = SonglistView(ctx, charts)
+            view.message = await ctx.reply(
+                embed=view.format_songlist(view.items[: view.per_page]),
+                view=view,
+                mention_author=False,
+            )
 
     @commands.hybrid_command("addalias")
     @commands.guild_only()

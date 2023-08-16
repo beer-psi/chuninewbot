@@ -1,8 +1,9 @@
 from decimal import Decimal
+from typing import Optional
 
 
-def calculate_rating(score: int, internal_level: float) -> Decimal:
-    level_base = Decimal(str(internal_level)) * 10000
+def calculate_rating(score: int, internal_level: Optional[float]) -> Decimal:
+    level_base = Decimal(internal_level or 0) * 10000
 
     rating100 = Decimal(0)
 
@@ -25,27 +26,28 @@ def calculate_rating(score: int, internal_level: float) -> Decimal:
     elif score >= 500_000:
         rating100 = (((level_base - 50_000) / 2) * (score - 500_000)) / 300_000
 
-    if rating100 < 0 and internal_level > 0:
-        rating100 = 0
+    if rating100 < 0 and internal_level is not None and internal_level > 0:
+        rating100 = Decimal(0)
 
     return rating100 / 10000
 
 
-def calculate_score_for_rating(rating: float, internal_level: float) -> int:
-    diff = Decimal(Decimal(str(rating)) * 10000 - Decimal(str(internal_level)) * 10000)
-    req = -1
+def calculate_score_for_rating(rating: float, internal_level: float) -> Optional[int]:
+    diff = Decimal(rating) * 10000 - Decimal(internal_level) * 10000
+
+    req = None
     if diff >= 21_501:
-        req = -1
+        req = None
     elif diff >= 20_000:
-        req = 1_007_500 + Decimal(diff) - 20_000
+        req = 1_007_500 + diff - 20_000
     elif diff >= 15_000:
-        req = 1_005_000 + Decimal(diff - 15_000) / 2
+        req = 1_005_000 + (diff - 15_000) / 2
     elif diff >= 10_000:
-        req = 1_000_000 + Decimal(diff - 10_000)
+        req = 1_000_000 + (diff - 10_000)
     else:
-        req = 975_000 + Decimal(diff) * 5 / 2
+        req = 975_000 + diff * 5 / 2
 
     # Calculation for scores below 975,000 is very complex so it is skipped for now
     # (If your score is below 975,000 you should just git gud)
 
-    return req
+    return int(req) if req is not None else None

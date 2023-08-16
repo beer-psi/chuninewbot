@@ -146,6 +146,38 @@ class Rank(Enum):
             return cls.C
         return cls.D
 
+    @property
+    def min_score(self) -> int:
+        match self.value:
+            case 0:
+                return 0
+            case 1:
+                return 500000
+            case 2:
+                return 600000
+            case 3:
+                return 700000
+            case 4:
+                return 800000
+            case 5:
+                return 900000
+            case 6:
+                return 925000
+            case 7:
+                return 950000
+            case 8:
+                return 975000
+            case 9:
+                return 990000
+            case 10:
+                return 1000000
+            case 11:
+                return 1005000
+            case 12:
+                return 1007500
+            case 13:
+                return 1009000
+
 
 class Possession(Enum):
     NONE = 0
