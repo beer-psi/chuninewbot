@@ -14,7 +14,7 @@ from sqlalchemy.orm import joinedload
 
 from bot import ChuniBot
 from database.models import Chart, Prefix, Song
-from utils import floor_to_ndp
+from utils import did_you_mean_text, floor_to_ndp
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -539,6 +539,48 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     target_score = 1_009_000
 
                 embeds.append(ChartCardEmbed(chart, target_score=target_score))
+            await ctx.reply(embeds=embeds, mention_author=False)
+
+    @commands.command("border")
+    async def border(self, ctx: Context, difficulty: str, *, query: str):
+        """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart.
+        The values are based on realistic JUSTICE:ATTACK:MISS ratios and are for reference only.
+        In terms of scoring, the score decrease from 1 ATTACK is equivalent to 51 JUSTICE, and 1 MISS is equivalent to 101 JUSTICE.
+
+        Parameters
+        ----------
+        difficulty: str
+            Chart difficulty to search for (BAS/ADV/EXP/MAS/ULT).
+        query: str
+            Song title to search for. You don't have to be exact; try things out!
+        """
+
+        async with ctx.typing(), self.bot.begin_db_session() as session:
+            guild_id = ctx.guild.id if ctx.guild else None
+            song, alias, similarity = await self.utils.find_song(
+                query, guild_id=guild_id, worlds_end=False
+            )
+            if song is None or similarity < 0.9:
+                return await ctx.reply(
+                    did_you_mean_text(song, alias), mention_author=False
+                )
+            
+            stmt = (
+                select(Chart)
+                .where((Chart.song == song) & (Chart.difficulty == difficulty[:3].upper()))
+                .limit(1)
+                .options(joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view))
+            )
+
+            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
+            if len(charts) == 0:
+                await ctx.reply("No charts found. Make sure you specified a valid chart difficulty (BAS/ADV/EXP/MAS/ULT).", mention_author=False)
+                return
+
+            embeds: list[discord.Embed] = []
+            for chart in charts:
+                embeds.append(ChartCardEmbed(chart, border=True))
+            
             await ctx.reply(embeds=embeds, mention_author=False)
 
     @commands.hybrid_command("prefix")
