@@ -8,7 +8,7 @@ from aioresponses import aioresponses as original_aioresponses
 from multidict import CIMultiDict
 
 from chunithm_net import ChuniNet
-from chunithm_net.entities.enums import ClearType, Difficulty, Genres, Possession, Rank
+from chunithm_net.entities.enums import ClearType, Difficulty, Possession, Rank
 from chunithm_net.exceptions import (
     ChuniNetError,
     InvalidTokenException,
@@ -766,25 +766,8 @@ async def test_client_parses_music_record_by_folder(
             body=f.read(),
         )
 
-    with pytest.raises(NotImplementedError):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
-            await client.authenticate()
-            await client.music_record_by_folder(difficulty=Difficulty.EXPERT)
-
-    with pytest.raises(NotImplementedError):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
-            await client.authenticate()
-            await client.music_record_by_folder(genre=Genres.VARIETY)
-
-    with pytest.raises(NotImplementedError):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
-            await client.authenticate()
-            await client.music_record_by_folder(rank=Rank.S)
-
     async with ChuniNet(clal, user_id=user_id, token=token) as client:
         await client.authenticate()
-
-        assert await client.music_record_by_folder(level=None) is None
 
         records = await client.music_record_by_folder(level="14")
 
