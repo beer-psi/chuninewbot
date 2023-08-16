@@ -200,6 +200,9 @@ class SearchCog(commands.Cog, name="Search"):
         _: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
+        if len(current) < 2:
+            return []
+
         song_query = select(Song.id, Song.title, text("'title' AS type"))
         aliases_query = select(
             Alias.song_id.label("id"),
@@ -209,16 +212,19 @@ class SearchCog(commands.Cog, name="Search"):
 
         subquery = song_query.union_all(aliases_query).subquery()
 
-        stmt = select(
-            subquery.c.title,
-            func.max(func.jwsim(subquery.c.title, current)).label("sim"),
-            func.max(text("type") == "title"),
-        ).group_by(subquery.c.id)
-
-        order = stmt.order_by(desc(text("sim"))).limit(25)
+        stmt = (
+            select(
+                subquery.c.title,
+                func.max(func.jwsim(subquery.c.title, current)).label("sim"),
+                func.max(text("type") == "title"),
+            )
+            .group_by(subquery.c.id)
+            .order_by(desc(text("sim")))
+            .limit(10)
+        )
 
         async with self.bot.begin_db_session() as session:
-            rows = (await session.execute(order)).scalars().all()
+            rows = (await session.execute(stmt)).scalars().all()
 
         return [app_commands.Choice(name=row, value=row) for row in rows]
 
