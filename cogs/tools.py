@@ -2,6 +2,8 @@ import itertools
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional, Sequence
 
+import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select, text
@@ -18,16 +20,16 @@ from utils.calculation.rating import calculate_rating, calculate_score_for_ratin
 from utils.components import ChartCardEmbed
 
 if TYPE_CHECKING:
-    import discord
-
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
+    from cogs.search import SearchCog
 
 
 class ToolsCog(commands.Cog, name="Tools"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
+        self.search_cog: "SearchCog" = self.bot.get_cog("Search")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calculate(
@@ -303,7 +305,13 @@ class ToolsCog(commands.Cog, name="Tools"):
                 embeds.append(ChartCardEmbed(chart, target_score=target_score))
             await ctx.reply(embeds=embeds, mention_author=False)
 
-    @commands.command("border")
+    async def song_title_autocomplete(
+        self, _: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        return await self.search_cog.song_title_autocomplete(_, current)
+
+    @commands.hybrid_command("border")
+    @app_commands.autocomplete(query=song_title_autocomplete)
     async def border(self, ctx: Context, difficulty: str, *, query: str):
         """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart.
         The values are based on realistic JUSTICE:ATTACK:MISS ratios and are for reference only.

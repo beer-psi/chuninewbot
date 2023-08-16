@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import JACKET_BASE
@@ -195,12 +195,40 @@ class SearchCog(commands.Cog, name="Search"):
             await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
             return None
 
+    async def song_title_autocomplete(
+        self,
+        _: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        song_query = select(Song.id, Song.title, text("'title' AS type"))
+        aliases_query = select(
+            Alias.song_id.label("id"),
+            Alias.alias.label("title"),
+            text("'alias' AS type"),
+        )
+
+        subquery = song_query.union_all(aliases_query).subquery()
+
+        stmt = select(
+            subquery.c.title,
+            func.max(func.jwsim(subquery.c.title, current)).label("sim"),
+            func.max(text("type") == "title"),
+        ).group_by(subquery.c.id)
+
+        order = stmt.order_by(desc(text("sim"))).limit(25)
+
+        async with self.bot.begin_db_session() as session:
+            rows = (await session.execute(order)).scalars().all()
+
+        return [app_commands.Choice(name=row, value=row) for row in rows]
+
     @app_commands.command(name="info", description="Search for a song.")
     @app_commands.describe(
         query="Song title to search for. You don't have to be exact; try things out!",
         worlds_end="Whether to search for WORLD'S END songs instead of standard songs.",
         detailed="Display detailed chart information (note counts and designer name)",
     )
+    @app_commands.autocomplete(query=song_title_autocomplete)
     async def info_slash(
         self,
         interaction: "discord.Interaction[ChuniBot]",

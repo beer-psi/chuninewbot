@@ -21,6 +21,7 @@ from utils.views.recent import RecentRecordsView
 if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
+    from cogs.search import SearchCog
 
 
 logger = logging.getLogger("chuninewbot")
@@ -52,6 +53,7 @@ class RecordsCog(commands.Cog, name="Records"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
+        self.search_cog: "SearchCog" = self.bot.get_cog("Search")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(
@@ -221,12 +223,18 @@ class RecordsCog(commands.Cog, name="Records"):
             )
             return None
 
+    async def song_title_autocomplete(
+        self, _: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        return await self.search_cog.song_title_autocomplete(_, current)
+
     @app_commands.command(name="scores", description="Get scores for a specific song.")
     @app_commands.describe(
         query="Song title to search for. You don't have to be exact; try things out!",
         user="Check scores of this Discord user. Yourself, if not provided.",
         worlds_end="Search for WORLD'S END songs instead of standard songs.",
     )
+    @app_commands.autocomplete(query=song_title_autocomplete)
     async def scores_slash(
         self,
         interaction: "discord.Interaction[ChuniBot]",
