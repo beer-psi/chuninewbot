@@ -543,11 +543,16 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.command("border")
     async def border(self, ctx: Context, difficulty: str, *, query: str):
-        """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart. The values displayed are for reference only. In terms of scoring, the score decrease from 1 ATTACK is equivalent to 51 JUSTICE, and 1 MISS is equivalent to 101 JUSTICE.
+        """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart.
+        The values are based on realistic JUSTICE:ATTACK:MISS ratios and are for reference only.
+        In terms of scoring, the score decrease from 1 ATTACK is equivalent to 51 JUSTICE, and 1 MISS is equivalent to 101 JUSTICE.
 
-        **Parameters**
-        `difficulty`: Chart difficulty to search for (BAS/ADV/EXP/MAS/ULT).
-        `query`: Song title to search for. You don't have to be exact; try things out!
+        Parameters
+        ----------
+        difficulty: str
+            Chart difficulty to search for (BAS/ADV/EXP/MAS/ULT).
+        query: str
+            Song title to search for. You don't have to be exact; try things out!
         """
 
         async with ctx.typing(), self.bot.begin_db_session() as session:

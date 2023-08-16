@@ -179,7 +179,7 @@ class SearchCog(commands.Cog, name="Search"):
     async def info(self, ctx: Context, *, query: str):
         """Search for a song.
 
-        **Parameters**
+        **Parameters:**
         `query`: Song title to search for. You don't have to be exact; try things out!
         `-we`: Search for WORLD'S END songs instead of normal songs.
         `-d`: Show detailed info, such as note counts and charter.
