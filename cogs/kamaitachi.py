@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
 
+from chunithm_net.entities.enums import Difficulty
 from database.models import Cookie
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from cogs.botutils import UtilsCog
 
 
-class KamaitachiCog(commands.Cog):
+class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": True}):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
@@ -31,9 +32,16 @@ class KamaitachiCog(commands.Cog):
     async def cog_unload(self) -> None:
         return await super().cog_unload()
 
-    @commands.group("kamaitachi", aliases=["kt"], invoke_without_command=True)
+    @commands.hybrid_group("kamaitachi", aliases=["kt"], invoke_without_command=True)
     async def kamaitachi(self, ctx: Context):
-        pass
+        await ctx.reply(
+            (
+                "[Kamaitachi](https://kamaitachi.xyz) is a modern, invite-only, arcade rhythm game score tracker.\n"
+                "You can link your Kamaitachi account to the bot to sync your scores with a simple command.\n"
+                "To get started, DM me with `c>kamaitachi link` for instructions."
+            ),
+            mention_author=False,
+        )
 
     async def _verify_and_login(self, token: str) -> Optional[str]:
         async with aiohttp.ClientSession() as session, session.get(
@@ -99,7 +107,14 @@ class KamaitachiCog(commands.Cog):
                 await session.merge(cookie)
 
             return await ctx.reply(
-                content="Successfully linked with Kamaitachi.", mention_author=False
+                content=(
+                    "Successfully linked with Kamaitachi.\n"
+                    "You can now use `c>kamaitachi sync` to sync your recent scores.\n"
+                    "\n"
+                    "**It is recommended that you run `c>kamaitachi sync pb` to sync your personal bests first, "
+                    "before syncing your recent scores.**"
+                ),
+                mention_author=False,
             )
 
         embed = discord.Embed(
@@ -142,8 +157,13 @@ class KamaitachiCog(commands.Cog):
         Parameters
         ----------
         mode: str
-            What to sync with Kamaitachi. Only `recent` is currently supported.
+            What to sync with Kamaitachi. Supported values are `recent` and `pb`.
+            Default is `recent`.
         """
+        if mode not in ("recent", "pb"):
+            msg = "Invalid sync mode. Allowed modes are `recent` and `pb`."
+            raise commands.BadArgument(msg)
+
         async with self.bot.begin_db_session() as session:
             query = select(Cookie).where(Cookie.discord_id == ctx.author.id)
             cookie = (await session.execute(query)).scalar_one_or_none()
@@ -162,51 +182,76 @@ class KamaitachiCog(commands.Cog):
 
         scores = []
         message = await ctx.reply(
-            "Fetching recent scores from CHUNITHM-NET...", mention_author=False
+            "Fetching scores from CHUNITHM-NET...", mention_author=False
         )
         async with self.utils.chuninet(ctx) as client:
             await client.authenticate()
 
-            recents = await client.recent_record()
-            for recent in recents:
-                score_data = {
-                    "score": recent.score,
-                    "lamp": str(recent.clear),
-                    "matchType": "inGameID",
-                    "identifier": "",
-                    "difficulty": str(recent.difficulty),
-                    "timeAchieved": time.mktime(recent.date.timetuple()) * 1000,
-                    "judgements": {},
-                    "hitMeta": {},
-                }
+            if mode == "recent":
+                recents = await client.recent_record()
+                for recent in recents:
+                    score_data = {
+                        "score": recent.score,
+                        "lamp": str(recent.clear),
+                        "matchType": "inGameID",
+                        "identifier": "",
+                        "difficulty": str(recent.difficulty),
+                        "timeAchieved": time.mktime(recent.date.timetuple()) * 1000,
+                        "judgements": {},
+                        "hitMeta": {},
+                    }
 
-                if recent.detailed is None:
-                    continue
+                    if recent.detailed is None:
+                        continue
 
-                detailed_recent = await client.detailed_recent_record(
-                    recent.detailed.idx
-                )
+                    detailed_recent = await client.detailed_recent_record(
+                        recent.detailed.idx
+                    )
 
-                if detailed_recent.detailed is None:
-                    continue
+                    if detailed_recent.detailed is None:
+                        continue
 
-                score_data["identifier"] = str(detailed_recent.detailed.idx)
+                    score_data["identifier"] = str(detailed_recent.detailed.idx)
 
-                score_data["judgements"]["jcrit"] = detailed_recent.judgements.jcrit
-                score_data["judgements"]["justice"] = detailed_recent.judgements.justice
-                score_data["judgements"]["attack"] = detailed_recent.judgements.attack
-                score_data["judgements"]["miss"] = detailed_recent.judgements.miss
+                    score_data["judgements"]["jcrit"] = detailed_recent.judgements.jcrit
+                    score_data["judgements"][
+                        "justice"
+                    ] = detailed_recent.judgements.justice
+                    score_data["judgements"][
+                        "attack"
+                    ] = detailed_recent.judgements.attack
+                    score_data["judgements"]["miss"] = detailed_recent.judgements.miss
 
-                if (
-                    detailed_recent.judgements.justice == 0
-                    and detailed_recent.judgements.attack == 0
-                    and detailed_recent.judgements.miss == 0
-                ):
-                    score_data["lamp"] = "ALL JUSTICE CRITICAL"
+                    if (
+                        detailed_recent.judgements.justice == 0
+                        and detailed_recent.judgements.attack == 0
+                        and detailed_recent.judgements.miss == 0
+                    ):
+                        score_data["lamp"] = "ALL JUSTICE CRITICAL"
 
-                score_data["hitMeta"]["maxCombo"] = detailed_recent.max_combo
+                    score_data["hitMeta"]["maxCombo"] = detailed_recent.max_combo
 
-                scores.append(score_data)
+                    scores.append(score_data)
+            elif mode == "pb":
+                for difficulty in Difficulty:
+                    if difficulty == Difficulty.WORLDS_END:
+                        # Kamaitachi does not accept WORLD'S END scores
+                        continue
+                    await message.edit(content=f"Fetching {difficulty} scores...")
+                    records = await client.music_record_by_folder(difficulty=difficulty)
+                    for score in records:
+                        if score.detailed is None:
+                            continue
+                        score_data = {
+                            "score": score.score,
+                            "lamp": str(score.clear),
+                            "matchType": "inGameID",
+                            "identifier": str(score.detailed.idx),
+                            "difficulty": str(score.difficulty),
+                        }
+                        if score.score == 1010000:
+                            score_data["lamp"] = "ALL JUSTICE CRITICAL"
+                        scores.append(score_data)
 
             await message.edit(content="Uploading scores to Kamaitachi...")
             request_body = {

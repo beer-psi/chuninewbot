@@ -194,29 +194,103 @@ class ChuniNet:
     async def music_record_by_folder(
         self,
         *,
-        difficulty: Optional[Difficulty] = None,
+        level: Optional[str] = None,
         genre: Optional[Genres] = None,
         rank: Optional[Rank] = None,
-        level: Optional[str] = None,
-    ) -> list[Record] | None:
-        if difficulty is not None or genre is not None or rank is not None:
-            raise NotImplementedError
+        difficulty: Optional[Difficulty] = None,
+    ) -> list[Record]:
+        """Get records for all songs matching specific criteria.
 
-        if level is None:
-            return None
+        CHUNITHM-NET only supports level, genre and rank search, so if multiple
+        criteria are specified, they are applied in order of:
+        - difficulty if difficulty is `Difficulty.WORLDS_END`
+        - level
+        - genre + difficulty
+        - rank + difficulty
+        - difficulty
 
-        plus_level = level[-1] == "+"
-        level_num = int(level[:-1] if plus_level else level)
-        level_value = level_num - 1 + max(0, level_num - 7) + (1 if plus_level else 0)
+        Parameters
+        ----------
+        level: Optional[str]
+            Song level to filter by. Between 1 and 15. From level 7 to 14, can be
+            suffixed with "+".
+        genre: Optional[Genres]
+            Genre to filter by. If this is set, `difficulty` must also be set.
+        rank: Optional[Rank]
+            Rank to filter by. If this is set, `difficulty` must also be set.
+        difficulty: Optional[Difficulty]
+            Difficulty to filter by.
 
-        resp = await self._request(
-            "mobile/record/musicLevel/sendSearch/",
-            method="POST",
-            data={
-                "level": str(level_value),
-                "token": self.token,
-            },
-        )
+        Returns
+        -------
+        list[Record]: List of records matching the criteria.
+
+        Exceptions
+        ----------
+        ValueError:
+            When genre/rank is specified but difficulty is not set, or when no
+            criteria is provided.
+        """
+        if difficulty == Difficulty.WORLDS_END:
+            resp = await self._request("mobile/record/worldsEndList")
+        elif level is not None:
+            plus_level = level[-1] == "+"
+            level_num = int(level[:-1] if plus_level else level)
+            level_value = (
+                level_num - 1 + max(0, level_num - 7) + (1 if plus_level else 0)
+            )
+
+            resp = await self._request(
+                "mobile/record/musicLevel/sendSearch/",
+                method="POST",
+                data={
+                    "level": str(level_value),
+                    "token": self.token,
+                },
+            )
+        elif genre is not None:
+            if difficulty is None:
+                msg = "Difficulty cannot be None when genre is specified"
+                raise ValueError(msg)
+
+            resp = await self._request(
+                f"mobile/record/musicGenre/send{str(difficulty).capitalize()}",
+                method="POST",
+                data={
+                    "genre": genre.value,
+                    "token": self.token,
+                },
+            )
+        elif rank is not None:
+            if difficulty is None:
+                msg = "Difficulty cannot be None when genre is specified"
+                raise ValueError(msg)
+
+            value = rank.value
+            if value < Rank.S.value:
+                value = 7
+
+            resp = await self._request(
+                f"mobile/record/musicRank/send{str(difficulty).capitalize()}",
+                method="POST",
+                data={
+                    "rank": str(rank.value),
+                    "token": self.token,
+                },
+            )
+        elif difficulty is not None:
+            resp = await self._request(
+                f"mobile/record/musicGenre/send{str(difficulty).capitalize()}",
+                method="POST",
+                data={
+                    "genre": "99",
+                    "token": self.token,
+                },
+            )
+        else:
+            msg = "No search criteria specified"
+            raise ValueError(msg)
+
         soup = BeautifulSoup(await resp.text(), "lxml")
         return parse_music_for_rating(soup)
 

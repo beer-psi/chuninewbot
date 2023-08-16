@@ -259,7 +259,9 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
                     idx=int(str(x.select_one("input[name=idx]")["value"])),
                     token=str(x.select_one("input[name=token]")["value"]),
                 ),
-                title=x.select_one(".music_title").get_text(),
+                title=x.select_one(
+                    ".music_title, .musiclist_worldsend_title"
+                ).get_text(),
                 difficulty=difficulty_from_imgurl(" ".join(x["class"])),
                 score=chuni_int(score_elem.get_text()),
                 rank=rank,
