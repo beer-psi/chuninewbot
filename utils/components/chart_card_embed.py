@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ChartCardEmbed(discord.Embed):
-    def __init__(self, chart: "Chart", *, target_score: Optional[int] = None, border = False) -> None:
+    def __init__(self, chart: "Chart", *, target_score: Optional[int] = None, border: bool = False) -> None:
         difficulty = Difficulty.from_short_form(chart.difficulty)
 
         super().__init__(
@@ -55,7 +55,7 @@ class ChartCardEmbed(discord.Embed):
             )
 
         if border:
-            if chart.maxcombo is not None:
+            if chart.maxcombo is not None and chart.maxcombo > 0:
                 field_value = str(chart.maxcombo)
                 
                 tolerance_sssp = floor_to_ndp(chart.maxcombo / 10, 0)
