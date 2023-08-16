@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -17,6 +17,9 @@ from .parser import (
     parse_player_card_and_avatar,
     parse_player_data,
 )
+
+if TYPE_CHECKING:
+    from chunithm_net.entities.player_data import PlayerData
 
 __all__ = ["ChuniNet"]
 
@@ -81,7 +84,7 @@ class ChuniNet:
                 raise InvalidTokenException(msg)
             return req.headers["Location"]
 
-    async def authenticate(self):
+    async def authenticate(self) -> "PlayerData":
         if self.user_id is not None:
             try:
                 # In some cases, the site token is refreshed automatically.
@@ -165,7 +168,7 @@ class ChuniNet:
             },
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
-        return parse_music_record(soup, DetailedParams(idx, self.token))
+        return parse_music_record(soup, DetailedParams(idx, self.token or ""))
 
     async def _worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
         resp = await self._request(
@@ -177,7 +180,7 @@ class ChuniNet:
             },
         )
         soup = BeautifulSoup(await resp.text(), "lxml")
-        return parse_music_record(soup, DetailedParams(idx, self.token))
+        return parse_music_record(soup, DetailedParams(idx, self.token or ""))
 
     async def best30(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailBest/")

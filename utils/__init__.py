@@ -8,11 +8,11 @@ from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
 if TYPE_CHECKING:
-    from typing import Sequence, TypeVar
+    from typing import TypeVar
 
     from database.models import Alias, Song
 
-    T = TypeVar("T", decimal.Decimal, float, str, int)
+    T = TypeVar("T", float | decimal.Decimal, decimal.Decimal, float, str, int)
 
 
 TOKYO_TZ = ZoneInfo("Asia/Tokyo")

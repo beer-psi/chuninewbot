@@ -28,7 +28,7 @@ def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
         rating100 = (((level_base - 50_000) / 2) * (score - 500_000)) / 300_000
 
     if rating100 < 0:
-        rating100 = 0
+        rating100 = Decimal(0)
 
     return Decimal(floor_to_ndp(rating100 / 2_000, 2))
 

@@ -203,7 +203,7 @@ class SearchCog(commands.Cog, name="Search"):
     )
     async def info_slash(
         self,
-        interaction: discord.Interaction,
+        interaction: "discord.Interaction[ChuniBot]",
         query: str,
         *,
         worlds_end: bool = False,

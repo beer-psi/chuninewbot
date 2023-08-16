@@ -229,7 +229,7 @@ class RecordsCog(commands.Cog, name="Records"):
     )
     async def scores_slash(
         self,
-        interaction: discord.Interaction,
+        interaction: "discord.Interaction[ChuniBot]",
         query: str,
         *,
         user: Optional[discord.User | discord.Member] = None,
