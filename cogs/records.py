@@ -224,9 +224,9 @@ class RecordsCog(commands.Cog, name="Records"):
             return None
 
     async def song_title_autocomplete(
-        self, _: discord.Interaction, current: str
+        self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        return await self.search_cog.song_title_autocomplete(_, current)
+        return await self.search_cog.song_title_autocomplete(interaction, current)
 
     @app_commands.command(name="scores", description="Get scores for a specific song.")
     @app_commands.describe(

@@ -197,18 +197,24 @@ class SearchCog(commands.Cog, name="Search"):
 
     async def song_title_autocomplete(
         self,
-        _: discord.Interaction,
+        interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
         if len(current) < 2:
             return []
 
-        song_query = select(Song.id, Song.title, text("'title' AS type"))
+        condition = Alias.guild_id == -1
+        if interaction.guild is not None:
+            condition |= Alias.guild_id == interaction.guild.id
+
+        song_query = select(Song.id, Song.title, text("'title' AS type")).where(
+            Song.chunithm_id < 8000
+        )
         aliases_query = select(
             Alias.song_id.label("id"),
             Alias.alias.label("title"),
             text("'alias' AS type"),
-        )
+        ).where(condition)
 
         subquery = song_query.union_all(aliases_query).subquery()
 

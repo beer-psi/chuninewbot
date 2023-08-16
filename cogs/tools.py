@@ -306,11 +306,20 @@ class ToolsCog(commands.Cog, name="Tools"):
             await ctx.reply(embeds=embeds, mention_author=False)
 
     async def song_title_autocomplete(
-        self, _: discord.Interaction, current: str
+        self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        return await self.search_cog.song_title_autocomplete(_, current)
+        return await self.search_cog.song_title_autocomplete(interaction, current)
 
     @commands.hybrid_command("border")
+    @app_commands.choices(
+        difficulty=[
+            app_commands.Choice(name="BASIC", value="BASIC"),
+            app_commands.Choice(name="ADVANCED", value="ADVANCED"),
+            app_commands.Choice(name="EXPERT", value="EXPERT"),
+            app_commands.Choice(name="MASTER", value="MASTER"),
+            app_commands.Choice(name="ULTIMA", value="ULTIMA"),
+        ]
+    )
     @app_commands.autocomplete(query=song_title_autocomplete)
     async def border(self, ctx: Context, difficulty: str, *, query: str):
         """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart.
