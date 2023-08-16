@@ -314,6 +314,7 @@ class ToolsCog(commands.Cog, name="Tools"):
     @app_commands.autocomplete(query=song_title_autocomplete)
     async def border(self, ctx: Context, difficulty: str, *, query: str):
         """Display the number of permissible JUSTICE, ATTACK and MISS to achieve specific ranks on a chart.
+
         The values are based on realistic JUSTICE:ATTACK:MISS ratios and are for reference only.
         In terms of scoring, the score decrease from 1 ATTACK is equivalent to 51 JUSTICE, and 1 MISS is equivalent to 101 JUSTICE.
 
