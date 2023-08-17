@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
-from sqlalchemy import desc, func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import JACKET_BASE
@@ -207,26 +207,30 @@ class SearchCog(commands.Cog, name="Search"):
         if interaction.guild is not None:
             condition |= Alias.guild_id == interaction.guild.id
 
-        song_query = select(Song.id, Song.title, text("'title' AS type")).where(
+        song_query = select(Song.title, Song.title.label("alias")).where(
             Song.chunithm_id < 8000
         )
-        aliases_query = select(
-            Alias.song_id.label("id"),
-            Alias.alias.label("title"),
-            text("'alias' AS type"),
-        ).where(condition)
+        aliases_query = (
+            select(
+                Song.title,
+                Alias.alias,
+            )
+            .join(Song)
+            .where(condition)
+        )
 
         subquery = song_query.union_all(aliases_query).subquery()
 
+        sim_col = func.jwsim(func.lower(subquery.c.alias), current.lower()).label("sim")
         stmt = (
             select(
                 subquery.c.title,
-                func.max(func.jwsim(subquery.c.title, current)).label("sim"),
-                func.max(text("type") == "title"),
+                func.max(sim_col),
             )
-            .group_by(subquery.c.id)
-            .order_by(desc(text("sim")))
-            .limit(10)
+            .where(sim_col > 0.7)
+            .group_by(subquery.c.title)
+            .order_by(sim_col.desc())
+            .limit(25)
         )
 
         async with self.bot.begin_db_session() as session:
