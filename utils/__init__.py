@@ -7,12 +7,10 @@ from zoneinfo import ZoneInfo
 from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
-from database.models import SdvxinChartView
-
 if TYPE_CHECKING:
     from typing import TypeVar
 
-    from database.models import Alias, Song
+    from database.models import Alias, SdvxinChartView, Song
 
     T = TypeVar("T", float | decimal.Decimal, decimal.Decimal, float, str, int)
 
@@ -77,7 +75,7 @@ def yt_search_link(title: str, difficulty: str) -> str:
     )
 
 
-def sdvxin_link(view: SdvxinChartView) -> str:
+def sdvxin_link(view: "SdvxinChartView") -> str:
     id = str(view.id)
     difficulty = view.difficulty
 
