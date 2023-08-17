@@ -381,14 +381,24 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                         continue
 
                     key, value = line.split("=", 1)
+
+                    # var LV00000W
+                    # var LV00000W2
                     level = difficulties[key[11]]
+                    end_index = key[12] if len(key) > 12 else ""
+
                     value_soup = BeautifulSoup(
                         value.removeprefix('"').removesuffix('";'), "lxml"
                     )
                     if value_soup.select_one("a") is None:
                         continue
                     inserted_data.append(
-                        {"id": sdvx_in_id, "song_id": song.id, "difficulty": level}
+                        {
+                            "id": sdvx_in_id,
+                            "song_id": song.id,
+                            "difficulty": level,
+                            "end_index": end_index,
+                        }
                     )
 
         stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()

@@ -140,6 +140,7 @@ class SdvxinChartView(Base):
     difficulty: Mapped[str] = mapped_column(
         ForeignKey("chunirec_charts.difficulty"), nullable=False
     )
+    end_index: Mapped[str] = mapped_column(nullable=False)
 
     chunithm_chart: Mapped["Chart"] = relationship(
         back_populates="sdvxin_chart_view",
@@ -148,7 +149,7 @@ class SdvxinChartView(Base):
 
     @hybrid_property
     def url(self) -> str:
-        return sdvxin_link(self.id, self.difficulty)
+        return sdvxin_link(self)
 
 
 class GuessScore(Base):

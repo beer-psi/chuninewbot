@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo
 from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
+from database.models import SdvxinChartView
+
 if TYPE_CHECKING:
     from typing import TypeVar
 
@@ -75,7 +77,10 @@ def yt_search_link(title: str, difficulty: str) -> str:
     )
 
 
-def sdvxin_link(id: str, difficulty: str) -> str:
+def sdvxin_link(view: SdvxinChartView) -> str:
+    id = str(view.id)
+    difficulty = view.difficulty
+
     if "ULT" not in difficulty and "WE" not in difficulty:
         if difficulty == "MAS":
             difficulty = "MST"
@@ -83,8 +88,8 @@ def sdvxin_link(id: str, difficulty: str) -> str:
             difficulty = "BSC"
         return f"https://sdvx.in/chunithm/{id[:2]}/{id}{difficulty.lower()}.htm"
 
-    difficulty = difficulty.replace("WE", "end")
-    return f"https://sdvx.in/chunithm/{difficulty.lower()[:3]}/{id}{difficulty.lower()}.htm"
+    difficulty = difficulty.replace("WE", "end").lower()
+    return f"https://sdvx.in/chunithm/{difficulty[:3]}/{id}{difficulty}{view.end_index or ''}.htm"
 
 
 def release_to_chunithm_version(date: datetime) -> str:
