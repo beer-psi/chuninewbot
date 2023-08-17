@@ -24,6 +24,7 @@ from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+    from cogs.autocompleters import AutocompletersCog
     from cogs.botutils import UtilsCog
 
 
@@ -31,6 +32,7 @@ class SearchCog(commands.Cog, name="Search"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
+        self.autocompleters: "AutocompletersCog" = bot.get_cog("Autocompleters")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("find")
     async def find(self, ctx: Context, level: str):
@@ -197,46 +199,10 @@ class SearchCog(commands.Cog, name="Search"):
 
     async def song_title_autocomplete(
         self,
-        interaction: discord.Interaction,
+        interaction: "discord.Interaction[ChuniBot]",
         current: str,
-    ) -> list[app_commands.Choice[str]]:
-        if len(current) < 3:
-            return []
-
-        condition = Alias.guild_id == -1
-        if interaction.guild is not None:
-            condition |= Alias.guild_id == interaction.guild.id
-
-        song_query = select(Song.title, Song.title.label("alias")).where(
-            Song.chunithm_id < 8000
-        )
-        aliases_query = (
-            select(
-                Song.title,
-                Alias.alias,
-            )
-            .join(Song)
-            .where(condition)
-        )
-
-        subquery = song_query.union_all(aliases_query).subquery()
-
-        sim_col = func.jwsim(func.lower(subquery.c.alias), current.lower()).label("sim")
-        stmt = (
-            select(
-                subquery.c.title,
-                func.max(sim_col),
-            )
-            .where(sim_col > 0.7)
-            .group_by(subquery.c.title)
-            .order_by(sim_col.desc())
-            .limit(25)
-        )
-
-        async with self.bot.begin_db_session() as session:
-            rows = (await session.execute(stmt)).scalars().all()
-
-        return [app_commands.Choice(name=row, value=row) for row in rows]
+    ):
+        return await self.autocompleters.song_title_autocomplete(interaction, current)
 
     @app_commands.command(name="info", description="Search for a song.")
     @app_commands.describe(

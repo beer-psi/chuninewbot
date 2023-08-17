@@ -21,15 +21,15 @@ from utils.components import ChartCardEmbed
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+    from cogs.autocompleters import AutocompletersCog
     from cogs.botutils import UtilsCog
-    from cogs.search import SearchCog
 
 
 class ToolsCog(commands.Cog, name="Tools"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
-        self.search_cog: "SearchCog" = self.bot.get_cog("Search")  # type: ignore[reportGeneralTypeIssues]
+        self.autocompleters: "AutocompletersCog" = self.bot.get_cog("Autocompleters")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calculate(
@@ -298,7 +298,7 @@ class ToolsCog(commands.Cog, name="Tools"):
     async def song_title_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        return await self.search_cog.song_title_autocomplete(interaction, current)
+        return await self.autocompleters.song_title_autocomplete(interaction, current)
 
     @commands.hybrid_command("border")
     @app_commands.choices(

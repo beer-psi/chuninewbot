@@ -126,13 +126,14 @@ async def startup():
         root=False,
     )
 
+    await bot.load_extension("cogs.autocompleters")
     await bot.load_extension("cogs.botutils")
     if bot.dev:
         await bot.load_extension("cogs.hotreload")
         await bot.load_extension("jishaku")
 
     for file in (BOT_DIR / "cogs").glob("*.py"):
-        if file.stem in ["hotreload", "botutils", "__init__"]:
+        if file.stem in ("hotreload", "botutils", "__init__", "autocompleters"):
             continue
         try:
             await bot.load_extension(f"cogs.{file.stem}")

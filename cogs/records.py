@@ -20,8 +20,8 @@ from utils.views.recent import RecentRecordsView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+    from cogs.autocompleters import AutocompletersCog
     from cogs.botutils import UtilsCog
-    from cogs.search import SearchCog
 
 
 logger = logging.getLogger("chuninewbot")
@@ -53,7 +53,7 @@ class RecordsCog(commands.Cog, name="Records"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
-        self.search_cog: "SearchCog" = self.bot.get_cog("Search")  # type: ignore[reportGeneralTypeIssues]
+        self.autocompleters: "AutocompletersCog" = self.bot.get_cog("Autocompleters")  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command(name="recent", aliases=["rs"])
     async def recent(
@@ -226,7 +226,7 @@ class RecordsCog(commands.Cog, name="Records"):
     async def song_title_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
-        return await self.search_cog.song_title_autocomplete(interaction, current)
+        return await self.autocompleters.song_title_autocomplete(interaction, current)
 
     @app_commands.command(name="scores", description="Get scores for a specific song.")
     @app_commands.describe(
