@@ -1,7 +1,7 @@
 from discord import Embed, Interaction
 from discord.ext.commands import Context
 
-from .pagination import PaginationView
+from ._pagination import PaginationView
 
 
 class LoginFlowView(PaginationView):

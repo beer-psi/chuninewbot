@@ -14,9 +14,7 @@ from chunithm_net.entities.enums import Difficulty
 from database.models import Song
 from utils import did_you_mean_text, shlex_split
 from utils.components import ScoreCardEmbed
-from utils.views.b30 import B30View
-from utils.views.compare import CompareView
-from utils.views.recent import RecentRecordsView
+from utils.views import B30View, CompareView, RecentRecordsView, SelectToCompareView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -25,28 +23,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger("chuninewbot")
-
-
-class SelectToCompareView(discord.ui.View):
-    def __init__(
-        self, options: list[tuple[str, int]], *, timeout: Optional[float] = 120
-    ):
-        super().__init__(timeout=timeout)
-        self.value = None
-        self.select.options = [
-            discord.SelectOption(label=k, value=str(v)) for k, v in options
-        ]
-
-    async def on_timeout(self) -> None:
-        self.select.disabled = True
-        self.clear_items()
-        self.stop()
-
-    @discord.ui.select(placeholder="Select a score...")
-    async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        await interaction.response.edit_message(content="Please wait...", view=None)
-        self.value = select.values[0]
-        self.stop()
 
 
 class RecordsCog(commands.Cog, name="Records"):

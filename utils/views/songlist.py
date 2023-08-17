@@ -8,7 +8,7 @@ from discord.utils import escape_markdown
 from database.models import Chart
 from utils import yt_search_link
 
-from .pagination import PaginationView
+from ._pagination import PaginationView
 
 
 class SonglistView(PaginationView):

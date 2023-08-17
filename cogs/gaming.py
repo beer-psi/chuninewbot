@@ -3,81 +3,23 @@ import io
 from asyncio import CancelledError, TimeoutError
 from random import randrange
 from threading import Lock
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import discord
 from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.ext.commands.context import DeferTyping
 from jarowinkler import jaro_similarity
 from PIL import Image
 from sqlalchemy import delete, select, text
 
 from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, GuessScore, Song
+from utils.views import NextGameButtonView, SkipButtonView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
-
-
-_current_sessions_lock = Lock()
-_current_sessions: dict[int, asyncio.Task] = {}
-
-
-class SkipButtonView(discord.ui.View):
-    task: asyncio.Task
-    message: discord.Message
-
-    def __init__(self):
-        super().__init__(timeout=20)
-
-    async def on_timeout(self):
-        self.clear_items()
-        await self.message.edit(view=self)
-
-    @discord.ui.button(label="⏩", style=discord.ButtonStyle.danger)
-    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        await self.on_timeout()
-        self.task.cancel()
-
-
-class NextGameButtonView(discord.ui.View):
-    def __init__(self, cog: "GamingCog"):
-        super().__init__(timeout=None)
-        self.cog = cog
-
-    @discord.ui.button(
-        label="New game", style=discord.ButtonStyle.green, custom_id="new_guess_game"
-    )
-    async def new_game(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if (
-            isinstance(
-                interaction.channel, (discord.ForumChannel, discord.CategoryChannel)
-            )
-            or interaction.channel_id in _current_sessions
-            or interaction.channel is None
-        ):
-            return await interaction.response.defer()
-
-        cursed_context = SimpleNamespace()
-
-        # The class only calls .defer, which interaction.response also has.
-        cursed_context.typing = lambda: DeferTyping(interaction.response, ephemeral=True)  # type: ignore[reportGeneralTypeIssues]
-
-        cursed_context.guild = interaction.guild
-        cursed_context.channel = interaction.channel
-        cursed_context.reply = interaction.channel.send
-        cursed_context.send = interaction.channel.send
-
-        # This has all the functions that guess() needs.
-        await self.cog.guess(cursed_context)  # type: ignore[reportGeneralTypeIssues]
-        return None
 
 
 class GamingCog(commands.Cog, name="Games"):
@@ -85,16 +27,17 @@ class GamingCog(commands.Cog, name="Games"):
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
-        self.session = ClientSession()
+        self.game_sessions: dict[int, asyncio.Task] = {}
+        self.game_sessions_lock = Lock()
 
     @commands.group("guess", invoke_without_command=True)
     async def guess(self, ctx: Context, mode: str = "lenient"):
-        if ctx.channel.id in _current_sessions:
+        if ctx.channel.id in self.game_sessions:
             # await ctx.reply("There is already an ongoing session in this channel!")
             return
 
-        with _current_sessions_lock:
-            _current_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
+        with self.game_sessions_lock:
+            self.game_sessions[ctx.channel.id] = asyncio.create_task(asyncio.sleep(0))
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             prefix = await self.utils.guild_prefix(ctx)
@@ -122,7 +65,7 @@ class GamingCog(commands.Cog, name="Games"):
             ]
 
             jacket_url = f"{JACKET_BASE}/{song.jacket}"
-            async with self.session.get(jacket_url) as resp:
+            async with ClientSession() as session, session.get(jacket_url) as resp:
                 jacket_bytes = await resp.read()
                 img = Image.open(io.BytesIO(jacket_bytes))
 
@@ -166,10 +109,10 @@ class GamingCog(commands.Cog, name="Games"):
 
         content = ""
         try:
-            view.task = _current_sessions[ctx.channel.id] = asyncio.create_task(
+            view.task = self.game_sessions[ctx.channel.id] = asyncio.create_task(
                 self.bot.wait_for("message", check=check, timeout=20)
             )
-            msg = await _current_sessions[ctx.channel.id]
+            msg = await self.game_sessions[ctx.channel.id]
             await self._increment_score(msg.author.id)
             await msg.add_reaction("✅")
 
@@ -194,22 +137,22 @@ class GamingCog(commands.Cog, name="Games"):
                 content=content,
                 embed=answer_embed,
                 mention_author=False,
-                view=NextGameButtonView(self),
+                view=NextGameButtonView(self, self.game_sessions),
             )
 
-            with _current_sessions_lock:
-                del _current_sessions[ctx.channel.id]
+            with self.game_sessions_lock:
+                del self.game_sessions[ctx.channel.id]
 
             # The whole point was to ignore exceptions.
             return  # noqa: B012
 
     @commands.hybrid_command("skip")
     async def skip(self, ctx: Context):
-        if ctx.channel.id not in _current_sessions:
+        if ctx.channel.id not in self.game_sessions:
             await ctx.reply("There is no ongoing session in this channel!")
             return
 
-        _current_sessions[ctx.channel.id].cancel()
+        self.game_sessions[ctx.channel.id].cancel()
         return
 
     @guess.command("leaderboard")
@@ -253,4 +196,4 @@ class GamingCog(commands.Cog, name="Games"):
 async def setup(bot: "ChuniBot") -> None:
     cog = GamingCog(bot)
     await bot.add_cog(cog)
-    bot.add_view(NextGameButtonView(cog))
+    bot.add_view(NextGameButtonView(cog, cog.game_sessions))

@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 from utils import floor_to_ndp
 from utils.components import ScoreCardEmbed
 
-from .pagination import PaginationView
+from ._pagination import PaginationView
 
 if TYPE_CHECKING:
     from utils.types.annotated_records import AnnotatedMusicRecord

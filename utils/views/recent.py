@@ -6,7 +6,7 @@ from discord.ext.commands import Context
 
 from utils.components import ScoreCardEmbed
 
-from .pagination import PaginationView
+from ._pagination import PaginationView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
