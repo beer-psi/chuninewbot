@@ -1,6 +1,7 @@
 name: Test DB generation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - trunk
