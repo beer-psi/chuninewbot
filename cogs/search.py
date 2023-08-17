@@ -200,7 +200,7 @@ class SearchCog(commands.Cog, name="Search"):
         interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
-        if len(current) < 2:
+        if len(current) < 3:
             return []
 
         condition = Alias.guild_id == -1

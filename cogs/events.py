@@ -89,6 +89,16 @@ class EventsCog(commands.Cog, name="Events"):
             exc, (commands.errors.NotOwner, commands.errors.MissingPermissions)
         ):
             return await ctx.reply("Insufficient permissions.", mention_author=False)
+        if isinstance(exc, commands.BadLiteralArgument):
+            to_string = [repr(x) for x in exc.literals]
+            if len(to_string) > 2:
+                fmt = "{}, or {}".format(", ".join(to_string[:-1]), to_string[-1])
+            else:
+                fmt = " or ".join(to_string)
+            return await ctx.reply(
+                f"`{exc.param.displayed_name or exc.param.name}` must be one of {fmt}, received {exc.argument!r}",
+                mention_author=False,
+            )
         if isinstance(
             exc,
             (

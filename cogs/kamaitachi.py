@@ -1,7 +1,7 @@
 import asyncio
 import sys
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
 import discord
@@ -151,7 +151,9 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         )
 
     @kamaitachi.command("sync", aliases=["s"])
-    async def kamaitachi_sync(self, ctx: Context, mode: str = "recent"):
+    async def kamaitachi_sync(
+        self, ctx: Context, sync: Literal["recent", "pb"] = "recent"
+    ):
         """Sync CHUNITHM scores with Kamaitachi.
 
         Parameters
@@ -160,9 +162,6 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             What to sync with Kamaitachi. Supported values are `recent` and `pb`.
             Default is `recent`.
         """
-        if mode not in ("recent", "pb"):
-            msg = "Invalid sync mode. Allowed modes are `recent` and `pb`."
-            raise commands.BadArgument(msg)
 
         async with self.bot.begin_db_session() as session:
             query = select(Cookie).where(Cookie.discord_id == ctx.author.id)
@@ -187,7 +186,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         async with self.utils.chuninet(ctx) as client:
             await client.authenticate()
 
-            if mode == "recent":
+            if sync == "recent":
                 recents = await client.recent_record()
                 for recent in recents:
                     score_data = {
@@ -232,7 +231,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     score_data["hitMeta"]["maxCombo"] = detailed_recent.max_combo
 
                     scores.append(score_data)
-            elif mode == "pb":
+            elif sync == "pb":
                 for difficulty in Difficulty:
                     if difficulty == Difficulty.WORLDS_END:
                         # Kamaitachi does not accept WORLD'S END scores

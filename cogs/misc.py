@@ -10,15 +10,15 @@ from discord.ext.commands import Context, Greedy
 from discord.utils import oauth_url
 from sqlalchemy import delete
 
-from bot import ChuniBot
 from database.models import Prefix
 
 if TYPE_CHECKING:
+    from bot import ChuniBot
     from cogs.botutils import UtilsCog
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
-    def __init__(self, bot: ChuniBot) -> None:
+    def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
@@ -26,7 +26,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     @commands.is_owner()
     async def sync(
         self,
-        ctx: Context,
+        ctx: Context["ChuniBot"],
         guilds: Greedy[discord.Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> None:
@@ -34,6 +34,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             if spec == "~":
                 synced = await ctx.bot.tree.sync(guild=ctx.guild)
             elif spec == "*":
+                if ctx.guild is None:
+                    raise commands.NoPrivateMessage
+
                 ctx.bot.tree.copy_global_to(guild=ctx.guild)
                 synced = await ctx.bot.tree.sync(guild=ctx.guild)
             elif spec == "^":
@@ -192,5 +195,5 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         )
 
 
-async def setup(bot: ChuniBot) -> None:
+async def setup(bot: "ChuniBot") -> None:
     await bot.add_cog(MiscCog(bot))

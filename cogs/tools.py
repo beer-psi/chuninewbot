@@ -1,11 +1,11 @@
 import itertools
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Literal, Optional, Sequence
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.ext.commands import Context
+from discord.ext.commands import Context, Range
 from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 
@@ -33,7 +33,10 @@ class ToolsCog(commands.Cog, name="Tools"):
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calculate(
-        self, ctx: Context, score: int, chart_constant: Optional[float] = None
+        self,
+        ctx: Context,
+        score: Range[int, 0, 1010000],
+        chart_constant: Optional[float] = None,
     ):
         """Calculate rating and over power from score and chart constant.
 
@@ -44,10 +47,6 @@ class ToolsCog(commands.Cog, name="Tools"):
         chart_constant: float
             Chart constant of the chart. Use the `info` command to find this.
         """
-
-        if not 0 <= score <= 1010000:
-            msg = "Score must be between 0 and 1010000."
-            raise commands.BadArgument(msg)
 
         if chart_constant is not None and chart_constant <= 0:
             msg = "Chart constant must be greater than 0."
@@ -82,7 +81,12 @@ class ToolsCog(commands.Cog, name="Tools"):
         await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("const", aliases=["constant"])
-    async def const(self, ctx: Context, chart_constant: float, mode: str = "default"):
+    async def const(
+        self,
+        ctx: Context,
+        chart_constant: Range[float, 1.0, 16.0],
+        mode: Literal["default", "aj"] = "default",
+    ):
         """Calculate rating and over power achieved with various scores based on chart constant.
 
         Parameters
@@ -90,14 +94,9 @@ class ToolsCog(commands.Cog, name="Tools"):
         chart_constant: float
             Chart constant of the chart. Use the `info` command to find this.
         mode: str
-            Sets the display mode: `default` (Display rating information only) / `AJ` (Display OP information for ALL JUSTICE only)
+            Sets the display mode: `default` (Display rating information only) / `aj` (Display OP information for ALL JUSTICE only)
         """
 
-        if chart_constant < 1 or chart_constant > 16:
-            msg = "Chart constant must be between 1.0 and 16.0"
-            raise commands.BadArgument(msg)
-
-        mode = mode.lower()
         if mode == "aj":
             separator = "-------------------------"
             res = f"```  Score |         OP (AJ)\n{separator}"
@@ -156,7 +155,7 @@ class ToolsCog(commands.Cog, name="Tools"):
         await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("rating")
-    async def rating(self, ctx: Context, rating: float):
+    async def rating(self, ctx: Context, rating: Range[float, 1.0, 17.55]):
         """Calculate score required to achieve the specified play rating.
 
         Parameters
@@ -164,10 +163,6 @@ class ToolsCog(commands.Cog, name="Tools"):
         rating: float
             Play rating you want to achieve
         """
-
-        if not 1 <= rating <= 17.55:
-            msg = "Play rating must be between 1.00 and 17.55."
-            raise commands.BadArgument(msg)
 
         res = "```Const |   Score\n---------------"
         chart_constant = floor_to_ndp(rating - 3, 0)
@@ -190,7 +185,7 @@ class ToolsCog(commands.Cog, name="Tools"):
         await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("random")
-    async def random(self, ctx: Context, level: str, count: int = 3):
+    async def random(self, ctx: Context, level: str, count: Range[int, 1, 4] = 3):
         """Get random charts based on level or chart constant.
 
         Parameters
@@ -202,10 +197,6 @@ class ToolsCog(commands.Cog, name="Tools"):
         """
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
-            if count > 4 or count < 1:
-                msg = "Number of songs must be between 1 and 4."
-                raise commands.BadArgument(msg)
-
             # Check whether input is level or constant
             stmt = (
                 select(Chart)
@@ -234,7 +225,10 @@ class ToolsCog(commands.Cog, name="Tools"):
 
     @commands.hybrid_command("recommend")
     async def recommend(
-        self, ctx: Context, count: int = 3, max_rating: Optional[float] = None
+        self,
+        ctx: Context,
+        count: Range[int, 1, 4] = 3,
+        max_rating: Optional[float] = None,
     ):
         """Get random chart recommendations with target scores based on your rating.
 
@@ -250,10 +244,6 @@ class ToolsCog(commands.Cog, name="Tools"):
         """
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
-            if count > 4 or count < 1:
-                msg = "Number of songs must be between 1 and 4."
-                raise commands.BadArgument(msg)
-
             if max_rating is None:
                 async with self.utils.chuninet(ctx) as client:
                     basic_player_data = await client.authenticate()
