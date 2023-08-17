@@ -241,7 +241,7 @@ class RecordsCog(commands.Cog, name="Records"):
         query: str,
         *,
         user: Optional[discord.User | discord.Member] = None,
-        worlds_end: bool = True,
+        worlds_end: bool = False,
     ):
         if user is not None:
             query = f"{user.mention} {query}"
