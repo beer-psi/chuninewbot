@@ -2,11 +2,11 @@ import asyncio
 import sys
 import time
 from random import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import Context
+from discord.ext.commands import Context, Greedy
 from discord.utils import oauth_url
 from sqlalchemy import delete
 
@@ -22,16 +22,42 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
-    @commands.command("treesync", hidden=True)
+    @commands.command("treesync", hidden=True, invoke_without_command=True)
     @commands.is_owner()
-    async def treesync(self, ctx: Context, guild_id: Optional[int] = None):
-        """Syncs the slash command tree."""
+    async def sync(
+        self,
+        ctx: Context,
+        guilds: Greedy[discord.Object],
+        spec: Optional[Literal["~", "*", "^"]] = None,
+    ) -> None:
+        if not guilds:
+            if spec == "~":
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "*":
+                ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "^":
+                ctx.bot.tree.clear_commands(guild=ctx.guild)
+                await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = []
+            else:
+                synced = await ctx.bot.tree.sync()
 
-        guild = discord.Object(id=guild_id) if guild_id is not None else None
-        if guild is not None:
-            self.bot.tree.copy_global_to(guild=guild)
-        await self.bot.tree.sync(guild=guild)
-        await ctx.message.add_reaction("✅")
+            await ctx.send(
+                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+            )
+            return
+
+        ret = 0
+        for guild in guilds:
+            try:
+                await ctx.bot.tree.sync(guild=guild)
+            except discord.HTTPException:  # noqa: PERF203
+                pass
+            else:
+                ret += 1
+
+        await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @commands.hybrid_command("source", aliases=["src"])
     async def source(self, ctx: Context):
