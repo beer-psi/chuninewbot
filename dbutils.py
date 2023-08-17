@@ -324,6 +324,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
     ) as client, async_session() as session, session.begin():
         # standard categories
         for category in categories:
+            print(f"-- Processing category {category}")
             if category == "end":
                 url = "https://sdvx.in/chunithm/end.htm"
             else:
@@ -356,17 +357,12 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     script_data = await script_resp.text()
 
                     match = WORLD_END_SDVXIN_REGEX.search(script_data)
-                    if (
-                        match is None
-                        or (difficulty := match.group("difficulty")) is None
-                    ):
+                    if match is None or (level := match.group("difficulty")) is None:
                         print(f"Could not extract difficulty for {title}, {sdvx_in_id}")
                         continue
 
                     stmt = stmt.join(Chart)
-                    condition &= (Song.chunithm_id >= 8000) & (
-                        Chart.difficulty == difficulty
-                    )
+                    condition &= (Song.chunithm_id >= 8000) & (Chart.level == level)
                 else:
                     condition &= Song.chunithm_id < 8000
 
@@ -385,14 +381,14 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                         continue
 
                     key, value = line.split("=", 1)
-                    difficulty = difficulties[key[11]]
+                    level = difficulties[key[11]]
                     value_soup = BeautifulSoup(
                         value.removeprefix('"').removesuffix('";'), "lxml"
                     )
                     if value_soup.select_one("a") is None:
                         continue
                     inserted_data.append(
-                        {"id": sdvx_in_id, "song_id": song.id, "difficulty": difficulty}
+                        {"id": sdvx_in_id, "song_id": song.id, "difficulty": level}
                     )
 
         stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
