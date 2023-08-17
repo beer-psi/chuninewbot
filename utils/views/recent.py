@@ -101,7 +101,14 @@ class RecentRecordsView(PaginationView):
         idx = int(select.values[0])
         score = await self.chuni_client.detailed_recent_record(idx)
         score = await self.utils.annotate_song(score)
-        await interaction.channel.send(
-            content=f"Score of {self.userinfo.name}",
-            embed=ScoreCardEmbed(score),
-        )
+
+        if interaction.message is not None:
+            await interaction.message.edit(
+                content=f"Score of {self.userinfo.name}",
+                embed=ScoreCardEmbed(score),
+            )
+        else:
+            await interaction.channel.send(
+                content=f"Score of {self.userinfo.name}",
+                embed=ScoreCardEmbed(score),
+            )
