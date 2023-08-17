@@ -167,7 +167,7 @@ for idx, random in enumerate(
 
 WORLD_END_REGEX = re.compile(r"【(.{1,2})】$", re.MULTILINE)
 WORLD_END_SDVXIN_REGEX = re.compile(
-    r"document\.title\s*=\s*['\"](?P<title>.+?) \[WORLD'S END\]\s*(?P<difficulty>.+?)?['\"]"
+    r"document\.title\s*=\s*['\"](?P<title>.+?) \[WORLD'S END(?:\])?\s*(?P<difficulty>.+?)(?:\]\s*)?['\"]"
 )
 
 
