@@ -332,74 +332,89 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
             resp = await client.get(url)
             soup = BeautifulSoup(await resp.text(), "lxml")
 
-            table = soup.select_one("table:has(td.tbgl)")
-            if table is None:
-                print(f"Could not find table for category {category}")
+            tables = soup.select("table:has(td.tbgl)")
+            if len(tables) == 0:
+                print(f"Could not find table(s) for category {category}")
                 continue
-            scripts = table.select("script[src]")
-            for script in scripts:
-                title = next(
-                    (str(x) for x in script.next_elements if isinstance(x, Comment)),
-                    None,
-                )
-                if title is None:
-                    continue
-                title = title_mapping.get(title, unescape(title))
-                sdvx_in_id = str(script["src"]).split("/")[-1][
-                    :5
-                ]  # TODO: dont assume the ID is always 5 digits
 
-                stmt = select(Song)
-                condition = Song.title == title
-                script_data = None
-                if category == "end":
-                    script_resp = await client.get(f"https://sdvx.in{script['src']}")
-                    script_data = await script_resp.text()
-
-                    match = WORLD_END_SDVXIN_REGEX.search(script_data)
-                    if match is None or (level := match.group("difficulty")) is None:
-                        print(f"Could not extract difficulty for {title}, {sdvx_in_id}")
-                        continue
-
-                    stmt = stmt.join(Chart)
-                    condition &= (Song.chunithm_id >= 8000) & (Chart.level == level)
-                else:
-                    condition &= Song.chunithm_id < 8000
-
-                stmt = stmt.where(condition)
-                song = (await session.execute(stmt)).scalar_one_or_none()
-                if song is None:
-                    print(f"Could not find song with title {title}")
-                    continue
-
-                if script_data is None:
-                    script_resp = await client.get(f"https://sdvx.in{script['src']}")
-                    script_data = await script_resp.text()
-
-                for line in script_data.splitlines():
-                    if not line.startswith(f"var LV{sdvx_in_id}"):
-                        continue
-
-                    key, value = line.split("=", 1)
-
-                    # var LV00000W
-                    # var LV00000W2
-                    level = difficulties[key[11]]
-                    end_index = key[12] if len(key) > 12 else ""
-
-                    value_soup = BeautifulSoup(
-                        value.removeprefix('"').removesuffix('";'), "lxml"
+            for table in tables:
+                scripts = table.select("script[src]")
+                for script in scripts:
+                    title = next(
+                        (
+                            str(x)
+                            for x in script.next_elements
+                            if isinstance(x, Comment)
+                        ),
+                        None,
                     )
-                    if value_soup.select_one("a") is None:
+                    if title is None:
                         continue
-                    inserted_data.append(
-                        {
-                            "id": sdvx_in_id,
-                            "song_id": song.id,
-                            "difficulty": level,
-                            "end_index": end_index,
-                        }
-                    )
+                    title = title_mapping.get(title, unescape(title))
+                    sdvx_in_id = str(script["src"]).split("/")[-1][
+                        :5
+                    ]  # TODO: dont assume the ID is always 5 digits
+
+                    stmt = select(Song)
+                    condition = Song.title == title
+                    script_data = None
+                    if category == "end":
+                        script_resp = await client.get(
+                            f"https://sdvx.in{script['src']}"
+                        )
+                        script_data = await script_resp.text()
+
+                        match = WORLD_END_SDVXIN_REGEX.search(script_data)
+                        if (
+                            match is None
+                            or (level := match.group("difficulty")) is None
+                        ):
+                            print(
+                                f"Could not extract difficulty for {title}, {sdvx_in_id}"
+                            )
+                            continue
+
+                        stmt = stmt.join(Chart)
+                        condition &= (Song.chunithm_id >= 8000) & (Chart.level == level)
+                    else:
+                        condition &= Song.chunithm_id < 8000
+
+                    stmt = stmt.where(condition)
+                    song = (await session.execute(stmt)).scalar_one_or_none()
+                    if song is None:
+                        print(f"Could not find song with title {title}")
+                        continue
+
+                    if script_data is None:
+                        script_resp = await client.get(
+                            f"https://sdvx.in{script['src']}"
+                        )
+                        script_data = await script_resp.text()
+
+                    for line in script_data.splitlines():
+                        if not line.startswith(f"var LV{sdvx_in_id}"):
+                            continue
+
+                        key, value = line.split("=", 1)
+
+                        # var LV00000W
+                        # var LV00000W2
+                        level = difficulties[key[11]]
+                        end_index = key[12] if len(key) > 12 else ""
+
+                        value_soup = BeautifulSoup(
+                            value.removeprefix('"').removesuffix('";'), "lxml"
+                        )
+                        if value_soup.select_one("a") is None:
+                            continue
+                        inserted_data.append(
+                            {
+                                "id": sdvx_in_id,
+                                "song_id": song.id,
+                                "difficulty": level,
+                                "end_index": end_index,
+                            }
+                        )
 
         stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
         await session.execute(stmt)
