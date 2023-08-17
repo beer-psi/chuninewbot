@@ -166,6 +166,9 @@ for idx, random in enumerate(
     }
 
 WORLD_END_REGEX = re.compile(r"【(.{1,2})】$", re.MULTILINE)
+WORLD_END_SDVXIN_REGEX = re.compile(
+    r"document\.title\s*=\s*['\"](?P<title>.+?) \[WORLD'S END\]\s*(?P<difficulty>.+?)?['\"]"
+)
 
 
 def normalize_title(title: str, *, remove_we_kanji: bool = False) -> str:
@@ -346,20 +349,36 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                 ]  # TODO: dont assume the ID is always 5 digits
 
                 stmt = select(Song)
+                condition = Song.title == title
+                script_data = None
                 if category == "end":
-                    stmt = stmt.where(
-                        (Song.title == title) & (Song.chunithm_id >= 8000)
+                    script_resp = await client.get(f"https://sdvx.in{script['src']}")
+                    script_data = await script_resp.text()
+
+                    match = WORLD_END_SDVXIN_REGEX.search(script_data)
+                    if (
+                        match is None
+                        or (difficulty := match.group("difficulty")) is None
+                    ):
+                        print(f"Could not extract difficulty for {title}, {sdvx_in_id}")
+                        continue
+
+                    stmt = stmt.join(Chart)
+                    condition &= (Song.chunithm_id >= 8000) & (
+                        Chart.difficulty == difficulty
                     )
                 else:
-                    stmt = stmt.where((Song.title == title) & (Song.chunithm_id < 8000))
+                    condition &= Song.chunithm_id < 8000
 
+                stmt = stmt.where(condition)
                 song = (await session.execute(stmt)).scalar_one_or_none()
                 if song is None:
                     print(f"Could not find song with title {title}")
                     continue
 
-                script_resp = await client.get(f"https://sdvx.in{script['src']}")
-                script_data = await script_resp.text()
+                if script_data is None:
+                    script_resp = await client.get(f"https://sdvx.in{script['src']}")
+                    script_data = await script_resp.text()
 
                 for line in script_data.splitlines():
                     if not line.startswith(f"var LV{sdvx_in_id}"):
