@@ -2238,9 +2238,9 @@ idna = ">=2.0"
 multidict = ">=4.0"
 
 [extras]
-aiohttp-speedups = ["aiodns", "brotli"]
+aiohttp-speedups = ["aiodns", "brotli", "faust-cchardet"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3ced4a86187b56326f3b3912771ecbcb737b49e8ea9c7a9041eece8bb7b7e818"
+content-hash = "c0f145db1f67af80a04922ab82aedfe5ab39e095d1f683126a18fbf67637bd92"

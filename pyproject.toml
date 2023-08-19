@@ -23,7 +23,7 @@ aiodns = { version = "^3.0.0", optional = true }
 brotli = { version = "^1.0.9", optional = true }
 
 [tool.poetry.extras]
-aiohttp-speedups = ["faust-ccchardet", "aiodns", "brotli"]
+aiohttp-speedups = ["faust-cchardet", "aiodns", "brotli"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
