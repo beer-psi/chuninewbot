@@ -27,9 +27,18 @@ class BotConfig:
     def error_reporting_webhook(self) -> Optional[str]:
         return self.__section.get("error_reporting_webhook")
 
+
+class WebConfig:
+    def __init__(self, section: "SectionProxy") -> None:
+        self.__section = section
+
     @property
     def login_server_port(self) -> Optional[int]:
         return self.__section.getint("login_server_port", fallback=None)
+
+    @property
+    def goatcounter(self) -> Optional[str]:
+        return self.__section.get("goatcounter")
 
 
 class CredentialsConfig:
@@ -86,6 +95,7 @@ class Config:
     def __init__(self, config: "ConfigParser") -> None:
         self.__config = config
         self.bot = BotConfig(self.__config["bot"])
+        self.web = WebConfig(self.__config["web"])
         self.credentials = CredentialsConfig(self.__config["credentials"])
         self.icons = IconsConfig(self.__config["icons"])
         self.dangerous = DangerousConfig(self.__config["dangerous"])

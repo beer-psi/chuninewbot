@@ -147,9 +147,9 @@ async def startup():
                 f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
             )
 
-    port = cfg.bot.login_server_port
+    port = cfg.web.login_server_port
     if port is not None and int(port) > 0:
-        bot.app = init_app(bot)
+        bot.app = init_app(bot, cfg.web.goatcounter)
         _ = asyncio.ensure_future(
             web._run_app(
                 bot.app,
