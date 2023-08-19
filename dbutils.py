@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional, TypedDict
 from xml.etree import ElementTree
 
 import aiohttp
-from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 from sqlalchemy import func, select
@@ -195,13 +194,6 @@ def normalize_title(title: str, *, remove_we_kanji: bool = False) -> str:
     return title
 
 
-async def request(
-    session: aiohttp.ClientSession, limiter: AsyncLimiter, url: str
-) -> aiohttp.ClientResponse:
-    async with limiter:
-        return await session.get(url)
-
-
 async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
     async with aiohttp.ClientSession() as client, async_session() as session, session.begin():
         resp = await client.get(
@@ -325,7 +317,6 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
     }
     # sdvx.in ID, song_id, difficulty
     inserted_data: list[dict] = []
-    limiter = AsyncLimiter(2, 1)
     async with aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=600)
     ) as client, async_session() as session, session.begin():
@@ -336,7 +327,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                 url = "https://sdvx.in/chunithm/end.htm"
             else:
                 url = f"https://sdvx.in/chunithm/sort/{category}.htm"
-            resp = await request(client, limiter, url)
+            resp = await client.get(url)
             soup = BeautifulSoup(await resp.text(), "lxml")
 
             tables = soup.select("table:has(td.tbgl)")
@@ -366,8 +357,8 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     condition = Song.title == title
                     script_data = None
                     if category == "end":
-                        script_resp = await request(
-                            client, limiter, f"https://sdvx.in{script['src']}"
+                        script_resp = await client.get(
+                            f"https://sdvx.in{script['src']}"
                         )
                         script_data = await script_resp.text()
 
@@ -393,8 +384,8 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                         continue
 
                     if script_data is None:
-                        script_resp = await request(
-                            client, limiter, f"https://sdvx.in{script['src']}"
+                        script_resp = await client.get(
+                            f"https://sdvx.in{script['src']}"
                         )
                         script_data = await script_resp.text()
 
