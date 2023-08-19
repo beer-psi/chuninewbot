@@ -36,7 +36,7 @@ async def login(request: web.Request) -> web.Response:
     if clal.startswith("clal="):
         clal = clal[5:]
 
-    if len(clal) != 64 or any(c in COOKIE_CHARACTERS for c in clal):
+    if len(clal) != 64 or any(c not in COOKIE_CHARACTERS for c in clal):
         raise web.HTTPBadRequest(reason="Invalid cookie provided")
 
     if not otp.isdigit() and len(otp) != 6:
