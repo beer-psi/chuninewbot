@@ -53,7 +53,7 @@ jobs:
 
             git pull
 
-            /home/beerpsi/.local/bin/poetry install --without dev
+            /home/beerpsi/.local/bin/poetry install --without dev --all-extras
 
             /home/beerpsi/.local/bin/poetry run alembic upgrade head
             systemctl --user restart chunibot
