@@ -52,9 +52,12 @@ async def login(request: web.Request) -> web.Response:
     )
     return web.Response(
         text=f"""
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
         <title>chuninewbot login</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
         {goatcounter_tag}
     </head>
     <body>
@@ -79,9 +82,18 @@ async def login(request: web.Request) -> web.Response:
     )
 
 
+async def on_response_prepare(_: web.Request, response: web.StreamResponse):
+    response.headers.add("x-content-type-options", "nosniff")
+    if response.headers.get("server"):
+        del response.headers["server"]
+
+
 def init_app(bot: "ChuniBot", goatcounter: Optional[str] = None) -> web.Application:
     app = web.Application()
+    app.on_response_prepare.append(on_response_prepare)
+
     app.add_routes(router)
+
     app["bot"] = bot
     app["goatcounter"] = goatcounter
     return app
