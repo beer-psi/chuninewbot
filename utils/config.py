@@ -1,7 +1,9 @@
+from configparser import ConfigParser
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from configparser import ConfigParser, SectionProxy
+    from configparser import SectionProxy
+    from pathlib import Path
 
 
 class BotConfig:
@@ -99,3 +101,9 @@ class Config:
         self.credentials = CredentialsConfig(self.__config["credentials"])
         self.icons = IconsConfig(self.__config["icons"])
         self.dangerous = DangerousConfig(self.__config["dangerous"])
+
+    @classmethod
+    def from_file(cls, path: "str | Path") -> "Config":
+        cfg = ConfigParser()
+        cfg.read(path)
+        return cls(cfg)
