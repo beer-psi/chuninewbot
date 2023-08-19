@@ -95,14 +95,17 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         try:
             process = await asyncio.create_subprocess_exec(
                 "git",
-                "rev-parse",
-                "--short",
-                "HEAD",
+                "describe",
+                "--tags",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await process.communicate()
             revision = stdout.decode("utf-8").replace("\n", "")
+
+            # vX.Y.Z-n-gHASH
+            if "-" in revision:
+                revision = "-".join(revision.split("-")[:2])
         except FileNotFoundError:
             revision = "unknown"
         if not revision:
