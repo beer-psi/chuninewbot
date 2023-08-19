@@ -96,7 +96,7 @@ def setup_database(conn, _):
 async def startup():
     if (token := cfg.bot.token) is None:
         sys.exit(
-            "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
+            "[ERROR] Token not found, make sure 'bot.token' is set in 'bot.ini'. Exiting."
         )
 
     (intents := discord.Intents.default()).message_content = True
@@ -163,7 +163,7 @@ async def startup():
         await bot.start(token)
     except discord.LoginFailure:
         sys.exit(
-            "[ERROR] Token not found, make sure 'TOKEN' is set in the '.env' file. Exiting."
+            "[ERROR] Invalid token, make sure 'bot.token' is properly set in 'bot.ini'. Exiting."
         )
     except discord.PrivilegedIntentsRequired:
         sys.exit(
