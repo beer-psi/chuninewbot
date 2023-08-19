@@ -2243,4 +2243,4 @@ aiohttp-speedups = ["aiodns", "brotli", "faust-cchardet"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c0f145db1f67af80a04922ab82aedfe5ab39e095d1f683126a18fbf67637bd92"
+content-hash = "841f06ee3bbab21f9394c6d7880c50ab23d7efe9d831709b47f27307f5209043"
