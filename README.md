@@ -18,7 +18,7 @@ Discord bot for CHUNITHM International version.
 - [x] Minigames (song quiz)
 
 ### Setup instructions
-0. Install Python (preferably 3.10 or newer, 3.9 is best effort) and [Poetry](https://python-poetry.org/docs/#installation)
+0. Install Python 3.10 or newer and [Poetry](https://python-poetry.org/docs/#installation)
 1. Copy `bot.example.ini` to `bot.ini` and fill in values based on the comments.
 2. `poetry install` and `poetry shell`
 3. Run `python dbutils.py create` to create the database.
