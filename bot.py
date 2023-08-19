@@ -58,6 +58,37 @@ class ChuniBot(commands.Bot):
         return await super().start(*args, **kwargs)
 
     async def setup_hook(self) -> None:
+        # Database setup
+        connection_string = cfg.bot.db_connection_string
+        self.engine = create_async_engine(connection_string)
+        self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
+
+        def setup_database(conn, _):
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.create_function("jwsim", 2, jarowinkler_similarity)
+
+        sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
+
+        # Load guild prefixes
+        async with self.begin_db_session() as session:
+            prefixes = (await session.execute(select(Prefix))).scalars()
+
+        self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}
+        print(f"Loaded {len(self.prefixes)} guild prefixes")
+
+        # Setup login web server (if enabled)
+        port = cfg.web.login_server_port
+        if port is not None and int(port) > 0:
+            self.app = init_app(self, cfg.web.goatcounter)
+            _ = asyncio.ensure_future(
+                web._run_app(
+                    self.app,
+                    port=int(port),
+                    host="127.0.0.1",
+                )
+            )
+
+        # Load extensions
         await self.load_extension("cogs.autocompleters")
         print("Loaded cogs.autocompleters")
 
@@ -84,33 +115,6 @@ class ChuniBot(commands.Bot):
                 print(
                     f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
                 )
-
-        connection_string = cfg.bot.db_connection_string
-        self.engine = create_async_engine(connection_string)
-        self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
-
-        def setup_database(conn, _):
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.create_function("jwsim", 2, jarowinkler_similarity)
-
-        sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
-
-        async with self.begin_db_session() as session:
-            prefixes = (await session.execute(select(Prefix))).scalars()
-
-        self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}
-        print(f"Loaded {len(self.prefixes)} guild prefixes")
-
-        port = cfg.web.login_server_port
-        if port is not None and int(port) > 0:
-            self.app = init_app(self, cfg.web.goatcounter)
-            _ = asyncio.ensure_future(
-                web._run_app(
-                    self.app,
-                    port=int(port),
-                    host="127.0.0.1",
-                )
-            )
 
     async def close(self) -> None:
         if self.app is not None:
