@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import logging.handlers
 import sys
@@ -171,11 +172,9 @@ async def startup():
             "Message Content Intent not enabled, go to 'https://discord.com/developers/applications' and enable the Message Content Intent."
         )
         sys.exit(1)
-    except KeyboardInterrupt:
-        return
 
 
-if __name__ == "__main__":
+def sync_startup():
     try:
         import uvloop  # type: ignore[reportMissingImports]
 
@@ -187,3 +186,8 @@ if __name__ == "__main__":
             asyncio.run(startup())
     except ModuleNotFoundError:
         asyncio.run(startup())
+
+
+if __name__ == "__main__":
+    with contextlib.suppress(KeyboardInterrupt):
+        sync_startup()
