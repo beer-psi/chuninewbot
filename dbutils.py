@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import logging
 import re
 from html import unescape
 from pathlib import Path
@@ -21,12 +22,17 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import joinedload
 
-from bot import cfg
 from database.models import Alias, Base, Chart, SdvxinChartView, Song
+from utils.config import config
+from utils.logging import setup_logging
 from utils.types.errors import MissingConfiguration
 
 if TYPE_CHECKING:
     from typing_extensions import NotRequired
+
+
+setup_logging("dbutils")
+logger = logging.getLogger("dbutils")
 
 
 class ChunirecMeta(TypedDict):
@@ -322,7 +328,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
     ) as client, async_session() as session, session.begin():
         # standard categories
         for category in categories:
-            print(f"-- Processing category {category}")
+            logger.info(f"Processing category {category}")
             if category == "end":
                 url = "https://sdvx.in/chunithm/end.htm"
             else:
@@ -332,7 +338,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
 
             tables = soup.select("table:has(td.tbgl)")
             if len(tables) == 0:
-                print(f"Could not find table(s) for category {category}")
+                logger.error(f"Could not find table(s) for category {category}")
                 continue
 
             for table in tables:
@@ -367,7 +373,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                             match is None
                             or (level := match.group("difficulty")) is None
                         ):
-                            print(
+                            logger.warning(
                                 f"Could not extract difficulty for {title}, {sdvx_in_id}"
                             )
                             continue
@@ -380,7 +386,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                     stmt = stmt.where(condition)
                     song = (await session.execute(stmt)).scalar_one_or_none()
                     if song is None:
-                        print(f"Could not find song with title {title}")
+                        logger.warning(f"Could not find song with title {title}")
                         continue
 
                     if script_data is None:
@@ -419,7 +425,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
 
 
 async def update_db(async_session: async_sessionmaker[AsyncSession]):
-    token = cfg.credentials.chunirec_token
+    token = config.credentials.chunirec_token
     if token is None:
         msg = "credentials.chunirec_token"
         raise MissingConfiguration(msg)
@@ -468,7 +474,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             chunithm_catcode = int(CHUNITHM_CATCODES[chunithm_song["catname"]])
             jacket = chunithm_song["image"]
         except StopIteration:
-            print(f"Couldn't find {song['meta']}")
+            logger.warning(f"Couldn't find {song['meta']}")
             return
 
         if not jacket:
@@ -653,7 +659,7 @@ async def update_cc_from_data(
             song = (await session.execute(stmt)).unique().scalar_one_or_none()
 
             if song is None:
-                print(f"Could not find song with chunithm_id {chunithm_id}")
+                logger.warning(f"Could not find song with chunithm_id {chunithm_id}")
                 return
 
             for chart in root.findall("./fumens/MusicFumenData[enable='true']"):
@@ -747,7 +753,7 @@ async def main():
     args = parser.parse_args()
 
     engine: AsyncEngine = create_async_engine(
-        cfg.bot.db_connection_string,
+        config.bot.db_connection_string,
         # Should be ridiculous even for multi-threading
         connect_args={"timeout": 20},
     )

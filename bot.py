@@ -15,8 +15,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from database.models import Prefix
-from utils.config import Config
+from utils.config import config
 from utils.help import HelpCommand
+from utils.logging import logger
 from web import init_app
 
 if TYPE_CHECKING:
@@ -25,11 +26,9 @@ if TYPE_CHECKING:
 
 
 BOT_DIR = Path(__file__).parent
-cfg = Config.from_file(BOT_DIR / "bot.ini")
 
 
 class ChuniBot(commands.Bot):
-    cfg: Config
     dev: bool = False
 
     engine: "AsyncEngine"
@@ -45,9 +44,8 @@ class ChuniBot(commands.Bot):
     # value: userId, _t cookies from CHUNITHM-NET
     sessions: dict[int, tuple[str | None, str | None]]
 
-    def __init__(self, *args, config: Config, **kwargs):
-        self.cfg = config
-        self.dev = self.cfg.dangerous.dev
+    def __init__(self, *args, **kwargs):
+        self.dev = config.dangerous.dev
         self.prefixes = {}
         self.sessions = {}
 
@@ -59,7 +57,7 @@ class ChuniBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         # Database setup
-        connection_string = cfg.bot.db_connection_string
+        connection_string = config.bot.db_connection_string
         self.engine = create_async_engine(connection_string)
         self.begin_db_session = async_sessionmaker(self.engine, expire_on_commit=False)
 
@@ -74,45 +72,39 @@ class ChuniBot(commands.Bot):
             prefixes = (await session.execute(select(Prefix))).scalars()
 
         self.prefixes = {prefix.guild_id: prefix.prefix for prefix in prefixes}
-        print(f"Loaded {len(self.prefixes)} guild prefixes")
+        logger.info(f"Loaded {len(self.prefixes)} guild prefixes")
 
         # Setup login web server (if enabled)
-        port = cfg.web.login_server_port
-        if port is not None and int(port) > 0:
-            self.app = init_app(self, cfg.web.goatcounter)
+        port = config.web.login_server_port
+        if port is not None and port > 0:
+            self.app = init_app(self, config.web.goatcounter)
             _ = asyncio.ensure_future(
                 web._run_app(
                     self.app,
-                    port=int(port),
+                    port=port,
                     host="127.0.0.1",
                 )
             )
 
         # Load extensions
         await self.load_extension("cogs.autocompleters")
-        print("Loaded cogs.autocompleters")
-
         await self.load_extension("cogs.botutils")
-        print("Loaded cogs.botutils")
         if self.dev:
             await self.load_extension("cogs.hotreload")
-            print("Loaded cogs.hotreload")
-
             await self.load_extension("jishaku")
-            print("Loaded jishaku")
 
         for file in (BOT_DIR / "cogs").glob("*.py"):
             if file.stem in ("hotreload", "botutils", "__init__", "autocompleters"):
                 continue
             try:
                 await self.load_extension(f"cogs.{file.stem}")
-                print(f"Loaded cogs.{file.stem}")
+                logger.info(f"Loaded extension cogs.{file.stem}")
             except commands.errors.ExtensionAlreadyLoaded:
-                print(f"cogs.{file.stem} already loaded")
+                logger.warning(f"cogs.{file.stem} already loaded")
             except commands.errors.NoEntryPointError:
-                print(f"cogs.{file.stem} has no `setup` function.")
+                logger.error(f"cogs.{file.stem} has no `setup` function.")
             except commands.errors.ExtensionFailed as e:
-                print(
+                logger.error(
                     f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
                 )
 
@@ -121,7 +113,8 @@ class ChuniBot(commands.Bot):
             await self.app.shutdown()
             await self.app.cleanup()
 
-        await self.engine.dispose()
+        if hasattr(self, "engine"):
+            await self.engine.dispose()
 
         return await super().close()
 
@@ -139,20 +132,23 @@ def guild_specific_prefix(default: str):
 
 
 if __name__ == "__main__":
-    if (token := cfg.bot.token) is None:
-        sys.exit(
-            "[ERROR] Token not found, make sure 'bot.token' is set in 'bot.ini'. Exiting."
-        )
+    if (token := config.bot.token) is None:
+        logger.error("Token not found. Make sure 'bot.token' is set in 'bot.ini'.")
+        sys.exit(1)
 
     (intents := discord.Intents.default()).message_content = True
     bot = ChuniBot(
-        command_prefix=guild_specific_prefix(cfg.bot.default_prefix),  # type: ignore[reportGeneralTypeIssues]
+        command_prefix=guild_specific_prefix(config.bot.default_prefix),  # type: ignore[reportGeneralTypeIssues]
         intents=intents,
         help_command=HelpCommand(),
-        config=cfg,
+        config=config,
     )
 
     try:
+        discord.utils.setup_logging(
+            level=logging.DEBUG if bot.dev else logging.INFO,
+            root=False,
+        )
         bot.run(
             token,
             reconnect=True,
@@ -162,18 +158,15 @@ if __name__ == "__main__":
                 maxBytes=32 * 1024 * 1024,  # 32 MiB
                 backupCount=5,  # Rotate through 5 files
             ),
-            log_formatter=logging.Formatter(
-                "[{asctime}] [{levelname:<8}] {name}: {message}",
-                datefmt="%Y-%m-%d %H:%M:%S",
-                style="{",
-            ),
             log_level=logging.DEBUG if bot.dev else logging.INFO,
         )
     except discord.LoginFailure:
-        sys.exit(
-            "[ERROR] Invalid token, make sure 'bot.token' is properly set in 'bot.ini'. Exiting."
+        logger.error(
+            "Invalid token. Make sure 'bot.token' is properly set in 'bot.ini'."
         )
+        sys.exit(1)
     except discord.PrivilegedIntentsRequired:
-        sys.exit(
-            "[ERROR] Message Content Intent not enabled, go to 'https://discord.com/developers/applications' and enable the Message Content Intent. Exiting."
+        logger.error(
+            "Message Content Intent not enabled, go to 'https://discord.com/developers/applications' and enable the Message Content Intent."
         )
+        sys.exit(1)

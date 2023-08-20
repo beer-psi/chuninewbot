@@ -1,9 +1,9 @@
 from configparser import ConfigParser
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from configparser import SectionProxy
-    from pathlib import Path
 
 
 class BotConfig:
@@ -107,3 +107,6 @@ class Config:
         cfg = ConfigParser()
         cfg.read(path)
         return cls(cfg)
+
+
+config = Config.from_file(Path(__file__).parent.parent / "bot.ini")

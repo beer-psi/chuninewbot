@@ -19,6 +19,7 @@ from utils.calculation.overpower import (
     calculate_overpower_max,
 )
 from utils.calculation.rating import calculate_rating
+from utils.config import config
 from utils.types import (
     AnnotatedDetailedRecentRecord,
     AnnotatedMusicRecord,
@@ -35,7 +36,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         self.bot = bot
 
     async def guild_prefix(self, ctx: Context) -> str:
-        default_prefix: str = self.bot.cfg.bot.default_prefix
+        default_prefix: str = config.bot.default_prefix
         if ctx.guild is None:
             return default_prefix
 

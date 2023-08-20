@@ -13,6 +13,7 @@ from chunithm_net.exceptions import (
     InvalidTokenException,
     MaintenanceException,
 )
+from utils.config import config
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -123,7 +124,7 @@ class EventsCog(commands.Cog, name="Events"):
             mention_author=False,
         )
 
-        if webhook_url := self.bot.cfg.bot.error_reporting_webhook:
+        if webhook_url := config.bot.error_reporting_webhook:
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
 

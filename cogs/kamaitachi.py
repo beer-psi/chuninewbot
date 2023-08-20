@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from chunithm_net.entities.enums import Difficulty
 from database.models import Cookie
+from utils.config import config
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -19,18 +20,14 @@ if TYPE_CHECKING:
 
 class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": True}):
     def __init__(self, bot: "ChuniBot") -> None:
-        self.bot = bot
-        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
-
-        if (kt_client_id := self.bot.cfg.credentials.kamaitachi_client_id) is None:
+        if (kt_client_id := config.credentials.kamaitachi_client_id) is None:
             msg = "Kamaitachi client ID is not set"
             raise ValueError(msg)
 
+        self.bot = bot
+        self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
         self.kt_client_id = kt_client_id
         self.user_agent = f"ChuniBot (https://github.com/Rapptz/discord.py {discord.__version__}) Python/{sys.version_info[0]}.{sys.version_info[1]} aiohttp/{aiohttp.__version__}"
-
-    async def cog_unload(self) -> None:
-        return await super().cog_unload()
 
     @commands.hybrid_group("kamaitachi", aliases=["kt"], invoke_without_command=True)
     async def kamaitachi(self, ctx: Context):

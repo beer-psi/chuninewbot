@@ -11,6 +11,7 @@ from discord.utils import oauth_url
 from sqlalchemy import delete
 
 from database.models import Prefix
+from utils.config import config
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -165,7 +166,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 if missing_permission:
                     raise commands.MissingPermissions(["manage_guild"])
 
-                default_prefix: str = self.bot.cfg.bot.default_prefix
+                default_prefix: str = config.bot.default_prefix
                 async with self.bot.begin_db_session() as session, session.begin():
                     if new_prefix == default_prefix:
                         stmt = delete(Prefix).where(Prefix.guild_id == ctx.guild.id)
