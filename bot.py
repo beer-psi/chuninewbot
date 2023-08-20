@@ -131,7 +131,7 @@ def guild_specific_prefix(default: str):
     return inner
 
 
-if __name__ == "__main__":
+async def startup():
     if (token := config.bot.token) is None:
         logger.error("Token not found. Make sure 'bot.token' is set in 'bot.ini'.")
         sys.exit(1)
@@ -149,17 +149,18 @@ if __name__ == "__main__":
             level=logging.DEBUG if bot.dev else logging.INFO,
             root=False,
         )
-        bot.run(
-            token,
-            reconnect=True,
-            log_handler=logging.handlers.RotatingFileHandler(
+        discord.utils.setup_logging(
+            level=logging.DEBUG if bot.dev else logging.INFO,
+            handler=logging.handlers.RotatingFileHandler(
                 filename="discord.log",
                 encoding="utf-8",
                 maxBytes=32 * 1024 * 1024,  # 32 MiB
                 backupCount=5,  # Rotate through 5 files
             ),
-            log_level=logging.DEBUG if bot.dev else logging.INFO,
+            root=False,
         )
+        async with bot:
+            await bot.start(token, reconnect=True)
     except discord.LoginFailure:
         logger.error(
             "Invalid token. Make sure 'bot.token' is properly set in 'bot.ini'."
@@ -170,3 +171,19 @@ if __name__ == "__main__":
             "Message Content Intent not enabled, go to 'https://discord.com/developers/applications' and enable the Message Content Intent."
         )
         sys.exit(1)
+    except KeyboardInterrupt:
+        return
+
+
+if __name__ == "__main__":
+    try:
+        import uvloop  # type: ignore[reportMissingImports]
+
+        if sys.version_info >= (3, 11):
+            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+                runner.run(startup())
+        else:
+            uvloop.install()
+            asyncio.run(startup())
+    except ModuleNotFoundError:
+        asyncio.run(startup())

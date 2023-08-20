@@ -19,7 +19,7 @@ TOKYO_TZ = ZoneInfo("Asia/Tokyo")
 
 
 try:
-    import orjson
+    import orjson  # type: ignore[reportMissingImports]
 
     def json_dumps(obj):
         return orjson.dumps(obj).decode("utf-8")

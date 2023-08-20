@@ -783,5 +783,16 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+    import sys
 
-    asyncio.run(main())
+    try:
+        import uvloop  # type: ignore[reportMissingImports]
+
+        if sys.version_info >= (3, 11):
+            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+                runner.run(main())
+        else:
+            uvloop.install()
+            asyncio.run(main())
+    except ModuleNotFoundError:
+        asyncio.run(main())

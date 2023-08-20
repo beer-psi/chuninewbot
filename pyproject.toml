@@ -22,9 +22,10 @@ faust-cchardet = { version = "^2.1.19", optional = true }
 aiodns = { version = "^3.0.0", optional = true }
 brotli = { version = "^1.0.9", optional = true }
 orjson = { version = "^3.9.5", optional = true }
+uvloop = { version = "^0.17.0", optional = true, markers = "sys_platform != 'win32'" }
 
 [tool.poetry.extras]
-speedups = ["faust-cchardet", "aiodns", "brotli", "lxml", "orjson"]
+speedups = ["faust-cchardet", "aiodns", "brotli", "lxml", "orjson", "uvloop"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
