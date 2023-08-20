@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import joinedload
 
 from database.models import Alias, Base, Chart, SdvxinChartView, Song
+from utils import json_loads
 from utils.config import config
 from utils.logging import setup_logging
 from utils.types.errors import MissingConfiguration
@@ -442,9 +443,11 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         zetaraku_resp = await client.get(
             "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/data.json"
         )
-        songs: list[ChunirecSong] = await resp.json()
-        chuni_songs: list[dict[str, str]] = await chuni_resp.json()
-        zetaraku_songs: ZetarakuChunithmData = await zetaraku_resp.json()
+        songs: list[ChunirecSong] = await resp.json(loads=json_loads)
+        chuni_songs: list[dict[str, str]] = await chuni_resp.json(loads=json_loads)
+        zetaraku_songs: ZetarakuChunithmData = await zetaraku_resp.json(
+            loads=json_loads
+        )
 
     inserted_songs = []
     inserted_charts = []

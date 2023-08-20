@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
 
+from utils import json_loads
+
 if TYPE_CHECKING:
     from bot import ChuniBot
 
@@ -19,7 +21,7 @@ async def login(request: web.Request) -> web.Response:
     params = {}
     content_type = request.headers.get("Content-Type")
     if content_type == "application/json":
-        params = await request.json()
+        params = await request.json(loads=json_loads)
     elif content_type in ["application/x-www-form-urlencoded", "multipart/form-data"]:
         params = await request.post()
     else:

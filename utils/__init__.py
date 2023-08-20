@@ -18,6 +18,22 @@ if TYPE_CHECKING:
 TOKYO_TZ = ZoneInfo("Asia/Tokyo")
 
 
+try:
+    import orjson
+
+    def json_dumps(obj):
+        return orjson.dumps(obj).decode("utf-8")
+
+    def json_loads(s):
+        return orjson.loads(s)
+
+except ModuleNotFoundError:
+    import json
+
+    json_dumps = json.dumps
+    json_loads = json.loads
+
+
 def shlex_split(s: str) -> list[str]:
     view = StringView(s)
     result = []

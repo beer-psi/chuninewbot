@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from chunithm_net.entities.enums import Difficulty
 from database.models import Cookie
+from utils import json_dumps, json_loads
 from utils.config import config
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 "Authorization": f"Bearer {token}",
             },
         ) as resp:
-            data = await resp.json()
+            data = await resp.json(loads=json_loads)
 
         if data["success"] is False:
             return data["description"]
@@ -259,7 +260,9 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 "scores": scores,
             }
 
-            async with aiohttp.ClientSession() as session, session.post(
+            async with aiohttp.ClientSession(
+                json_serialize=json_dumps
+            ) as session, session.post(
                 "https://kamaitachi.xyz/ir/direct-manual/import",
                 json=request_body,
                 headers={
@@ -268,7 +271,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     "X-User-Intent": "true",
                 },
             ) as resp:
-                data = await resp.json()
+                data = await resp.json(loads=json_loads)
 
                 if not data["success"]:
                     return await message.edit(
@@ -283,7 +286,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         "Authorization": f"Bearer {cookie.kamaitachi_token}",
                     },
                 ) as resp:
-                    data = await resp.json()
+                    data = await resp.json(loads=json_loads)
 
                 if not data["success"]:
                     return await message.edit(

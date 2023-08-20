@@ -3,6 +3,8 @@ import pathlib
 
 from discord.ext import commands, tasks
 
+from utils.logging import logger
+
 # put your extension names in this list
 # if you don't want them to be reloaded
 IGNORE_EXTENSIONS: list[str] = ["jishaku"]
@@ -42,9 +44,9 @@ class HotReload(commands.Cog):
                 # For d.py 2.0, await the next line
                 await self.bot.reload_extension(extension)
             except commands.ExtensionError:
-                print(f"Couldn't reload extension: {extension}")
+                logger.warning(f"Couldn't reload extension: {extension}")
             else:
-                print(f"Reloaded extension: {extension}")
+                logger.info(f"Reloaded extension: {extension}")
             finally:
                 self.last_modified_time[extension] = time
 
