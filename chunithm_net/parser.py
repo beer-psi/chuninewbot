@@ -244,7 +244,7 @@ def parse_music_record(
 
 def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
     records = []
-    for x in soup.select(".w388.musiclist_box"):
+    for x in soup.select("form:has(.w388.musiclist_box)"):
         if (score_elem := x.select_one(".play_musicdata_highscore .text_b")) is None:
             continue
 
@@ -253,6 +253,7 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
         else:
             rank, clear = Rank.D, ClearType.FAILED
 
+        div = x.select_one(".w388.musiclist_box")
         records.append(
             Record(
                 detailed=DetailedParams(
@@ -262,7 +263,7 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
                 title=x.select_one(
                     ".music_title, .musiclist_worldsend_title"
                 ).get_text(),
-                difficulty=difficulty_from_imgurl(" ".join(x["class"])),
+                difficulty=difficulty_from_imgurl(" ".join(div["class"])),
                 score=chuni_int(score_elem.get_text()),
                 rank=rank,
                 clear=clear,

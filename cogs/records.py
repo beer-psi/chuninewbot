@@ -1,5 +1,8 @@
 import asyncio
+import contextlib
+import itertools
 import logging
+from argparse import ArgumentError
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Optional, cast
 
@@ -10,9 +13,10 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 
 from chunithm_net.consts import JACKET_BASE
-from chunithm_net.entities.enums import Difficulty
+from chunithm_net.entities.enums import Difficulty, Genres, Rank
 from database.models import Song
 from utils import did_you_mean_text, shlex_split
+from utils.argparse import DiscordArguments
 from utils.components import ScoreCardEmbed
 from utils.views import B30View, CompareView, RecentRecordsView, SelectToCompareView
 
@@ -354,37 +358,197 @@ class RecordsCog(commands.Cog, name="Records"):
                 mention_author=False,
             )
 
-    @commands.hybrid_command("top")
+    @app_commands.command(name="top", description="View your best scores for a level.")
+    @app_commands.describe(
+        level="Level (from 1 to 15) to search for.",
+        difficulty="Difficulty to search for.",
+        genre="Genre to search for.",
+        rank="Rank to search for.",
+    )
+    @app_commands.choices(
+        level=[
+            *[app_commands.Choice(name=str(i), value=str(i)) for i in range(1, 7)],
+            *itertools.chain.from_iterable(
+                [
+                    (
+                        app_commands.Choice(name=f"{i}", value=f"{i}"),
+                        app_commands.Choice(name=f"{i}+", value=f"{i}+"),
+                    )
+                    for i in range(7, 15)
+                ]
+            ),
+            app_commands.Choice(name="15", value="15"),
+        ],
+        difficulty=[app_commands.Choice(name=str(x), value=x.value) for x in Difficulty.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
+        genre=[app_commands.Choice(name=str(x), value=x.value) for x in Genres.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
+        rank=[app_commands.Choice(name=str(x), value=x.value) for x in Rank.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
+    )
+    async def top_slash(
+        self,
+        interaction: "discord.Interaction[ChuniBot]",
+        *,
+        user: Optional[discord.User | discord.Member] = None,
+        level: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
+        genre: Optional[Genres] = None,
+        rank: Optional[Rank] = None,
+    ):
+        await interaction.response.defer()
+
+        if (genre or rank) and not difficulty:
+            return await interaction.followup.send(
+                "Difficulty must be set if genre or rank is set."
+            )
+
+        async with self.utils.chuninet(
+            interaction.user.id if user is None else user.id
+        ) as client:
+            await client.authenticate()
+            records = await client.music_record_by_folder(
+                level=level, genre=genre, difficulty=difficulty, rank=rank
+            )
+            assert records is not None
+
+            if len(records) == 0:
+                return await interaction.followup.send("No scores found.")
+
+            tasks = [self.utils.annotate_song(score) for score in records]
+            records = await asyncio.gather(*tasks)
+            records.sort(key=lambda x: (x.play_rating, x.score), reverse=True)
+
+            ctx = await Context.from_interaction(interaction)
+            view = B30View(ctx, records, show_average=False)
+            view.message = await ctx.reply(
+                content=view.format_content(),
+                embeds=view.format_page(view.items[: view.per_page]),
+                view=view,
+            )
+            return None
+
+    @commands.command("top")
     async def top(
         self,
         ctx: Context,
-        level: str,
-        user: Optional[discord.User | discord.Member] = None,
+        *,
+        query: str,
     ):
-        """View your best scores for a level."""
+        """
+        **View your best scores for a level.**
 
-        if level[-1] == "+":
-            numeric_level = int(level.zfill(3)[:-1])
-        else:
-            numeric_level = int(level[0:2])
+        **Parameters:**
+        `user`: Discord username of the player. Yourself, if not provided.
+        `level`: Level (from 1 to 15) to search for.
+        `-d`: Difficulty to search for. Must be one of `EASY`, `ADVANCED`, `EXPERT`, `MASTER`, `ULTIMA`, or `WE` if specified.
+        `-g`: Genre to search for. Must be one of `POPS&ANIME`, `niconico`, `Touhou Project`, `ORIGINAL`, `VARIETY`, `Irodorimidori`, or `Gekimai`, if specified.
+        `-r`: Rank to search for. Anywhere between "S" and "SSS+" (inclusive), if specified.
 
-        msg = "Invalid level."
-        if level[-1] == "+" and numeric_level not in range(7, 15):
+        Genre and rank cannot be set at the same time. If genre or rank is set, difficulty must also be set.
+
+        If multiple parameters are set, they will be applied in order of:
+        - level
+        - genre + difficulty
+        - rank + difficulty
+        - difficulty
+
+        **Examples:**
+        `c>top 14+`: View your best scores for level 14+
+        `c>top -d mas`: View your best scores for MASTER difficulty
+        `c>top -g original -d ultima`: View your best scores for ULTIMA difficulty in the ORIGINAL folder
+        `c>top @player -r sss`: View @player's best scores for SSS rank.
+        """
+
+        def genre(arg: str) -> Genres:
+            genre = None
+            genre_lower = arg.lower()
+            if genre_lower.startswith("pops"):
+                genre = Genres.POPS_AND_ANIME
+            elif genre_lower.startswith("nico"):
+                genre = Genres.NICONICO
+            elif genre_lower.startswith(("touhou", "toho", "東方")):
+                genre = Genres.TOUHOU_PROJECT
+            elif genre_lower.startswith(("original", "chunithm")):
+                genre = Genres.ORIGINAL
+            elif genre_lower.startswith("variety"):
+                genre = Genres.VARIETY
+            elif genre_lower.startswith("irodori"):
+                genre = Genres.IRODORIMIDORI
+            elif genre_lower.startswith(("geki", "ゲキ")):
+                genre = Genres.GEKIMAI
+            else:
+                msg = "Invalid genre."
+                raise ValueError(msg)
+
+            return genre
+
+        def difficulty(arg: str) -> Difficulty:
+            if arg.upper().startswith("WORLD"):
+                return Difficulty.WORLDS_END
+            return Difficulty.from_short_form(arg.upper()[:3])
+
+        def rank(arg: str) -> Rank:
+            return Rank[arg.upper().replace("+", "p")]
+
+        parser = DiscordArguments()
+        parser.add_argument("-d", "--difficulty", nargs="?", type=difficulty)
+
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("-g", "--genre", nargs="?", type=genre)
+        group.add_argument("-r", "--rank", nargs="?", type=rank)
+
+        try:
+            args, rest = await parser.parse_known_intermixed_args(shlex_split(query))
+        except ArgumentError as e:
+            raise commands.BadArgument(str(e)) from e
+
+        if (args.genre or args.rank) and not args.difficulty:
+            msg = "Difficulty must be set if genre or rank is set."
             raise commands.BadArgument(msg)
-        if numeric_level not in range(1, 16):
-            raise commands.BadArgument(msg)
+
+        user = None
+        str_level = None
+        if len(rest) > 0:
+            for converter in [commands.MemberConverter, commands.UserConverter]:
+                with contextlib.suppress(commands.BadArgument):
+                    user = await converter().convert(ctx, rest[0])
+                    str_level = rest[1] if len(rest) > 1 else None
+                    break
+
+        if str_level is None:
+            str_level = rest[0] if len(rest) > 0 else None
+
+        level = None
+        if str_level:
+            msg = "Invalid level."
+
+            try:
+                if str_level[-1] == "+":
+                    numeric_level = int(str_level.zfill(3)[:-1])
+                else:
+                    numeric_level = int(str_level[0:2])
+            except ValueError:
+                raise commands.BadArgument(msg) from None
+
+            if str_level[-1] == "+" and numeric_level not in range(7, 15):
+                raise commands.BadArgument(msg)
+            if numeric_level not in range(1, 16):
+                raise commands.BadArgument(msg)
+
+            level = str_level
 
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
             await client.authenticate()
-            records = await client.music_record_by_folder(level=level)
+            records = await client.music_record_by_folder(
+                level=level,
+                genre=args.genre,
+                difficulty=args.difficulty,
+                rank=args.rank,
+            )
             assert records is not None
 
             if len(records) == 0:
-                return await ctx.reply(
-                    f"No scores found for level {level}.", mention_author=False
-                )
+                return await ctx.reply("No scores found.", mention_author=False)
 
             tasks = [self.utils.annotate_song(score) for score in records]
             records = await asyncio.gather(*tasks)
