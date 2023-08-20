@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import importlib.util
 import logging
 import re
 from html import unescape
@@ -240,6 +241,7 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
 
 
 async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
+    bs4_features = "lxml" if importlib.util.find_spec("lxml") else "html.parser"
     categories = [
         "pops",
         "niconico",
@@ -334,7 +336,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
             else:
                 url = f"https://sdvx.in/chunithm/sort/{category}.htm"
             resp = await client.get(url)
-            soup = BeautifulSoup(await resp.text(), "lxml")
+            soup = BeautifulSoup(await resp.text(), bs4_features)
 
             tables = soup.select("table:has(td.tbgl)")
             if len(tables) == 0:
@@ -407,7 +409,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                         end_index = key[12] if len(key) > 12 else ""
 
                         value_soup = BeautifulSoup(
-                            value.removeprefix('"').removesuffix('";'), "lxml"
+                            value.removeprefix('"').removesuffix('";'), bs4_features
                         )
                         if value_soup.select_one("a") is None:
                             continue

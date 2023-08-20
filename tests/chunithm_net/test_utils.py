@@ -1,3 +1,5 @@
+import importlib.util
+
 import pytest
 from bs4 import BeautifulSoup
 
@@ -72,7 +74,8 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
     ],
 )
 def test_get_rank_and_cleartype(html, expected):
-    soup = BeautifulSoup(html, "lxml")
+    bs4_features = "lxml" if importlib.util.find_spec("lxml") else "html.parser"
+    soup = BeautifulSoup(html, bs4_features)
     assert get_rank_and_cleartype(soup) == expected
 
 

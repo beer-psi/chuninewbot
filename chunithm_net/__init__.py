@@ -1,3 +1,4 @@
+import importlib.util
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Optional
 
@@ -44,6 +45,10 @@ class ChuniNet:
         self.session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar())
         self.session.cookie_jar.update_cookies(
             {"clal": clal}, URL("https://lng-tgk-aime-gw.am-all.net")
+        )
+
+        self.bs4_features = (
+            "lxml" if importlib.util.find_spec("lxml") else "html.parser"
         )
 
         if user_id is not None:
@@ -107,7 +112,9 @@ class ChuniNet:
             msg = "Invalid cookie: No userId cookie found"
             raise InvalidTokenException(msg)
 
-        return parse_player_card_and_avatar(BeautifulSoup(await resp.text(), "lxml"))
+        return parse_player_card_and_avatar(
+            BeautifulSoup(await resp.text(), self.bs4_features)
+        )
 
     async def _request(self, endpoint: str, method="GET", **kwargs):
         if self.user_id is None:
@@ -122,7 +129,7 @@ class ChuniNet:
             return await self._request(endpoint, method, **kwargs)
 
         if response.url.path.startswith("/mobile/error"):
-            soup = BeautifulSoup(await response.text(), "lxml")
+            soup = BeautifulSoup(await response.text(), self.bs4_features)
             err = soup.select(".block.text_l .font_small")
 
             errcode = int(err[0].get_text().split(":")[1])
@@ -133,12 +140,12 @@ class ChuniNet:
 
     async def player_data(self):
         resp = await self._request("mobile/home/playerData")
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_player_data(soup)
 
     async def recent_record(self) -> list[RecentRecord]:
         resp = await self._request("mobile/record/playlog")
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
 
         web_records = soup.select(".frame02.w400")
         return [parse_basic_recent_record(record) for record in web_records]
@@ -152,7 +159,7 @@ class ChuniNet:
                 "token": self.token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_detailed_recent_record(soup)
 
     async def music_record(self, idx: int) -> list[MusicRecord]:
@@ -167,7 +174,7 @@ class ChuniNet:
                 "token": self.token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_music_record(soup, DetailedParams(idx, self.token or ""))
 
     async def _worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
@@ -179,18 +186,18 @@ class ChuniNet:
                 "token": self.token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_music_record(soup, DetailedParams(idx, self.token or ""))
 
     async def best30(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailBest/")
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
 
         return parse_music_for_rating(soup)
 
     async def recent10(self) -> list[Record]:
         resp = await self._request("mobile/home/playerData/ratingDetailRecent/")
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
 
         return parse_music_for_rating(soup)
 
@@ -294,7 +301,7 @@ class ChuniNet:
             msg = "No search criteria specified"
             raise ValueError(msg)
 
-        soup = BeautifulSoup(await resp.text(), "lxml")
+        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_music_for_rating(soup)
 
     async def change_player_name(self, new_name: str) -> bool:

@@ -3,6 +3,7 @@ name = "chuninewbot"
 version = "0.1.0"
 description = ""
 authors = ["beerpiss <lacvtg.a1.2023@gmail.com>"]
+license = "0BSD"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -10,19 +11,20 @@ python = "^3.10"
 aiohttp = "^3.8.5"
 yarl = "^1.8.2"
 beautifulsoup4 = "^4.11.2"
-lxml = "^4.9.2"
 pillow = "^9.5.0"
 jarowinkler = "^1.2.3"
 alembic = "^1.11.3"
+aiosqlite = "^0.19.0"
 sqlalchemy = { version = "^2.0.20", extras = ["asyncio"] }
 tzdata = { version = "^2023.3", markers = "sys_platform == 'win32'" }
-aiosqlite = "^0.19.0"
+lxml = { version = "^4.9.2", optional = true }
 faust-cchardet = { version = "^2.1.19", optional = true }
 aiodns = { version = "^3.0.0", optional = true }
 brotli = { version = "^1.0.9", optional = true }
+orjson = { version = "^3.9.5", optional = true }
 
 [tool.poetry.extras]
-aiohttp-speedups = ["faust-cchardet", "aiodns", "brotli"]
+speedups = ["faust-cchardet", "aiodns", "brotli", "lxml", "orjson"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
