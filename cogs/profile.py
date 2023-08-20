@@ -143,7 +143,7 @@ class ProfileCog(commands.Cog, name="Profile"):
             results = await asyncio.gather(*tasks)
             items: dict[str, bytes] = dict(
                 zip(
-                    ["base", "back", *AVATAR_COORDS.keys()],
+                    ["base", "back", *AVATAR_COORDS],
                     results,
                 )
             )

@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from database.models import Prefix
 from utils.config import config
 from utils.help import HelpCommand
-from utils.logging import logger
+from utils.logging import QueueListenerHandler, console_handler, logger, setup_handler
 from web import init_app
 
 if TYPE_CHECKING:
@@ -145,21 +145,23 @@ async def startup():
         config=config,
     )
 
-    try:
-        discord.utils.setup_logging(
-            level=logging.DEBUG if bot.dev else logging.INFO,
-            root=False,
-        )
-        discord.utils.setup_logging(
-            level=logging.DEBUG if bot.dev else logging.INFO,
-            handler=logging.handlers.RotatingFileHandler(
-                filename="discord.log",
-                encoding="utf-8",
-                maxBytes=32 * 1024 * 1024,  # 32 MiB
-                backupCount=5,  # Rotate through 5 files
+    discord.utils.setup_logging(
+        level=logging.DEBUG if bot.dev else logging.INFO,
+        handler=QueueListenerHandler(
+            console_handler,
+            setup_handler(
+                logging.handlers.RotatingFileHandler(
+                    filename="discord.log",
+                    encoding="utf-8",
+                    maxBytes=32 * 1024 * 1024,  # 32 MiB
+                    backupCount=5,  # Rotate through 5 files
+                ),
             ),
-            root=False,
-        )
+        ),
+        root=False,
+    )
+
+    try:
         async with bot:
             await bot.start(token, reconnect=True)
     except discord.LoginFailure:

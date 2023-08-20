@@ -1,8 +1,10 @@
+import atexit
 import logging
 import logging.handlers
 import os
 import sys
 from pathlib import Path
+from queue import Queue
 from typing import Any, ClassVar, Optional
 
 from utils.config import config
@@ -76,6 +78,44 @@ class ColorFormatter(logging.Formatter):
         return output
 
 
+class QueueListenerHandler(logging.handlers.QueueHandler):
+    def __init__(self, *handlers: logging.Handler) -> None:
+        super().__init__(Queue(-1))
+        self._listener = logging.handlers.QueueListener(
+            self.queue,
+            *handlers,
+        )
+
+        self._listener.start()
+        atexit.register(self._listener.stop)
+
+    def emit(self, record):
+        try:
+            self.enqueue(record)
+        except Exception:  # noqa: BLE001
+            self.handleError(record)
+
+
+def setup_handler(
+    handler: logging.Handler,
+    formatter: Optional[logging.Formatter] = None,
+) -> logging.Handler:
+    if formatter is None:
+        if isinstance(handler, logging.StreamHandler) and stream_supports_colour(
+            handler.stream
+        ):
+            formatter = ColorFormatter()
+        else:
+            formatter = logging.Formatter(
+                "[{asctime}] [{levelname:<8}] {name}: {message}",
+                datefmt="%Y-%m-%d %H:%M:%S",
+                style="{",
+            )
+
+    handler.setFormatter(formatter)
+    return handler
+
+
 def setup_logging(
     name: str,
     *,
@@ -105,19 +145,20 @@ def setup_logging(
     logger.addHandler(handler)
 
 
+console_handler = setup_handler(logging.StreamHandler())
 setup_logging(
     "chuninewbot",
-    handler=logging.handlers.RotatingFileHandler(
-        filename="chuninewbot.log",
-        encoding="utf-8",
-        maxBytes=32 * 1024 * 1024,  # 32 MiB
-        backupCount=5,  # Rotate through 5 files
+    handler=QueueListenerHandler(
+        console_handler,
+        setup_handler(
+            logging.handlers.RotatingFileHandler(
+                filename="chuninewbot.log",
+                encoding="utf-8",
+                maxBytes=32 * 1024 * 1024,  # 32 MiB
+                backupCount=5,  # Rotate through 5 files
+            ),
+        ),
     ),
     level=logging.DEBUG if config.dangerous.dev else logging.INFO,
 )
-setup_logging(
-    "chuninewbot",
-    level=logging.DEBUG if config.dangerous.dev else logging.INFO,
-)
-
 logger = logging.getLogger("chuninewbot")
