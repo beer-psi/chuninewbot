@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
@@ -85,6 +86,35 @@ AVATAR_COORDS = {
 }
 
 
+def render_avatar(items: dict[str, bytes]) -> BytesIO:
+    avatar = Image.open(BytesIO(items["base"]))
+
+    # crop out the USER AVATAR text at the top
+    avatar = avatar.crop((0, 20, avatar.width, avatar.height))
+
+    back = Image.open(BytesIO(items["back"]))
+
+    base_x = int((avatar.width - back.width) / 2)
+    avatar.paste(back, (base_x, 25), back)
+
+    for name, coords in AVATAR_COORDS.items():
+        image = Image.open(BytesIO(items[name]))
+        crop = image.crop(
+            (
+                coords.sx,
+                coords.sy,
+                coords.sx + coords.width,
+                coords.sy + coords.height,
+            )
+        ).rotate(coords.rotate, expand=True, resample=Image.BICUBIC)
+        avatar.paste(crop, (base_x + coords.dx_offset, coords.dy), crop)
+
+    buffer = BytesIO()
+    avatar.save(buffer, "png", optimize=True)
+    buffer.seek(0)
+    return buffer
+
+
 class ProfileCog(commands.Cog, name="Profile"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
@@ -101,38 +131,29 @@ class ProfileCog(commands.Cog, name="Profile"):
             basic_data = await client.authenticate()
             avatar_urls = basic_data.avatar
 
-            async with client.session.get(avatar_urls.base) as resp:
-                avatar = Image.open(BytesIO(await resp.read()))
-                avatar = avatar.crop((0, 20, avatar.width, avatar.height))
-            async with client.session.get(avatar_urls.back) as resp:
-                back = Image.open(BytesIO(await resp.read()))
-
-            base_x = int((avatar.width - back.width) / 2)
-            avatar.paste(back, (base_x, 25), back)
-
-            for name, coords in AVATAR_COORDS.items():
-                url = getattr(avatar_urls, name)
+            async def task(url):
                 async with client.session.get(url) as resp:
-                    image = Image.open(BytesIO(await resp.read()))
-                crop = image.crop(
-                    (
-                        coords.sx,
-                        coords.sy,
-                        coords.sx + coords.width,
-                        coords.sy + coords.height,
-                    )
-                ).rotate(coords.rotate, expand=True, resample=Image.BICUBIC)
-                avatar.paste(crop, (base_x + coords.dx_offset, coords.dy), crop)
+                    return await resp.read()
 
-        with BytesIO() as buffer:
-            avatar.save(buffer, "png", optimize=True)
-            buffer.seek(0)
-
-            await ctx.reply(
-                content=f"Avatar of {basic_data.name}",
-                file=discord.File(buffer, filename="avatar.png"),
-                mention_author=False,
+            tasks = [
+                task(avatar_urls.base),
+                task(avatar_urls.back),
+            ]
+            tasks.extend(task(getattr(avatar_urls, name)) for name in AVATAR_COORDS)
+            results = await asyncio.gather(*tasks)
+            items: dict[str, bytes] = dict(
+                zip(
+                    ["base", "back", *AVATAR_COORDS.keys()],
+                    results,
+                )
             )
+
+        buffer = await asyncio.to_thread(render_avatar, items)
+        await ctx.reply(
+            content=f"Avatar of {basic_data.name}",
+            file=discord.File(buffer, filename="avatar.png"),
+            mention_author=False,
+        )
 
     @commands.hybrid_command(name="chunithm", aliases=["chuni", "profile"])
     async def chunithm(
