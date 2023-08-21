@@ -785,14 +785,24 @@ if __name__ == "__main__":
     import asyncio
     import sys
 
-    try:
+    event_loop_impl = None
+    loop_factory = None
+
+    if sys.platform == "win32" and importlib.util.find_spec("winloop"):
+        import winloop  # type: ignore[reportMissingImports]
+
+        loop_factory = winloop.new_event_loop
+        event_loop_impl = winloop
+    elif sys.platform != "win32" and importlib.util.find_spec("uvloop"):
         import uvloop  # type: ignore[reportMissingImports]
 
-        if sys.version_info >= (3, 11):
-            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
-                runner.run(main())
-        else:
-            uvloop.install()
-            asyncio.run(main())
-    except ModuleNotFoundError:
+        loop_factory = uvloop.new_event_loop
+        event_loop_impl = uvloop
+
+    if sys.version_info >= (3, 11):
+        with asyncio.Runner(loop_factory=loop_factory) as runner:
+            runner.run(main())
+    else:
+        if event_loop_impl is not None:
+            event_loop_impl.install()
         asyncio.run(main())
