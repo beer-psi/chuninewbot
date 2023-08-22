@@ -66,7 +66,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         return None
 
     @kamaitachi.command("link", aliases=["login"])
-    async def kamaitachi_link(self, ctx: Context, token: str):
+    async def kamaitachi_link(self, ctx: Context, token: Optional[str] = None):
         async with self.bot.begin_db_session() as session:
             query = select(Cookie).where(Cookie.discord_id == ctx.author.id)
             cookie = (await session.execute(query)).scalar_one_or_none()
@@ -77,6 +77,11 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 mention_author=False,
             )
 
+        channel = (
+            ctx.author.dm_channel
+            if ctx.author.dm_channel
+            else await ctx.author.create_dm()
+        )
         if not isinstance(ctx.channel, discord.channel.DMChannel):
             please_delete_message = ""
             if token is not None:
@@ -84,12 +89,6 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     await ctx.message.delete()
                 except discord.errors.Forbidden:
                     please_delete_message = "Please delete the original command. Why are you exposing your API keys?"
-
-            channel = (
-                ctx.author.dm_channel
-                if ctx.author.dm_channel
-                else await ctx.author.create_dm()
-            )
 
             await ctx.send(
                 f"Login instructions have been sent to your DMs. {please_delete_message}"
