@@ -54,7 +54,7 @@ class ChartCardEmbed(discord.Embed):
 
             if chart.const is not None:
                 target_rating = calculate_rating(target_score, chart.const)
-                field_value += f" ({target_rating:.2f})"
+                field_value += f" ({floor_to_ndp(target_rating, 2)})"
 
             self.add_field(
                 name="Target Score",
