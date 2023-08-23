@@ -34,7 +34,7 @@ def calculate_overpower_base(score: int, internal_level: float) -> Decimal:
 
 
 def calculate_overpower_max(internal_level: float) -> Decimal:
-    return Decimal(internal_level * 5 + 15)
+    return Decimal(str(internal_level)) * 5 + 15
 
 
 def calculate_play_overpower(score: AnnotatedMusicRecord) -> Decimal:
