@@ -3,7 +3,7 @@ from typing import Optional
 
 
 def calculate_rating(score: int, internal_level: Optional[float]) -> Decimal:
-    level_base = Decimal(internal_level or 0) * 10000
+    level_base = Decimal(str(internal_level or 0)) * 10000
 
     rating100 = Decimal(0)
 
@@ -33,7 +33,7 @@ def calculate_rating(score: int, internal_level: Optional[float]) -> Decimal:
 
 
 def calculate_score_for_rating(rating: float, internal_level: float) -> Optional[int]:
-    diff = Decimal(rating) * 10000 - Decimal(internal_level) * 10000
+    diff = Decimal(str(rating)) * 10000 - Decimal(str(internal_level)) * 10000
 
     req = None
     if diff >= 21_501:
