@@ -1,5 +1,5 @@
 import asyncio
-import sys
+import platform
 import time
 from random import random
 from typing import TYPE_CHECKING, Literal, Optional
@@ -89,9 +89,22 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore[reportGeneralTypeIssues]
 
-    @commands.hybrid_command("status")
-    async def status(self, ctx: Context):
-        """View the bot's status."""
+    @commands.hybrid_command("botinfo")
+    async def botinfo(self, ctx: Context):
+        """Shows information about the bot."""
+
+        embed = discord.Embed(color=discord.Color.yellow())
+        embed.add_field(
+            name="About the bot",
+            value=(
+                "This is [chuninewbot](https://github.com/beerpiss/chuninewbot), a Discord bot created by "
+                "[beerpsi](https://github.com/beerpiss) and [contributors](https://github.com/beerpiss/chuninewbot/graphs/contributors) "
+                "for CHUNITHM International version."
+            ),
+            inline=False,
+        )
+        if self.bot.user is not None and self.bot.user.avatar is not None:
+            embed.set_thumbnail(url=self.bot.user.avatar.url)
 
         try:
             process = await asyncio.create_subprocess_exec(
@@ -115,19 +128,20 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         async with self.bot.begin_db_session() as session:
             users = await session.scalar(select(func.count()).select_from(Cookie))
 
-        summary = [
-            f"chuninewbot revision `{revision}`",
-            f"discord.py `{discord.__version__}`",
-            f"Python `{sys.version}` on `{sys.platform}`",
-            "",
-            f"Online since <t:{int(self.bot.launch_time)}:R>",
-            "",
-            f"This bot can see {len(self.bot.guilds)} guild(s). {users} user(s) are logged in.",
-            "",
-            f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms",
-        ]
+        embed.add_field(name="Version", value=revision)
+        embed.add_field(
+            name="Python",
+            value=f"[{platform.python_version()}](https://www.python.org/)",
+        )
+        embed.add_field(
+            name="discord.py",
+            value=f"[{discord.__version__}](https://github.com/Rapptz/discord.py#readme)",
+        )
+        embed.add_field(name="Uptime", value=f"<t:{int(self.bot.launch_time)}:R>")
+        embed.add_field(name="Total servers", value=len(self.bot.guilds))
+        embed.add_field(name="Total users", value=str(users))
 
-        await ctx.reply("\n".join(summary), mention_author=False)
+        await ctx.reply(embed=embed, mention_author=False)
 
     @commands.hybrid_command("ping")
     async def ping(self, ctx: Context):
