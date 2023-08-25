@@ -7,7 +7,7 @@ from ._pagination import PaginationView
 class LoginFlowView(PaginationView):
     def __init__(self, ctx: Context, code: str | None = None):
         if code is not None:
-            self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/15cae66bafed402b93eb6b75d80fad93a0ff7f37/login.js' ;d.body.append(s)}(document))\n"
+            self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/70f4e2f4defb26eb053b68dcee8c6250ba178503/login.js' ;d.body.append(s)}(document))\n"
         else:
             self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/c096f619a3a207b99a0cbb63e1d214a7b1af4f28/login2.js' ;d.body.append(s)}(document))\n"
 

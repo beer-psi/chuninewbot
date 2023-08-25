@@ -3,6 +3,8 @@ from html import escape
 from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
+from discord import Permissions
+from discord.utils import oauth_url
 
 from utils import json_loads
 
@@ -16,7 +18,21 @@ COOKIE_CHARACTERS = string.ascii_lowercase + string.digits
 router = web.RouteTableDef()
 
 
-@router.post("/chuninewbot/login")
+@router.get("/invite")
+async def invite(request: web.Request) -> web.Response:
+    permissions = Permissions(
+        read_messages=True,
+        send_messages=True,
+        send_messages_in_threads=True,
+        manage_messages=True,
+        read_message_history=True,
+    )
+    url = oauth_url(request.config_dict["bot"].user.id, permissions=permissions)
+
+    raise web.HTTPFound(url)
+
+
+@router.post("/login")
 async def login(request: web.Request) -> web.Response:
     params = {}
     content_type = request.headers.get("Content-Type")
