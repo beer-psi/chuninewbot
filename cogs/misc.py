@@ -8,9 +8,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 from discord.utils import oauth_url
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 
-from database.models import Prefix
+from database.models import Cookie, Prefix
 from utils.config import config
 
 if TYPE_CHECKING:
@@ -112,6 +112,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         if not revision:
             revision = "unknown"
 
+        async with self.bot.begin_db_session() as session:
+            users = await session.scalar(select(func.count()).select_from(Cookie))
+
         summary = [
             f"chuninewbot revision `{revision}`",
             f"discord.py `{discord.__version__}`",
@@ -119,7 +122,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             "",
             f"Online since <t:{int(self.bot.launch_time)}:R>",
             "",
-            f"This bot can see {len(self.bot.guilds)} guild(s) and {len(self.bot.users)} user(s).",
+            f"This bot can see {len(self.bot.guilds)} guild(s). {users} user(s) are logged in.",
+            "",
             f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms",
         ]
 
