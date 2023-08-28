@@ -35,8 +35,16 @@ class WebConfig:
         self.__section = section
 
     @property
-    def login_server_port(self) -> Optional[int]:
-        return self.__section.getint("login_server_port", fallback=None)
+    def enable(self) -> bool:
+        return self.__section.getboolean("enable", fallback=False)
+
+    @property
+    def port(self) -> Optional[int]:
+        return self.__section.getint("port", fallback=5730)
+
+    @property
+    def base_url(self) -> Optional[str]:
+        return self.__section.get("base_url")
 
     @property
     def goatcounter(self) -> Optional[str]:
@@ -54,6 +62,10 @@ class CredentialsConfig:
     @property
     def kamaitachi_client_id(self) -> Optional[str]:
         return self.__section.get("kamaitachi_client_id")
+
+    @property
+    def kamaitachi_client_secret(self) -> Optional[str]:
+        return self.__section.get("kamaitachi_client_secret")
 
 
 class IconsConfig:

@@ -1,15 +1,22 @@
 import string
+import sys
 from html import escape
 from typing import TYPE_CHECKING, Optional
 
-from aiohttp import web
-from discord import Permissions
+import aiohttp
+import discord
+from aiohttp import ClientSession, web
 from discord.utils import oauth_url
+from sqlalchemy import select
 
+from database.models import Cookie
 from utils import json_loads
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+
+
+__all__ = ("init_app",)
 
 
 COOKIE_CHARACTERS = string.ascii_lowercase + string.digits
@@ -18,22 +25,95 @@ COOKIE_CHARACTERS = string.ascii_lowercase + string.digits
 router = web.RouteTableDef()
 
 
+@router.get("/kamaitachi/oauth")
+async def kamaitachi_oauth(request: web.Request) -> web.Response:
+    if (
+        (kamaitachi_client_id := request.config_dict["kamaitachi_client_id"]) is None
+        or (kamaitachi_client_secret := request.config_dict["kamaitachi_client_secret"])
+        is None
+        or (base_url := request.config_dict["base_url"]) is None
+    ):
+        raise web.HTTPInternalServerError(
+            reason="Some options are not configured. Yell at the bot owner."
+        )
+
+    session: ClientSession = request.config_dict["session"] or ClientSession()
+    params = request.query
+    if "code" not in params or "context" not in params:
+        raise web.HTTPBadRequest(reason="Missing parameters")
+
+    try:
+        discord_id = int(params["context"])
+    except ValueError:
+        raise web.HTTPBadRequest(reason="Invalid context parameter") from None
+
+    bot: ChuniBot = request.config_dict["bot"]
+    async with bot.begin_db_session() as db_session:
+        stmt = select(Cookie).where(Cookie.discord_id == discord_id)
+        cookie = (await db_session.execute(stmt)).scalar_one_or_none()
+        if cookie is None:
+            raise web.HTTPUnauthorized(
+                reason="You are not logged in to the bot. Please login with `c>login` first."
+            )
+
+    async with session.post(
+        "https://kamaitachi.xyz/api/v1/oauth/token",
+        json={
+            "code": params["code"],
+            "client_id": kamaitachi_client_id,
+            "client_secret": kamaitachi_client_secret,
+            "grant_type": "authorization_code",
+            "redirect_uri": f"{base_url}/kamaitachi/oauth",
+        },
+    ) as resp:
+        data = await resp.json(loads=json_loads)
+
+    if not data["success"]:
+        raise web.HTTPUnauthorized(reason="Failed to authenticate.")
+
+    token = data["body"]["token"]
+
+    async with session.get(
+        "https://kamaitachi.xyz/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as resp:
+        whoami_data = await resp.json(loads=json_loads)
+
+    if not whoami_data["success"]:
+        raise web.HTTPInternalServerError
+
+    cookie.kamaitachi_token = token
+    async with bot.begin_db_session() as db_session, db_session.begin():
+        await db_session.merge(cookie)
+
+    return web.Response(
+        text="Your accounts are now linked! You can close this page and use the bot now.",
+        content_type="text/plain",
+    )
+
+
 @router.get("/invite")
 async def invite(request: web.Request) -> web.Response:
-    permissions = Permissions(
+    bot: ChuniBot = request.config_dict["bot"]
+    if bot.user is None:
+        raise web.HTTPInternalServerError(reason="Bot is not ready yet.")
+
+    permissions = discord.Permissions(
         read_messages=True,
         send_messages=True,
         send_messages_in_threads=True,
         manage_messages=True,
         read_message_history=True,
     )
-    url = oauth_url(request.config_dict["bot"].user.id, permissions=permissions)
+    url = oauth_url(bot.user.id, permissions=permissions)
 
     raise web.HTTPFound(url)
 
 
 @router.post("/login")
 async def login(request: web.Request) -> web.Response:
+    bot: ChuniBot = request.config_dict["bot"]
+
     params = {}
     content_type = request.headers.get("Content-Type")
     if content_type == "application/json":
@@ -60,9 +140,9 @@ async def login(request: web.Request) -> web.Response:
     if not otp.isdigit() and len(otp) != 6:
         raise web.HTTPBadRequest(reason="Invalid passcode provided")
 
-    request.config_dict["bot"].dispatch(f"chunithm_login_{otp}", clal)
+    bot.dispatch(f"chunithm_login_{otp}", clal)
 
-    goatcounter = request.config_dict["goatcounter"]
+    goatcounter: str = request.config_dict["goatcounter"]
     goatcounter_tag = (
         f'<script data-goatcounter="{goatcounter}" async src="//gc.zgo.at/count.js"></script>'
         if goatcounter
@@ -106,12 +186,36 @@ async def on_response_prepare(_: web.Request, response: web.StreamResponse):
         del response.headers["server"]
 
 
-def init_app(bot: "ChuniBot", goatcounter: Optional[str] = None) -> web.Application:
+async def on_shutdown(app: web.Application):
+    await app["session"].close()
+
+
+def init_app(
+    bot: "ChuniBot",
+    *,
+    base_url: Optional[str] = None,
+    goatcounter: Optional[str] = None,
+    kamaitachi_client_id: Optional[str] = None,
+    kamaitachi_client_secret: Optional[str] = None,
+) -> web.Application:
     app = web.Application()
     app.on_response_prepare.append(on_response_prepare)
+    app.on_shutdown.append(on_shutdown)
 
     app.add_routes(router)
 
+    session = ClientSession()
+    session.headers.add(
+        "User-Agent",
+        f"ChuniBot (https://github.com/Rapptz/discord.py {discord.__version__}) Python/{sys.version_info[0]}.{sys.version_info[1]} aiohttp/{aiohttp.__version__}",
+    )
+
     app["bot"] = bot
+    app["session"] = session
+
+    app["base_url"] = base_url
     app["goatcounter"] = goatcounter
+    app["kamaitachi_client_id"] = kamaitachi_client_id
+    app["kamaitachi_client_secret"] = kamaitachi_client_secret
+
     return app

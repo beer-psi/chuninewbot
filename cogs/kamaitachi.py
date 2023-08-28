@@ -24,9 +24,20 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             msg = "Kamaitachi client ID is not set"
             raise ValueError(msg)
 
+        kt_client_secret = None
+        if (
+            bot.app is not None
+            and (kt_client_secret := config.credentials.kamaitachi_client_secret)
+            is None
+        ):
+            msg = "Kamaitachi client secret is not set"
+            raise ValueError(msg)
+
         self.bot = bot
         self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
+
         self.kt_client_id = kt_client_id
+        self.kt_client_secret = kt_client_secret
         self.user_agent = f"ChuniBot (https://github.com/Rapptz/discord.py {discord.__version__}) Python/{sys.version_info[0]}.{sys.version_info[1]} aiohttp/{aiohttp.__version__}"
 
     @commands.hybrid_group("kamaitachi", aliases=["kt"], invoke_without_command=True)
@@ -121,6 +132,11 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 "run `c>kamaitachi link <token>` in DMs."
             ),
         )
+        if self.bot.app is not None:
+            embed.description = (
+                "Click this link to authenticate with Kamaitachi: "
+                f"https://kamaitachi.xyz/oauth/request-auth?clientID={self.kt_client_id}&context={ctx.author.id}"
+            )
 
         return await channel.send(
             content="Kamaitachi is a modern score tracker for arcade rhythm games.",

@@ -77,13 +77,18 @@ class ChuniBot(commands.Bot):
         logger.info(f"Loaded {len(self.prefixes)} guild prefixes")
 
         # Setup login web server (if enabled)
-        port = config.web.login_server_port
-        if port is not None and port > 0:
-            self.app = init_app(self, config.web.goatcounter)
+        if config.web.enable:
+            self.app = init_app(
+                self,
+                goatcounter=config.web.goatcounter,
+                base_url=config.web.base_url,
+                kamaitachi_client_id=config.credentials.kamaitachi_client_id,
+                kamaitachi_client_secret=config.credentials.kamaitachi_client_secret,
+            )
             _ = asyncio.ensure_future(
                 web._run_app(
                     self.app,
-                    port=port,
+                    port=config.web.port,
                     host="127.0.0.1",
                 )
             )
