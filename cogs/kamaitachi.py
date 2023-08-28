@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import time
 from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
@@ -192,7 +191,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         "matchType": "inGameID",
                         "identifier": "",
                         "difficulty": str(recent.difficulty),
-                        "timeAchieved": time.mktime(recent.date.timetuple()) * 1000,
+                        "timeAchieved": int(recent.date.timestamp()) * 1000,
                         "judgements": {},
                         "hitMeta": {},
                     }
