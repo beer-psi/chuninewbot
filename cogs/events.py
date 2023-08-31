@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 
 import aiohttp
 import discord
-from discord import Webhook, app_commands
+from discord import Webhook
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -32,18 +32,9 @@ class EventsCog(commands.Cog, name="Events"):
         if isinstance(error, commands.CommandNotFound):
             return None
 
-        if isinstance(error, commands.errors.HybridCommandError):
-            exc = error.original
-            if isinstance(exc, app_commands.errors.CommandInvokeError):
-                try:
-                    exc = error.original
-                except AttributeError:
-                    exc = error
-        else:
-            try:
-                exc = error.original
-            except AttributeError:
-                exc = error
+        exc = error.original
+        while hasattr(exc, "original"):
+            exc = exc.original  # type: ignore[reportGeneralTypeIssues]
 
         logging.getLogger("discord").error(
             "Exception in command %s", ctx.command, exc_info=exc
