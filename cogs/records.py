@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import itertools
-import logging
 from argparse import ArgumentError
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Optional, cast
@@ -24,9 +23,6 @@ if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.autocompleters import AutocompletersCog
     from cogs.botutils import UtilsCog
-
-
-logger = logging.getLogger("chuninewbot")
 
 
 class RecordsCog(commands.Cog, name="Records"):

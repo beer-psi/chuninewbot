@@ -1,4 +1,3 @@
-import logging
 import traceback
 from typing import TYPE_CHECKING, cast
 
@@ -14,6 +13,7 @@ from chunithm_net.exceptions import (
     MaintenanceException,
 )
 from utils.config import config
+from utils.logging import logger
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -35,10 +35,6 @@ class EventsCog(commands.Cog, name="Events"):
         exc = error.original
         while hasattr(exc, "original"):
             exc = exc.original  # type: ignore[reportGeneralTypeIssues]
-
-        logging.getLogger("discord").error(
-            "Exception in command %s", ctx.command, exc_info=exc
-        )
 
         if isinstance(exc, MaintenanceException):
             return await ctx.reply(
@@ -106,6 +102,7 @@ class EventsCog(commands.Cog, name="Events"):
         ):
             return await ctx.reply(str(error), mention_author=False)
 
+        logger.error("Exception in command %s", ctx.command, exc_info=exc)
         await ctx.reply(
             (
                 "Something really terrible happened. "
@@ -122,18 +119,17 @@ class EventsCog(commands.Cog, name="Events"):
                 content = (
                     f"## Exception in command {ctx.command}\n\n"
                     "```python\n"
-                    f"{''.join(traceback.format_exception(exc))}"
+                    f"{(''.join(traceback.format_exception(exc)))[-1961 + len(str(ctx.command)):]}"
                     "```"
                 )
+
+                client_user = cast(discord.ClientUser, self.bot.user)
                 await webhook.send(
-                    username=cast(discord.ClientUser, self.bot.user).display_name,
-                    avatar_url=cast(
-                        discord.ClientUser, self.bot.user
-                    ).display_avatar.url,
+                    username=client_user.display_name,
+                    avatar_url=client_user.display_avatar.url,
                     content=content,
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-                return None
         return None
 
 
