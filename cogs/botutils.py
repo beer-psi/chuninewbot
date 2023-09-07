@@ -120,7 +120,9 @@ class UtilsCog(commands.Cog, name="Utils"):
                 else:
                     stmt = stmt.where(Song.chunithm_id == song.detailed.idx)
 
-                song_data = (await session.execute(stmt)).scalar_one()
+                song_data = (await session.execute(stmt)).scalar_one_or_none()
+                if song_data is None:
+                    return song
 
                 id = song_data.id
 
