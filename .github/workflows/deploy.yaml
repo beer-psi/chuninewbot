@@ -45,14 +45,14 @@ jobs:
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: beerpsi
+          username: chuninewbot
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/beerpsi/chuninewbot
+            cd /home/chuninewbot/chuninewbot
 
             git pull
 
-            /home/beerpsi/.local/bin/poetry install --without dev --all-extras
+            /home/chuninewbot/.local/bin/poetry install --without dev --all-extras
 
-            /home/beerpsi/.local/bin/poetry run alembic upgrade head
+            /home/chuninewbot/.local/bin/poetry run alembic upgrade head
             systemctl --user restart chunibot
