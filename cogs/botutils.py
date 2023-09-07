@@ -20,6 +20,7 @@ from utils.calculation.overpower import (
 )
 from utils.calculation.rating import calculate_rating
 from utils.config import config
+from utils.logging import logger
 from utils.types import (
     AnnotatedDetailedRecentRecord,
     AnnotatedMusicRecord,
@@ -103,6 +104,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
 
                 if song_data is None:
+                    logger.warn(f"Missing song data for song ID {song.detailed.idx}")
                     return MusicRecord.from_record(song)
 
                 id = song_data.id
@@ -122,6 +124,10 @@ class UtilsCog(commands.Cog, name="Utils"):
 
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
                 if song_data is None:
+                    if song.detailed is None or isinstance(song, RecentRecord):
+                        logger.warn(f"Missing song data for song title {song.title} with jacket {song.jacket}")
+                    else:
+                        logger.warn(f"Missing song data for song ID {song.detailed.idx}")
                     return song
 
                 id = song_data.id
