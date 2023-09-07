@@ -32,7 +32,7 @@ class EventsCog(commands.Cog, name="Events"):
         if isinstance(error, commands.CommandNotFound):
             return None
 
-        exc = error.original
+        exc = error
         while hasattr(exc, "original"):
             exc = exc.original  # type: ignore[reportGeneralTypeIssues]
 
