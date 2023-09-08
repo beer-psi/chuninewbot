@@ -1,6 +1,7 @@
+import contextlib
 import decimal
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -32,6 +33,19 @@ except ModuleNotFoundError:
 
     json_dumps = json.dumps
     json_loads = json.loads
+
+
+class asuppress(contextlib.AbstractAsyncContextManager):
+    def __init__(self, *exceptions) -> None:
+        self._exceptions = exceptions
+
+    async def __aenter__(self):
+        pass
+
+    async def __aexit__(
+        self, exctype: type[BaseException] | None, __exc_value, __traceback
+    ) -> Optional[bool]:
+        return exctype is not None and issubclass(exctype, self._exceptions)
 
 
 def shlex_split(s: str) -> list[str]:

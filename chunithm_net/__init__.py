@@ -20,6 +20,8 @@ from .parser import (
 )
 
 if TYPE_CHECKING:
+    from aiohttp import ClientResponse
+
     from chunithm_net.entities.player_data import PlayerData
 
 __all__ = ["ChuniNet"]
@@ -116,7 +118,7 @@ class ChuniNet:
             BeautifulSoup(await resp.text(), self.bs4_features)
         )
 
-    async def _request(self, endpoint: str, method="GET", **kwargs):
+    async def _request(self, endpoint: str, method="GET", **kwargs) -> "ClientResponse":
         if self.user_id is None:
             await self.authenticate()
 
@@ -332,3 +334,7 @@ class ChuniNet:
             },
         )
         return resp.url.path == "/mobile/home/userOption/"
+
+    async def logout(self) -> bool:
+        resp = await self._request("mobile/home/userOption/logout/")
+        return resp.url.host == URL(self.AUTH_URL).host

@@ -8,8 +8,9 @@ from discord.ext.commands import Context
 from sqlalchemy import delete
 
 from chunithm_net import ChuniNet
-from chunithm_net.exceptions import ChuniNetException
+from chunithm_net.exceptions import ChuniNetException, InvalidTokenException
 from database.models import Cookie
+from utils import asuppress
 from utils.views.login import LoginFlowView
 
 if TYPE_CHECKING:
@@ -28,10 +29,19 @@ class AuthCog(commands.Cog, name="Auth"):
         description="Logs you out of the bot.",
     )
     async def logout(self, ctx: Context):
+        msg = "Successfully logged out."
+        async with asuppress(InvalidTokenException), self.utils.chuninet(ctx) as client:
+            result = await client.logout()
+            if not result:
+                msg = (
+                    "There was an error signing out on CHUNITHM-NET. "
+                    "However, your account has been deleted from our records."
+                )
+
         async with ctx.typing(), self.bot.begin_db_session() as session:
             stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
             await session.execute(stmt)
-        await ctx.reply("Successfully logged out.", mention_author=False)
+        await ctx.reply(msg, mention_author=False)
 
     async def _verify_and_login(self, id: int, clal: str) -> Optional[Exception]:
         if clal.startswith("clal="):

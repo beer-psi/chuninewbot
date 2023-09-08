@@ -125,9 +125,13 @@ class UtilsCog(commands.Cog, name="Utils"):
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
                 if song_data is None:
                     if song.detailed is None or isinstance(song, RecentRecord):
-                        logger.warn(f"Missing song data for song title {song.title} with jacket {song.jacket}")
+                        logger.warn(
+                            f"Missing song data for song title {song.title} with jacket {song.jacket}"
+                        )
                     else:
-                        logger.warn(f"Missing song data for song ID {song.detailed.idx}")
+                        logger.warn(
+                            f"Missing song data for song ID {song.detailed.idx}"
+                        )
                     return song
 
                 id = song_data.id
