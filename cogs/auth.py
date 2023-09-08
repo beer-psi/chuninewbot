@@ -24,19 +24,24 @@ class AuthCog(commands.Cog, name="Auth"):
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
         self.random = SystemRandom()
 
-    @commands.hybrid_command(
-        name="logout",
-        description="Logs you out of the bot.",
-    )
-    async def logout(self, ctx: Context):
+    @commands.hybrid_command(name="logout")
+    async def logout(self, ctx: Context, *, invalidate: bool = False):
+        """Logs you out of the bot.
+
+        Parameters
+        ----------
+        invalidate: bool
+            Signs out from CHUNITHM-NET, making the token unusable.
+        """
         msg = "Successfully logged out."
-        async with asuppress(InvalidTokenException), self.utils.chuninet(ctx) as client:
-            result = await client.logout()
-            if not result:
-                msg = (
-                    "There was an error signing out on CHUNITHM-NET. "
-                    "However, your account has been deleted from our records."
-                )
+        if invalidate:
+            async with asuppress(InvalidTokenException), self.utils.chuninet(ctx) as client:
+                result = await client.logout()
+                if not result:
+                    msg = (
+                        "There was an error signing out from CHUNITHM-NET. "
+                        "However, your account has been deleted from our records."
+                    )
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
