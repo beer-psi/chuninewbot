@@ -123,6 +123,14 @@ class UtilsCog(commands.Cog, name="Utils"):
                     stmt = stmt.where(Song.chunithm_id == song.detailed.idx)
 
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
+
+                if isinstance(song, DetailedRecentRecord):
+                    annotated_song = AnnotatedDetailedRecentRecord(**song.__dict__)
+                elif isinstance(song, RecentRecord):
+                    annotated_song = AnnotatedRecentRecord(**song.__dict__)
+                else:
+                    annotated_song = AnnotatedMusicRecord(**song.__dict__)
+
                 if song_data is None:
                     if song.detailed is None or isinstance(song, RecentRecord):
                         logger.warn(
@@ -132,16 +140,9 @@ class UtilsCog(commands.Cog, name="Utils"):
                         logger.warn(
                             f"Missing song data for song ID {song.detailed.idx}"
                         )
-                    return song
+                    return annotated_song
 
                 id = song_data.id
-
-                if isinstance(song, DetailedRecentRecord):
-                    annotated_song = AnnotatedDetailedRecentRecord(**song.__dict__)
-                elif isinstance(song, RecentRecord):
-                    annotated_song = AnnotatedRecentRecord(**song.__dict__)
-                else:
-                    annotated_song = AnnotatedMusicRecord(**song.__dict__)
 
             stmt = select(Chart).where(
                 (Chart.song_id == id)

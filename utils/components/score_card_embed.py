@@ -35,7 +35,7 @@ class ScoreCardEmbed(discord.Embed):
             score_data = f"▸ {rank_icon(record.rank)} ▸ {record.score}"
 
         footer_sections = []
-        if record.play_rating is not None:
+        if record.play_rating:
             play_overpower = calculate_play_overpower(record)
             play_op_display = f"{floor_to_ndp(play_overpower, 2)} ({floor_to_ndp(play_overpower / record.overpower_max * 100, 2)}%)"
 
