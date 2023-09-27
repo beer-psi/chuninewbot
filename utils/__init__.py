@@ -205,4 +205,10 @@ def release_to_chunithm_version(date: datetime) -> str:
         <= datetime(2022, 9, 29, tzinfo=TOKYO_TZ)
     ):
         return "NEW PLUS"
-    return "SUN"
+    if (
+        datetime(2022, 10, 13, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2023, 4, 26, tzinfo=TOKYO_TZ)
+    ):
+        return "SUN"
+    return "SUN PLUS"
