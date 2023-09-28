@@ -167,20 +167,23 @@ class ProfileCog(commands.Cog, name="Profile"):
             await client.authenticate()
             player_data = await client.player_data()
 
+            optional_data: list[str] = []
+            if player_data.team is not None:
+                optional_data.append(f"Team {player_data.team.name}")
+            if player_data.medal is not None:
+                content = f"Class {player_data.medal}"
+                if player_data.emblem is not None:
+                    content += f", cleared all of class {player_data.emblem}"
+                content += "."
+                optional_data.append(content)
+            optional_data_joined = "\n".join(optional_data)
+
             level = str(player_data.lv)
             if player_data.reborn > 0:
                 level = f"{player_data.reborn}⭐ + {level}"
 
-            class_ = ""
-            if player_data.medal is not None:
-                class_ += f"Class {player_data.medal}"
-            if player_data.emblem is not None:
-                class_ += f", cleared all of class {player_data.emblem}"
-            if len(class_) > 0:
-                class_ += "."
-
             description = (
-                f"{class_}\n"
+                f"{optional_data_joined}\n"
                 f"▸ **Level**: {level}\n"
                 f"▸ **Rating**: {player_data.rating.current:.2f} (MAX {player_data.rating.max:.2f})\n"
                 f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"

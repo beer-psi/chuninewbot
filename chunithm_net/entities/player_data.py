@@ -47,6 +47,12 @@ class UserAvatar:
 
 
 @dataclass(kw_only=True)
+class Team:
+    # emblem: some_enum_here
+    name: str
+
+
+@dataclass(kw_only=True)
 class PlayerData:
     possession: Possession = Possession.NONE
 
@@ -61,6 +67,7 @@ class PlayerData:
     playcount: Optional[int] = None
     last_play_date: datetime
 
+    team: Optional[Team] = None
     overpower: Overpower
     nameplate: Nameplate
     rating: Rating

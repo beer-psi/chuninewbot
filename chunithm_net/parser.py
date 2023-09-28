@@ -10,6 +10,7 @@ from .entities.player_data import (
     Overpower,
     PlayerData,
     Rating,
+    Team,
     UserAvatar,
 )
 from .entities.record import (
@@ -40,6 +41,9 @@ def parse_player_card_and_avatar(soup: BeautifulSoup):
 
     name = soup.select_one(".player_name_in").get_text()
     lv = chuni_int(soup.select_one(".player_lv").get_text())
+
+    team_name_elem = soup.select_one(".player_team_name")
+    team_name = team_name_elem.get_text() if team_name_elem else None
 
     nameplate_content = soup.select_one(".player_honor_text").get_text()
     nameplate_rarity = (
@@ -112,6 +116,7 @@ def parse_player_card_and_avatar(soup: BeautifulSoup):
         lv=lv,
         reborn=reborn,
         possession=possession,
+        team=Team(name=team_name) if team_name else None,
         nameplate=Nameplate(content=nameplate_content, rarity=nameplate_rarity),
         rating=Rating(rating, max_rating),
         overpower=Overpower(overpower_value, overpower_progress),
