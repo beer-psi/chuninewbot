@@ -116,8 +116,9 @@ class UtilsCog(commands.Cog, name="Utils"):
             else:
                 stmt = select(Song)
                 if song.detailed is None or isinstance(song, RecentRecord):
+                    jacket_filename = song.jacket.split("/")[-1]
                     stmt = stmt.where(
-                        (Song.title == song.title) & (Song.jacket == song.jacket)
+                        (Song.title == song.title) & (Song.jacket == jacket_filename)
                     )
                 else:
                     stmt = stmt.where(Song.id == song.detailed.idx)
