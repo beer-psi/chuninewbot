@@ -125,7 +125,7 @@ class SearchCog(commands.Cog, name="Search"):
                 # Limit to non-WE entries. WE entries are redirected to
                 # their non-WE respectives when song-searching anyways.
                 (func.lower(Song.title) == song_title_or_alias_lower)
-                & (Song.chunithm_id < 8000)
+                & (Song.id < 8000)
             )
             song = (await session.execute(stmt)).scalar_one_or_none()
 

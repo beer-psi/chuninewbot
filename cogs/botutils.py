@@ -100,7 +100,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 if song.detailed is None:
                     raise MissingDetailedParams
 
-                stmt = select(Song).where(Song.chunithm_id == song.detailed.idx)
+                stmt = select(Song).where(Song.id == song.detailed.idx)
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
 
                 if song_data is None:
@@ -120,7 +120,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                         (Song.title == song.title) & (Song.jacket == song.jacket)
                     )
                 else:
-                    stmt = stmt.where(Song.chunithm_id == song.detailed.idx)
+                    stmt = stmt.where(Song.id == song.detailed.idx)
 
                 song_data = (await session.execute(stmt)).scalar_one_or_none()
 

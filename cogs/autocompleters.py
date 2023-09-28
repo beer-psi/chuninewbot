@@ -28,7 +28,7 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
             condition |= Alias.guild_id == interaction.guild.id
 
         song_query = select(Song.title, Song.title.label("alias")).where(
-            Song.chunithm_id < 8000
+            Song.id < 8000
         )
         aliases_query = (
             select(

@@ -220,7 +220,7 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
                     select(Song)
                     # Limit to non-WE entries. WE entries are redirected to
                     # their non-WE respectives when song-searching anyways.
-                    .where((Song.title == title) & (Song.chunithm_id < 8000))
+                    .where((Song.title == title) & (Song.id < 8000))
                 )
             ).scalar_one_or_none()
             if song is None:
@@ -382,9 +382,9 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                             continue
 
                         stmt = stmt.join(Chart)
-                        condition &= (Song.chunithm_id >= 8000) & (Chart.level == level)
+                        condition &= (Song.id >= 8000) & (Chart.level == level)
                     else:
-                        condition &= Song.chunithm_id < 8000
+                        condition &= Song.id < 8000
 
                     stmt = stmt.where(condition)
                     song = (await session.execute(stmt)).scalar_one_or_none()
@@ -509,8 +509,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         )
 
         inserted_song = {
-            "id": song["meta"]["id"],
-            "chunithm_id": chunithm_id,
+            "id": chunithm_id,
             # Don't use song["meta"]["title"]
             "title": chunithm_song["title"],
             "chunithm_catcode": chunithm_catcode,
@@ -534,7 +533,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                     chart["is_const_unknown"] = 0
 
                 inserted_chart = {
-                    "song_id": song["meta"]["id"],
+                    "song_id": chunithm_id,
                     "difficulty": difficulty,
                     "level": str(chart["level"]).replace(".5", "+").replace(".0", ""),
                     "const": None if chart["is_const_unknown"] == 1 else chart["const"],
@@ -591,7 +590,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 we_stars += "☆"
             inserted_charts.append(
                 {
-                    "song_id": song["meta"]["id"],
+                    "song_id": chunithm_id,
                     "difficulty": "WE",
                     "level": chunithm_song["we_kanji"] + we_stars,
                     "const": None,
@@ -658,7 +657,7 @@ async def update_cc_from_data(
 
             stmt = (
                 select(Song)
-                .where(Song.chunithm_id == chunithm_id)
+                .where(Song.id == chunithm_id)
                 .options(joinedload(Song.charts))
             )
             song = (await session.execute(stmt)).unique().scalar_one_or_none()

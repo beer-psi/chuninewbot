@@ -33,8 +33,7 @@ class Cookie(Base):
 class Song(Base):
     __tablename__ = "chunirec_songs"
 
-    id: Mapped[str] = mapped_column(String(16), primary_key=True)
-    chunithm_id: Mapped[int] = mapped_column(nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     title: Mapped[str] = mapped_column(nullable=False)
 
@@ -71,7 +70,7 @@ class Chart(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    song_id: Mapped[str] = mapped_column(
+    song_id: Mapped[int] = mapped_column(
         ForeignKey("chunirec_songs.id"), nullable=False
     )
 
@@ -103,7 +102,7 @@ class Alias(Base):
 
     alias: Mapped[str] = mapped_column(nullable=False)
     guild_id: Mapped[int] = mapped_column(BigInteger(), nullable=False)
-    song_id: Mapped[str] = mapped_column(
+    song_id: Mapped[int] = mapped_column(
         ForeignKey("chunirec_songs.id"), nullable=False
     )
     owner_id: Mapped[Optional[int]] = mapped_column(BigInteger(), nullable=True)
@@ -134,7 +133,7 @@ class SdvxinChartView(Base):
     rowid: Mapped[int] = mapped_column(primary_key=True)
 
     id: Mapped[str] = mapped_column(nullable=False)
-    song_id: Mapped[str] = mapped_column(
+    song_id: Mapped[int] = mapped_column(
         ForeignKey("chunirec_charts.song_id"), nullable=False
     )
     difficulty: Mapped[str] = mapped_column(

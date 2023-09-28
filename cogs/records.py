@@ -152,7 +152,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 return None
 
             userinfo = await client.authenticate()
-            records = await client.music_record(song.chunithm_id)
+            records = await client.music_record(song.id)
 
             if len(records) == 0:
                 await ctx.reply(
@@ -276,7 +276,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             userinfo = await client.authenticate()
 
-            records = await client.music_record(song.chunithm_id)
+            records = await client.music_record(song.id)
 
             if len(records) == 0:
                 await ctx.reply(
