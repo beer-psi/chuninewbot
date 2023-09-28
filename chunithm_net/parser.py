@@ -33,7 +33,7 @@ from .utils import (
 
 
 def parse_player_card_and_avatar(soup: BeautifulSoup):
-    if (e := soup.select_one(".player_chara_info img")) is not None:
+    if (e := soup.select_one(".player_chara img")) is not None:
         character = cast(str, e["src"])
     else:
         character = None
