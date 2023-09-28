@@ -14,7 +14,7 @@ def chuni_int(s: str) -> int:
 def parse_player_rating(soup: ResultSet[Tag]) -> float:
     rating = ""
     for x in soup:
-        digit = cast(str, x["src"]).split("_")[-1].split(".")[0]
+        digit = extract_last_part(cast(str, x["src"]))
         if digit == "comma":
             rating += "."
         else:
@@ -55,16 +55,24 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
 def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
     if (rank_img_elem := soup.select_one("img[src*=_rank_]")) is not None:
         rank_img_url = cast(str, rank_img_elem["src"])
-        rank = Rank(int(rank_img_url.split("_")[-1].split(".")[0]))
+        rank = Rank(int(extract_last_part(rank_img_url)))
     else:
         rank = Rank.D
 
-    clear_type = (
-        ClearType.CLEAR
-        if soup.select_one("img[src*=clear]") is not None
-        else ClearType.FAILED
-    )
-    if clear_type == ClearType.CLEAR:
+    clear_type = ClearType.FAILED
+    if soup.select_one("img[src*=clear]") is not None:
+        clear_type = ClearType.CLEAR
+    elif soup.select_one("img[src*=hard]") is not None:
+        clear_type = ClearType.HARD
+    elif soup.select_one("img[src*=absolutep]") is not None:
+        clear_type = ClearType.ABSOLUTE_PLUS
+    elif soup.select_one("img[src*=absolute]") is not None:
+        clear_type = ClearType.ABSOLUTE
+    elif soup.select_one("img[src*=catastrophy]") is not None:
+        clear_type = ClearType.CATASTROPHY
+
+    # FC and AJ should override all other lamps.
+    if clear_type != ClearType.FAILED:
         if soup.select_one("img[src*=fullcombo]") is not None:
             clear_type = ClearType.FULL_COMBO
         elif soup.select_one("img[src*=alljustice]") is not None:

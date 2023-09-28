@@ -71,6 +71,50 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
             """,
             (Rank.SSS, ClearType.FULL_COMBO),
         ),
+        (
+            """
+            <div class="play_musicdata_icon clearfix">
+                <!-- ◆クリア -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_absolutep.png">
+                <!-- ◆ランク -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
+            </div>
+            """,
+            (Rank.SSSp, ClearType.ABSOLUTE_PLUS),
+        ),
+        (
+            """
+            <div class="play_musicdata_icon clearfix">
+                <!-- ◆クリア -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_absolute.png">
+                <!-- ◆ランク -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
+            </div>
+            """,
+            (Rank.SSSp, ClearType.ABSOLUTE),
+        ),
+        (
+            """
+            <div class="play_musicdata_icon clearfix">
+                <!-- ◆クリア -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_hard.png">
+                <!-- ◆ランク -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
+            </div>
+            """,
+            (Rank.SSSp, ClearType.HARD),
+        ),
+        (
+            """
+            <div class="play_musicdata_icon clearfix">
+                <!-- ◆クリア -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_catastrophy.png">
+                <!-- ◆ランク -->
+                <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
+            </div>
+            """,
+            (Rank.SSSp, ClearType.CATASTROPHY),
+        ),
     ],
 )
 def test_get_rank_and_cleartype(html, expected):
