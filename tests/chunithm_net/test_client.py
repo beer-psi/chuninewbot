@@ -355,6 +355,8 @@ async def test_client_parses_playerdata(
 
     assert user_data.possession == Possession.NONE
 
+    assert user_data.team is not None
+    assert user_data.team.name == "ＣＨＵＮＩＴＨＭ　Ｆｌｅｘｉｂｌｅ"  # noqa: RUF001
     assert (
         user_data.character
         == "https://chunithm-net-eng.com/mobile/img/2c20c7ac326c1a9d.png"
