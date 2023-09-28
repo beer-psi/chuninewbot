@@ -10,12 +10,12 @@ from discord.utils import escape_markdown as emd
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty
 from database.models import Alias, Chart, Song
 from utils import (
     TOKYO_TZ,
     did_you_mean_text,
+    get_jacket_url,
     release_to_chunithm_version,
     shlex_split,
     yt_search_link,
@@ -272,7 +272,7 @@ class SearchCog(commands.Cog, name="Search"):
                     f"**BPM**: {song.bpm if song.bpm is not None else 'Unknown'}\n"
                 ),
                 color=discord.Color.yellow(),
-            ).set_thumbnail(url=f"{JACKET_BASE}/{song.jacket}")
+            ).set_thumbnail(url=get_jacket_url(song))
 
             stmt = (
                 select(Chart)

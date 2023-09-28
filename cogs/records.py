@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
 
-from chunithm_net.consts import JACKET_BASE
+from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
 from chunithm_net.entities.enums import Difficulty, Genres, Rank
 from database.models import Song
 from utils import did_you_mean_text, shlex_split
@@ -91,7 +91,11 @@ class RecordsCog(commands.Cog, name="Records"):
                     async for message in ctx.channel.history(limit=50)
                     if message.author == self.bot.user
                     and any(
-                        x.thumbnail.url is not None and JACKET_BASE in x.thumbnail.url
+                        x.thumbnail.url is not None
+                        and (
+                            JACKET_BASE in x.thumbnail.url
+                            or INTERNATIONAL_JACKET_BASE in x.thumbnail.url
+                        )
                         for x in message.embeds
                     )
                 ]
@@ -107,6 +111,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 if x.thumbnail.url is not None
                 and (
                     JACKET_BASE in x.thumbnail.url
+                    or INTERNATIONAL_JACKET_BASE in x.thumbnail.url
                     or "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/img/cover/"
                     in x.thumbnail.url
                 )

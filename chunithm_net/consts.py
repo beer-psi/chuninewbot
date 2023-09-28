@@ -1,4 +1,5 @@
 JACKET_BASE = "https://new.chunithm-net.com/chuni-mobile/html/mobile/img"
+INTERNATIONAL_JACKET_BASE = "https://chunithm-net-eng.com/mobile/img"
 PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS = [
     "．",
     "・",

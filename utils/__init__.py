@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from discord.ext.commands.view import StringView
 from discord.utils import escape_markdown
 
+from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
+
 if TYPE_CHECKING:
     from typing import TypeVar
 
@@ -118,6 +120,14 @@ def sdvxin_link(view: "SdvxinChartView") -> str:
 
     difficulty = difficulty.replace("WE", "end").lower()
     return f"https://sdvx.in/chunithm/{difficulty[:3]}/{id}{difficulty}{view.end_index or ''}.htm"
+
+
+def get_jacket_url(song: "Song") -> str:
+    return (
+        f"{INTERNATIONAL_JACKET_BASE}/{song.jacket}"
+        if song.international_only
+        else f"{JACKET_BASE}/{song.jacket}"
+    )
 
 
 def release_to_chunithm_version(date: datetime) -> str:

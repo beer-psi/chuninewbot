@@ -635,7 +635,7 @@ async def test_client_parses_music_record(
     assert records[0].clear == ClearType.CLEAR
     assert records[1].clear == ClearType.CLEAR
 
-    assert records[0].jacket == records[1].jacket == "986a1c6047f3033e.jpg"
+    assert records[0].jacket == records[1].jacket == "https://chunithm-net-eng.com/mobile/img/986a1c6047f3033e.jpg"
 
     assert records[0].play_count == records[1].play_count == 2
 
@@ -689,7 +689,7 @@ async def test_clients_parses_we_music_record(
 
     assert record.clear == ClearType.CLEAR
 
-    assert record.jacket == "2640e526c59188fc.jpg"
+    assert record.jacket == "https://chunithm-net-eng.com/mobile/img/2640e526c59188fc.jpg"
 
     assert record.play_count == 1
 

@@ -4,9 +4,8 @@ from typing import TYPE_CHECKING, Optional
 import discord
 from discord.utils import escape_markdown
 
-from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import Difficulty, Rank
-from utils import floor_to_ndp, sdvxin_link, yt_search_link
+from utils import floor_to_ndp, get_jacket_url, sdvxin_link, yt_search_link
 from utils.calculation.rating import calculate_rating
 from utils.ranks import rank_icon
 
@@ -30,7 +29,7 @@ class ChartCardEmbed(discord.Embed):
             description=escape_markdown(chart.song.artist),
         )
 
-        self.set_thumbnail(url=f"{JACKET_BASE}/{chart.song.jacket}")
+        self.set_thumbnail(url=get_jacket_url(chart.song))
 
         self.add_field(
             name="Category",

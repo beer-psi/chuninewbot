@@ -46,6 +46,8 @@ class Song(Base):
     jacket: Mapped[str] = mapped_column(nullable=False)
     zetaraku_jacket: Mapped[str] = mapped_column(nullable=False)
 
+    international_only: Mapped[bool] = mapped_column(nullable=False)
+
     charts: Mapped[list["Chart"]] = relationship(
         back_populates="song", cascade="all, delete-orphan"
     )

@@ -13,8 +13,8 @@ from jarowinkler import jaro_similarity
 from PIL import Image
 from sqlalchemy import delete, select, text
 
-from chunithm_net.consts import JACKET_BASE
 from database.models import Alias, GuessScore, Song
+from utils import get_jacket_url
 from utils.views import NextGameButtonView, SkipButtonView
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class GamingCog(commands.Cog, name="Games"):
                 alias.alias for alias in (await session.execute(stmt)).scalars()
             ]
 
-            jacket_url = f"{JACKET_BASE}/{song.jacket}"
+            jacket_url = get_jacket_url(song)
             async with ClientSession() as session, session.get(jacket_url) as resp:
                 jacket_bytes = await resp.read()
                 img = Image.open(io.BytesIO(jacket_bytes))

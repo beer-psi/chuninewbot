@@ -53,9 +53,6 @@ class MusicRecord(Record):
 
     play_count: Optional[int] = None
 
-    def full_jacket_url(self) -> str:
-        return f"{JACKET_BASE}/{self.jacket}"
-
     @staticmethod
     def from_record(record: Record) -> "MusicRecord":
         return MusicRecord(**record.__dict__, jacket="")

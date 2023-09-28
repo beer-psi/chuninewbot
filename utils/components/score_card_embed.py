@@ -27,7 +27,7 @@ class ScoreCardEmbed(discord.Embed):
         super().__init__(
             color=record.difficulty.color(),
         )
-        self.set_thumbnail(url=record.full_jacket_url())
+        self.set_thumbnail(url=record.jacket)
 
         if show_clear_type:
             score_data = f"▸ {rank_icon(record.rank)} ▸ {record.clear} ▸ {record.score}"

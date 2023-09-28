@@ -199,7 +199,7 @@ def parse_music_record(
     soup: BeautifulSoup, detailed: Optional[DetailedParams] = None
 ) -> list[MusicRecord]:
     jacket = (
-        str(elem["src"]).split("/")[-1]
+        str(elem["src"])
         if (elem := soup.select_one(".play_jacket_img img"))
         else ""
     )
