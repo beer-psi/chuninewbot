@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from chunithm_net.consts import JACKET_BASE
 from chunithm_net.entities.enums import ClearType, Difficulty, Rank
 
 

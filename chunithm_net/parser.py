@@ -164,7 +164,6 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     jacket_elem = record.select_one(".play_jacket_img img")
     if (jacket := cast(str | None, jacket_elem.get("data-original"))) is None:
         jacket = cast(str, jacket_elem["src"])
-    jacket = jacket.split("/")[-1]
     track = int(record.select_one(".play_track_text").get_text().split(" ")[1])
     title = record.select_one(".play_musicdata_title").get_text()
 

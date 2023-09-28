@@ -486,7 +486,7 @@ async def test_client_parses_playlog(
     assert record.rank == Rank.AAA
     assert record.clear == ClearType.FAILED
 
-    assert record.jacket == "db15d5b7aefaa672.jpg"
+    assert record.jacket == "https://chunithm-net-eng.com/mobile/img/db15d5b7aefaa672.jpg"
 
     assert record.play_count is None
 
@@ -547,7 +547,7 @@ async def test_client_parses_detailed_playlog(
     assert record.rank == Rank.AAA
     assert record.clear == ClearType.FAILED
 
-    assert record.jacket == "db15d5b7aefaa672.jpg"
+    assert record.jacket == "https://chunithm-net-eng.com/mobile/img/db15d5b7aefaa672.jpg"
 
     assert record.play_count is None
 
