@@ -92,14 +92,14 @@ class ClearType(Enum):
     CLEAR = 1
     FULL_COMBO = 2
     ALL_JUSTICE = 3
-    HARD = 4
-    ABSOLUTE = 5
-    ABSOLUTE_PLUS = 6
-    CATASTROPHY = 7
+    HARD_CLEAR = 4
+    ABSOLUTE_CLEAR = 5
+    ABSOLUTE_PLUS_CLEAR = 6
+    CATASTROPHY_CLEAR = 7
 
     def __str__(self):
-        if self.value == self.ABSOLUTE_PLUS:
-            return "ABSOLUTE+"
+        if self.value == self.ABSOLUTE_PLUS_CLEAR:
+            return "ABSOLUTE+ CLEAR"
         return self.name.replace("_", " ")
 
 

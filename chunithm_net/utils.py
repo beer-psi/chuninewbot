@@ -63,13 +63,13 @@ def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType]:
     if soup.select_one("img[src*=clear]") is not None:
         clear_type = ClearType.CLEAR
     elif soup.select_one("img[src*=hard]") is not None:
-        clear_type = ClearType.HARD
+        clear_type = ClearType.HARD_CLEAR
     elif soup.select_one("img[src*=absolutep]") is not None:
-        clear_type = ClearType.ABSOLUTE_PLUS
+        clear_type = ClearType.ABSOLUTE_PLUS_CLEAR
     elif soup.select_one("img[src*=absolute]") is not None:
-        clear_type = ClearType.ABSOLUTE
+        clear_type = ClearType.ABSOLUTE_CLEAR
     elif soup.select_one("img[src*=catastrophy]") is not None:
-        clear_type = ClearType.CATASTROPHY
+        clear_type = ClearType.CATASTROPHY_CLEAR
 
     # FC and AJ should override all other lamps.
     if clear_type != ClearType.FAILED:
