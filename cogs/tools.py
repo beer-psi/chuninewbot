@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context, Range
+from discord.utils import escape_markdown
 from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 
@@ -344,19 +345,20 @@ class ToolsCog(commands.Cog, name="Tools"):
                 .options(joinedload(Chart.song), joinedload(Chart.sdvxin_chart_view))
             )
 
-            charts: Sequence[Chart] = (await session.execute(stmt)).scalars().all()
-            if len(charts) == 0:
+            chart = (await session.execute(stmt)).scalar_one_or_none()
+            if chart is None:
                 await ctx.reply(
                     "No charts found. Make sure you specified a valid chart difficulty (BAS/ADV/EXP/MAS/ULT).",
                     mention_author=False,
                 )
                 return None
 
-            embeds: list[discord.Embed] = [
-                ChartCardEmbed(chart, border=True) for chart in charts
-            ]
+            if chart.maxcombo is None:
+                await ctx.reply(
+                    content=f"We currently don't have note counts for {escape_markdown(song.title)} [{chart.difficulty}]. Calculating the border is not possible. Please try again later."
+                )
 
-            await ctx.reply(embeds=embeds, mention_author=False)
+            await ctx.reply(embed=ChartCardEmbed(chart, border=True), mention_author=False)
             return None
 
 
