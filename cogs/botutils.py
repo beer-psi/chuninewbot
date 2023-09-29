@@ -14,6 +14,7 @@ from chunithm_net.entities.record import (
     Record,
 )
 from database.models import Alias, Chart, Cookie, Song
+from utils import get_jacket_url
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -110,7 +111,7 @@ class UtilsCog(commands.Cog, name="Utils"):
                 id = song_data.id
 
                 annotated_song: AnnotatedMusicRecord = AnnotatedMusicRecord(
-                    **song.__dict__, jacket=song_data.jacket
+                    **song.__dict__, jacket=get_jacket_url(song_data)
                 )
                 annotated_song.rank = Rank.from_score(song.score)
             else:
