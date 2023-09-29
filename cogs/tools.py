@@ -355,8 +355,10 @@ class ToolsCog(commands.Cog, name="Tools"):
 
             if chart.maxcombo is None:
                 await ctx.reply(
-                    content=f"We currently don't have note counts for {escape_markdown(song.title)} [{chart.difficulty}]. Calculating the border is not possible. Please try again later."
+                    content=f"We currently don't have note counts for {escape_markdown(song.title)} [{chart.difficulty}]. Calculating the border is not possible. Please try again later.",
+                    mention_author=False,
                 )
+                return None
 
             await ctx.reply(embed=ChartCardEmbed(chart, border=True), mention_author=False)
             return None
