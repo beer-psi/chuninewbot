@@ -98,7 +98,7 @@ class ClearType(Enum):
     CATASTROPHY_CLEAR = 7
 
     def __str__(self):
-        if self.value == self.ABSOLUTE_PLUS_CLEAR:
+        if self.value == 6:
             return "ABSOLUTE+ CLEAR"
         return self.name.replace("_", " ")
 
