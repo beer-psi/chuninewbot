@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Install Poetry
         run: pipx install poetry
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
         with:
           python-version: "3.10"
           cache: poetry
@@ -39,10 +39,10 @@ jobs:
         run: poetry run pytest -v
 
       - name: Type check
-        run: poetry run npx pyright .
+        run: poetry run npx pyright@1.1.333 .
 
       - name: Deploy bot
-        uses: appleboy/ssh-action@v0.1.10
+        uses: appleboy/ssh-action@334f9259f2f8eb3376d33fa4c684fff373f2c2a6
         with:
           host: ${{ secrets.SSH_HOST }}
           username: chuninewbot

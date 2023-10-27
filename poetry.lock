@@ -1871,6 +1871,24 @@ files = [
 ]
 
 [[package]]
+name = "pyright"
+version = "1.1.333"
+description = "Command line wrapper for pyright"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyright-1.1.333-py3-none-any.whl", hash = "sha256:f0a7b7b0cac11c396b17ef3cf6c8527aca1269edaf5cf8203eed7d6dd1ef52aa"},
+    {file = "pyright-1.1.333.tar.gz", hash = "sha256:1c49b0029048120c4378f3baf6c1dcbbfb221678bb69654fe773c514430ac53c"},
+]
+
+[package.dependencies]
+nodeenv = ">=1.6.0"
+
+[package.extras]
+all = ["twine (>=3.4.1)"]
+dev = ["twine (>=3.4.1)"]
+
+[[package]]
 name = "pytest"
 version = "7.4.0"
 description = "pytest: simple powerful testing with Python"
@@ -2375,4 +2393,4 @@ speedups = ["aiodns", "brotli", "faust-cchardet", "lxml", "orjson", "uvloop", "w
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "dc81de4a0d5e4919a151da432d7c62cb13a49f08a4873b0219f3ce633cf5a4c4"
+content-hash = "523991b6fc01c0015156fd1788004db8fd823186b4853104e325f77f5a8f802f"
