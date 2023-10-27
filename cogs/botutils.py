@@ -52,6 +52,16 @@ class UtilsCog(commands.Cog, name="Utils"):
             raise commands.BadArgument(msg)
         return clal
 
+    async def fetch_cookie(self, id: int) -> str | None:
+        async with self.bot.begin_db_session() as session:
+            stmt = select(Cookie).where(Cookie.discord_id == id)
+            cookie = (await session.execute(stmt)).scalar_one_or_none()
+
+        if cookie is None:
+            return None
+
+        return cookie.cookie
+    
     @contextlib.asynccontextmanager
     async def chuninet(self, ctx_or_id: Context | int):
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
@@ -65,16 +75,6 @@ class UtilsCog(commands.Cog, name="Utils"):
             await session.close()
             self.bot.sessions[id] = (session.user_id, session.token)
 
-    async def fetch_cookie(self, id: int) -> str | None:
-        async with self.bot.begin_db_session() as session:
-            stmt = select(Cookie).where(Cookie.discord_id == id)
-            cookie = (await session.execute(stmt)).scalar_one_or_none()
-
-        if cookie is None:
-            return None
-
-        return cookie.cookie
-
     @overload
     async def annotate_song(
         self, song: DetailedRecentRecord
@@ -82,18 +82,18 @@ class UtilsCog(commands.Cog, name="Utils"):
         ...
 
     @overload
+    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
+        ...
+    
+    @overload
     async def annotate_song(
         self, song: Record | MusicRecord
-    ) -> MusicRecord | AnnotatedMusicRecord:
-        ...
-
-    @overload
-    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
+    ) -> AnnotatedMusicRecord:
         ...
 
     async def annotate_song(
         self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
-    ) -> MusicRecord | AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
+    ) -> AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
         async with self.bot.begin_db_session() as session:
             if isinstance(song, Record) and not isinstance(
                 song, (MusicRecord, DetailedRecentRecord, RecentRecord)
@@ -106,7 +106,7 @@ class UtilsCog(commands.Cog, name="Utils"):
 
                 if song_data is None:
                     logger.warn(f"Missing song data for song ID {song.detailed.idx}")
-                    return MusicRecord.from_record(song)
+                    return AnnotatedMusicRecord(**song.__dict__)
 
                 id = song_data.id
 
