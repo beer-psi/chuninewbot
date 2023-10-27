@@ -186,7 +186,7 @@ class ProfileCog(commands.Cog, name="Profile"):
                 f"{optional_data_joined}\n"
                 f"▸ **Level**: {level}\n"
                 f"▸ **Rating**: {player_data.rating.current:.2f} (MAX {player_data.rating.max:.2f})\n"
-                f"▸ **OVER POWER**: {player_data.overpower.value} ({player_data.overpower.progress * 100:.2f}%)\n"
+                f"▸ **OVER POWER**: {player_data.overpower.value:.2f} ({player_data.overpower.progress * 100:.2f}%)\n"
                 f"▸ **Playcount**: {player_data.playcount}\n"
             )
 
