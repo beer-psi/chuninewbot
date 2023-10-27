@@ -111,10 +111,10 @@ class ToolsCog(commands.Cog, name="Tools"):
         else:
             separator = "---------------"
             res = f"```  Score |  Rate\n{separator}"
-            scores = [1009900]
+            scores = [1009000]
             scores.extend(
                 itertools.chain(
-                    range(1009500, 1004500, -500),  # 1005000..=1009900
+                    range(1008500, 1004500, -500),  # 1005000..=1009900
                     range(1004000, 999000, -1000),  # 1000000..=1004000
                     range(997500, 972500, -2500),  # 975000..=997500
                     range(970000, 940000, -10000),  # 950000..=970000
