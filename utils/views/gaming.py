@@ -51,6 +51,7 @@ class NextGameButtonView(View):
         # The class only calls .defer, which interaction.response also has.
         cursed_context.typing = lambda: DeferTyping(interaction.response, ephemeral=True)  # type: ignore[reportGeneralTypeIssues]
 
+        cursed_context.author = interaction.user
         cursed_context.guild = interaction.guild
         cursed_context.channel = interaction.channel
         cursed_context.reply = interaction.channel.send

@@ -86,6 +86,7 @@ class GamingCog(commands.Cog, name="Games"):
 
             view = SkipButtonView()
             view.message = await ctx.reply(
+                content=f"Game started by {ctx.author.mention}",
                 embed=question_embed,
                 file=discord.File(bytesio, "image.png"),
                 mention_author=False,
