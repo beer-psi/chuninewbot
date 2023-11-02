@@ -8,7 +8,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
 
-from chunithm_net.entities.enums import Difficulty
+from chunithm_net.entities.enums import Difficulty, ClearType
 from database.models import Cookie
 from utils import json_dumps, json_loads
 from utils.config import config
@@ -162,6 +162,12 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             content="Successfully unlinked with Kamaitachi.", mention_author=False
         )
 
+    def _tachi_lamp(self, lamp: ClearType) -> str:
+        if lamp in (ClearType.HARD_CLEAR, ClearType.ABSOLUTE_CLEAR, ClearType.ABSOLUTE_PLUS_CLEAR, ClearType.CATASTROPHY_CLEAR):
+            return "CLEAR"
+
+        return str(lamp)
+
     @kamaitachi.command("sync", aliases=["s"])
     async def kamaitachi_sync(
         self, ctx: Context, sync: Literal["recent", "pb"] = "recent"
@@ -203,7 +209,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 for recent in recents:
                     score_data = {
                         "score": recent.score,
-                        "lamp": str(recent.clear),
+                        "lamp": self._tachi_lamp(recent.clear),
                         "matchType": "inGameID",
                         "identifier": "",
                         "difficulty": str(recent.difficulty),
@@ -255,7 +261,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                             continue
                         score_data = {
                             "score": score.score,
-                            "lamp": str(score.clear),
+                            "lamp": self._tachi_lamp(score.clear),
                             "matchType": "inGameID",
                             "identifier": str(score.detailed.idx),
                             "difficulty": str(score.difficulty),
