@@ -1,0 +1,25 @@
+{
+    display_name: "Mithra Tercera",
+    db_connection_string: "sqlite://./example.sqlite3",
+    our_url: "https://example.com",
+    tachi: {
+        base_url: "https://example.com",
+        client_id: "CIclient_id",
+        client_secret: "CSclient_secret",
+    },
+    discord: {
+        token: "token",
+        default_prefix: "c>",
+        icons: {},
+    },
+    logger_config: {
+        level: "CRITICAL",
+        console: true,
+        file: false,
+        seq_api_key: "abc",
+        discord: {
+            webhook_url: "https://discord.com/api/webhooks/0123456789/example",
+            who_to_mention: ["<@0123456789>"],
+        },
+    },
+}
