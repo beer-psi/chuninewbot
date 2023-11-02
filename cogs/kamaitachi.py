@@ -163,10 +163,11 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         )
 
     def _tachi_lamp(self, lamp: ClearType) -> str:
-        if lamp in (ClearType.HARD_CLEAR, ClearType.ABSOLUTE_CLEAR, ClearType.ABSOLUTE_PLUS_CLEAR, ClearType.CATASTROPHY_CLEAR):
+        str_lamp = str(lamp)
+        if "CLEAR" in str_lamp:
             return "CLEAR"
 
-        return str(lamp)
+        return str_lamp
 
     @kamaitachi.command("sync", aliases=["s"])
     async def kamaitachi_sync(
