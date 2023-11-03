@@ -6,7 +6,10 @@ import logging.handlers
 from discord.utils import stream_supports_colour, _ColourFormatter
 
 from mithra_tercera.config import bot_config, environment
-from mithra_tercera.logger.discord import DiscordWebhookHandler
+from mithra_tercera.logger.discord import DiscordHandler
+
+
+ROOT_LOGGER_NAME = "mithra_tercera"
 
 
 if bot_config.logger_config.seq_api_key and environment.seq_url:
@@ -22,7 +25,7 @@ if bot_config.logger_config.seq_api_key and environment.seq_url:
 
         logging.setLoggerClass(seqlog.StructuredLogger)
 
-        root_logger = logging.getLogger("mithra_tercera")
+        root_logger = logging.getLogger(ROOT_LOGGER_NAME)
 
         handler = seqlog.SeqLogHandler(
             server_url=environment.seq_url,
@@ -35,12 +38,12 @@ if bot_config.logger_config.seq_api_key and environment.seq_url:
 
 # Get the logger again, in cases where seqlog was not installed
 # or seq was not set up.
-root_logger = logging.getLogger("mithra_tercera")
+root_logger = logging.getLogger(ROOT_LOGGER_NAME)
 root_logger.setLevel(bot_config.logger_config.level)
 
 if bot_config.logger_config.file:
     handler = logging.handlers.TimedRotatingFileHandler(
-        filename="logs/mithra_tercera.log",
+        filename=f"logs/{ROOT_LOGGER_NAME}.log",
         when="D",
         backupCount=14,
         delay=True,
@@ -55,13 +58,21 @@ if bot_config.logger_config.console:
         formatter = _ColourFormatter()
     else:
         dt_fmt = "%Y-%m-%d %H:%M:%S"
-        formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
+        formatter = logging.Formatter(
+            "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
+        )
 
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
 
-if bot_config.logger_config.discord and (webhook_url := bot_config.logger_config.discord.webhook_url):
-    handler = DiscordWebhookHandler(webhook_url, auto_flush=True)
+if bot_config.logger_config.discord and (
+    webhook_url := bot_config.logger_config.discord.webhook_url
+):
+    handler = DiscordHandler(
+        webhook_url,
+        service_name=bot_config.display_name,
+        who_to_mention=bot_config.logger_config.discord.who_to_mention,
+    )
 
     # we don't want to flood discord with debug logs
     handler.setLevel(logging.WARNING)
@@ -69,4 +80,14 @@ if bot_config.logger_config.discord and (webhook_url := bot_config.logger_config
     root_logger.addHandler(handler)
 
 if len(root_logger.handlers) == 0:
-    print("You have no handlers set. Absolutely no logs will be saved. This is a terrible idea!")
+    print(
+        "You have no handlers set. Absolutely no logs will be saved. This is a terrible idea!"
+    )
+
+
+def create_log_ctx(name: str, lg: logging.Logger = root_logger) -> logging.Logger:
+    # mithra_tercera.db
+    if name.startswith(f"{ROOT_LOGGER_NAME}."):
+        _, _, name = name.partition(".")
+
+    return lg.getChild(name)

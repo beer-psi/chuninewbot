@@ -175,10 +175,10 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-# Ignore all .env's apart from example.env
+# Ignore all .env's apart from .env.example
 .env
-*.env
-!example.env
+.env.*
+!.env.example
 
 # Ignore all config.json5 except config.example.json5
 config.json5
@@ -187,3 +187,17 @@ config.*.json5
 
 # Don't want to check in logs
 logs
+
+# Don't want to accidentally push user tokens
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+*.db-shm
+*.db-wal
+*.db-journal

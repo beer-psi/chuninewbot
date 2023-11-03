@@ -21,7 +21,7 @@ KamaitachiClientId = Annotated[str, StringConstraints(pattern=r"^CI[0-9a-f]{40}$
 KamaitachiClientSecret = Annotated[str, StringConstraints(pattern=r"^CS[0-9a-f]{40}$")]
 DiscordToken = Annotated[
     str,
-    StringConstraints(pattern=r"^([\w-]{26}\.[\w-]{6}\.[\w-]{38}|mfa\.[\w-]{84})$"),
+    StringConstraints(pattern=r"^([\w-]{24,26}\.[\w-]{6}\.[\w-]{38}|mfa\.[\w-]{84})$"),
 ]
 DiscordWebhookUrl = Annotated[
     str,

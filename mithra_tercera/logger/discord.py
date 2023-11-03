@@ -1,176 +1,62 @@
 import asyncio
-import atexit
+import datetime
+import itertools
 import logging
-from typing import Any, ClassVar, Literal, Mapping, Optional, Self
+from dataclasses import dataclass, field
+from logging import LogRecord
+from typing import Any, Optional, Self
 
 import aiohttp
 import discord
+from discord.ext import tasks
 
 
-def _flush(self: logging.Logger) -> None:
-    for handler in self.handlers:
-        if isinstance(handler, DiscordWebhookHandler):
-            handler.send()
+MAX_LOG_SNIPPET_LENGTH = 1500
+DISCORD_COLORS: dict[str, int] = {
+    "CRITICAL": 0xFF0000,
+    "ERROR": 0xCC0000,
+    "WARN": 0xFFCC00,
+    "WARNING": 0xFFCC00,
+}
 
 
-class DiscordWebhookFormatter(logging.Formatter):
-    MAX_DISCORD_MESSAGE_LEN = 2000
-    DISCORD_MESSAGE_TEMPLATE = "```diff\n{}```"
-    DISCORD_MESSAGE_TEMPLATE_LEN = len(DISCORD_MESSAGE_TEMPLATE.format(""))
-    MAX_LOG_LEN = MAX_DISCORD_MESSAGE_LEN - DISCORD_MESSAGE_TEMPLATE_LEN
+@dataclass
+class LogLevelCountState:
+    warn: list[str] = field(default_factory=list)
+    error: list[str] = field(default_factory=list)
 
-    _LEVEL_PREFIX_LENGTH = 3
-    _LEVEL_PREFIX: ClassVar[dict[str, str]] = {
-        "DEBUG": "===",
-        "INFO": "+  ",
-        "WARNING": "W  ",
-        "ERROR": "-  ",
-        "CRITICAL": "-!!",
-    }
 
-    def __init__(  # noqa: PLR0913
+class DiscordHandler(logging.Handler):
+    """
+    A logging.Handler implementation using Discord webhooks, inspired by
+    https://github.com/TNG-dev/Tachi/blob/staging/server/src/lib/logger/discord-transport.ts
+    """
+
+    def __init__(
         self: Self,
-        fmt: Optional[str] = None,
-        datefmt: Optional[str] = None,
-        style: Literal["%", "{", "$"] = "%",
-        validate: bool = True,  # noqa: FBT001, FBT002
+        webhook_url: str,
         *,
-        defaults: Optional[Mapping[str, Any]] = None,
+        service_name: str = "",
+        who_to_mention: Optional[list[str]] = None,
     ) -> None:
-        super().__init__(fmt, datefmt, style, validate, defaults=defaults)
-        for v in DiscordWebhookFormatter._LEVEL_PREFIX.values():
-            assert len(v) == DiscordWebhookFormatter._LEVEL_PREFIX_LENGTH
-
-    def format(  # noqa: A003
-        self: Self,
-        record: logging.LogRecord,
-    ) -> tuple[list[str], int]:
-        lines = record.msg.split("\n")
-
-        try:
-            level_prefix = DiscordWebhookFormatter._LEVEL_PREFIX[record.levelname]
-        except KeyError:
-            level_prefix = " " * DiscordWebhookFormatter._LEVEL_PREFIX_LENGTH
-
-        formatted_lines = []
-        formatted_lines_len = 0
-
-        for i in range(len(lines)):
-            # if single log message has multiple lines, show it with using different separators
-            # Example:
-            # Log message: logger.info('1st line\nnext line\nlast line')
-            # Formatted output:
-            # +  │1st line
-            # +  ├next line
-            # +  └last line
-            if i == 0:
-                separator = "│"
-            elif i == len(lines) - 1:
-                separator = "└"
-            else:
-                separator = "├"
-
-            split_len = (
-                DiscordWebhookFormatter.MAX_LOG_LEN
-                - DiscordWebhookFormatter._LEVEL_PREFIX_LENGTH
-                - 1
-            )  # -1 = separator
-            if len(lines[i]) > split_len:
-                # line is too long to send in single discord message, we need to split it in multiple messages
-                formatted_lines.append(level_prefix + separator + lines[i][:split_len])
-                formatted_lines_len += split_len
-
-                # use different separator to show, that line was split into multiple messages
-                separator = "↳"
-                for line in [
-                    lines[i][x : x + split_len]
-                    for x in range(split_len, len(lines[i]), split_len)
-                ]:
-                    formatted_lines.append(level_prefix + separator + line)
-                    formatted_lines_len += len(formatted_lines[-1])
-            else:
-                formatted_lines.append(level_prefix + separator + lines[i])
-                formatted_lines_len += len(formatted_lines[-1])
-
-        # add \n to char count
-        formatted_lines_len += len(formatted_lines) - 1
-
-        return formatted_lines, formatted_lines_len
-
-
-class DiscordWebhookHandler(logging.Handler):
-    def __init__(self: Self, webhook_url: str, *, auto_flush: bool = False) -> None:
         super().__init__()
         self.webhook = discord.Webhook.from_url(
-            webhook_url, session=aiohttp.ClientSession(),
+            webhook_url, session=aiohttp.ClientSession()
         )
-        self.formatter: DiscordWebhookFormatter = DiscordWebhookFormatter()
 
-        self.auto_flush = auto_flush
+        self._is_bucketing = False
+        self._bucket_start: datetime.datetime | None = None
+        self._bucket_data = LogLevelCountState()
 
-        # buffer for storing shorter logs and sending them in larger batches
-        self.buffer: list[tuple[logging.LogRecord, list[str]]] = []
-        self.buffer_message_len = 0
+        self._service_name = service_name
+        self._who_to_mention = who_to_mention or []
 
-        # send all remaining buffered messages before app exit
-        atexit.register(self.send)
+    def _reset_bucket_data(self: Self) -> None:
+        self._bucket_data.warn.clear()
+        self._bucket_data.error.clear()
 
-    def emit(self: Self, record: logging.LogRecord) -> None:
-        try:
-            formatted_lines, formatted_lines_len = self.formatter.format(record)
-
-            if formatted_lines_len >= self.formatter.MAX_LOG_LEN:
-                # new message is too large, new message can't fit info buffer, send buffered message and also send new message
-                for line in formatted_lines:
-                    if (
-                        self.buffer_message_len + len(line)
-                        >= self.formatter.MAX_LOG_LEN
-                    ):
-                        self.send()
-
-                        self.buffer.append((record, [line]))
-                        self.buffer_message_len += len(line) + 1
-                    else:
-                        self.buffer.append((record, [line]))
-                        self.buffer_message_len += len(line) + 1
-
-                self.send()
-            elif (
-                self.buffer_message_len + formatted_lines_len
-                >= self.formatter.MAX_LOG_LEN
-            ):
-                # buffered message + new message is too large, but new message can fit into buffer, send buffered message and move new message into buffer
-                self.send()
-
-                self.buffer.append((record, formatted_lines))
-                self.buffer_message_len += formatted_lines_len + 1
-            else:
-                # buffered messasge + new message fits info buffer, append it
-                self.buffer.append((record, formatted_lines))
-                self.buffer_message_len += formatted_lines_len + 1
-
-            if self.auto_flush:
-                self.send()
-        except Exception:  # noqa: BLE001
-            self.handleError(record)
-
-    def send(self: Self) -> None:
-        if self.buffer_message_len == 0:
-            # if buffer is empty, skip sending
-            return
-
-        # prepare body of message
-        log_message = ""
-        for b in self.buffer:
-            for line in b[1]:
-                log_message += line + "\n"
-
-        # prepare message for sending, exclude last \n char
-        json_data = {
-            "content": self.formatter.DISCORD_MESSAGE_TEMPLATE.format(log_message[:-1]),
-        }
-
-        coro = post_content(self, self.buffer[-1][0], self.webhook, json_data)
+    def _post_data(self: Self, payload: dict[str, Any]) -> None:
+        coro = self.webhook.send(**payload)
         try:
             loop = asyncio.get_event_loop()
             _ = asyncio.ensure_future(coro)
@@ -179,17 +65,81 @@ class DiscordWebhookHandler(logging.Handler):
             asyncio.set_event_loop(loop)
             loop.run_until_complete(coro)
 
-        self.buffer.clear()
-        self.buffer_message_len = 0
+    def _get_who_to_mention(self: Self) -> str:
+        if len(self._who_to_mention) > 0:
+            return " ".join(self._who_to_mention)
 
+        return "Nobody configured to tag, but this is bad, get someone!"
 
-async def post_content(
-    handler: logging.Handler,
-    record: logging.LogRecord,
-    webhook: discord.Webhook,
-    message_body: dict[str, Any],
-) -> None:
-    try:
-        await webhook.send(**message_body)
-    except discord.DiscordException:
-        handler.handleError(record)
+    def _send_directly_to_discord(self: Self, record: LogRecord, msg: str) -> None:
+        payload = {
+            "content": "",
+            "embeds": [
+                discord.Embed(
+                    description=f"[{record.levelname}] {msg}",
+                    color=DISCORD_COLORS.get(record.levelname),
+                    timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+                )
+            ],
+        }
+
+        if record.levelno == logging.CRITICAL:
+            payload[
+                "content"
+            ] = f"CRITICAL ERROR: {self._get_who_to_mention()}\n{payload['content']}"
+
+        self._post_data(payload)
+
+    @tasks.loop(minutes=1)
+    async def _send_bucket_data(self: Self) -> None:
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        embed = discord.Embed(
+            title=f"{self._service_name} log summary".strip(),
+            description=f"Log summary for {self._bucket_start.isoformat() if self._bucket_start else ''} to {now.isoformat()}.",
+            timestamp=now,
+        )
+
+        if len(warns := self._bucket_data.warn) > 0:
+            embed.color = DISCORD_COLORS["WARNING"]
+            embed.add_field(name="Warns", value=warns)
+        if len(errs := self._bucket_data.error) > 0:
+            embed.color = DISCORD_COLORS["ERROR"]
+            embed.add_field(name="Errors", value=errs)
+
+        log_snippet = "\n".join(
+            itertools.chain(self._bucket_data.error, self._bucket_data.warn)
+        )
+        if len(log_snippet) > MAX_LOG_SNIPPET_LENGTH:
+            log_snippet = f"{log_snippet[:MAX_LOG_SNIPPET_LENGTH - 3]}..."
+
+        payload = {
+            "content": f"```\n{log_snippet}\n```",
+            "embed": embed,
+        }
+        self._post_data(payload)
+        self._reset_bucket_data()
+        self._is_bucketing = False
+        self._bucket_start = None
+
+    def emit(self: Self, record: LogRecord) -> None:
+        if record.levelno < logging.WARNING:
+            return None
+
+        msg = self.format(record)
+
+        if record.levelno == logging.CRITICAL:
+            return self._send_directly_to_discord(record, msg)
+
+        if record.levelno == logging.ERROR:
+            self._bucket_data.error.append(msg)
+        elif record.levelno == logging.WARNING:
+            self._bucket_data.warn.append(msg)
+
+        if not self._is_bucketing:
+            self._is_bucketing = True
+            self._bucket_start = datetime.datetime.now(tz=datetime.timezone.utc)
+
+        if not self._send_bucket_data.is_running():
+            self._send_bucket_data.start()
+
+        return None

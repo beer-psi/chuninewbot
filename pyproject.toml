@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mithratercera"
-version = "0.3.0"
+version = "0.3.0a"
 description = "Discord bot for CHUNITHM-NET International"
 authors = ["beerpiss <lacvtg.a1.2023@gmail.com>"]
 license = "0BSD"
@@ -16,7 +16,8 @@ Pillow = "^10.1.0"
 pydantic = "^2.4.2"
 json5 = "^0.9.14"
 python-dotenv = "^1.0.0"
-peewee = "^3.17.0"
+tortoise-orm = "^0.20.0"
+fuzzywuzzy = "^0.18.0"
 faust-cchardet = { version = "^2.1.19", optional = true }
 aiodns = { version = "^3.1.1", optional = true }
 brotli = { version = "^1.1.0", optional = true }
@@ -25,10 +26,11 @@ orjson = { version = "^3.9.10", optional = true }
 winloop = { version = "^0.0.9", optional = true, markers = "sys_platform == 'win32'" }
 uvloop = { version = "^0.19.0", optional = true, markers = "sys_platform == 'win32'" }
 tzdata = { version = "^2023.3", markers = "sys_platform == 'win32'" }
+python-levenshtein = { version = "^0.23.0", optional = true }
 seqlog = { version = "^0.3.30", optional = true }
 
 [tool.poetry.extras]
-speedups = ["faust-cchardet", "aiodns", "brotli", "lxml", "orjson", "uvloop", "winloop"]
+speedups = ["faust-cchardet", "aiodns", "brotli", "lxml", "orjson", "uvloop", "winloop", "python-levenshtein"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.10.1"
@@ -85,11 +87,16 @@ select = [
     "YTT",
     "W",
 ]
-ignore = ["E501", "N999"]
-unfixable = ["B"]
 
-[tool.ruff.extend-per-file-ignores]
-"__init__.py" = ["F401"]
+ignore = [
+    # line-too-long (E501)
+    # Nothing we can really do if a line is too long, without hurting the readability
+    # by breaking up the line into non-sensible parts.
+    "E501", 
+    # missing-trailing-comma (COM812)
+    # Black handles the formatting.
+    "COM812"
+]
 
 [build-system]
 requires = ["poetry-core"]

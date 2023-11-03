@@ -2,54 +2,18 @@ import asyncio
 import contextlib
 import importlib.util
 import sys
-from time import time
-from typing import Awaitable, Callable, Self
+from typing import Awaitable, Callable
 
 import discord
 from discord.ext import commands
 import mithra_tercera
 
-from mithra_tercera.cogs import ENABLED_COGS
+from mithra_tercera import MithraTercera
 from mithra_tercera.config import bot_config
-from mithra_tercera.logger import root_logger
+from mithra_tercera.logger import create_log_ctx
 
 
-logger = root_logger.getChild(__name__)
-
-
-class MithraTercera(commands.Bot):
-    prefixes: dict[int, str]
-    launch_time: float
-
-    # Not typing all that
-    def __init__(self: Self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
-        self.prefixes = {}
-
-        super().__init__(*args, **kwargs)
-
-    async def start(self: Self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
-        self.launch_time = time()
-        return await super().start(*args, **kwargs)
-
-    async def setup_hook(self: Self) -> None:
-        for cog in ENABLED_COGS:
-            try:
-                await self.load_extension(cog)
-                logger.debug(f"Loaded extension {cog}")
-            except commands.errors.ExtensionAlreadyLoaded:   # noqa: PERF203
-                logger.warning(f"Extension {cog} was already loaded")
-            except commands.errors.ExtensionNotFound:
-                logger.critical(f"Extension {cog} was not found. Perhaps there was a typo?")
-                await self.close()
-                sys.exit(1)
-            except commands.errors.NoEntryPointError:
-                logger.critical(f"Extension {cog} has no setup function.")
-                await self.close()
-                sys.exit(1)
-            except commands.errors.ExtensionFailed as e:
-                logger.critical(f"Extension {cog} raised an error.", exc_info=e)
-                await self.close()
-                sys.exit(1)
+logger = create_log_ctx(__name__)
 
 
 def guild_specific_prefix(
@@ -80,7 +44,9 @@ async def startup() -> None:
         async with bot:
             await bot.start(bot_config.discord.token, reconnect=True)
     except discord.LoginFailure as e:
-        logger.critical(f"Could not log in to Discord: {e} Double check `discord.token` in 'config.json5'.")
+        logger.critical(
+            f"Could not log in to Discord: {e} Double check `discord.token` in 'config.json5'."
+        )
         sys.exit(1)
     except discord.PrivilegedIntentsRequired:
         logger.critical(
