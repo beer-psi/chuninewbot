@@ -661,7 +661,7 @@ async def update_cc_from_data(
                 .where(Song.id == chunithm_id)
                 .options(joinedload(Song.charts))
             )
-            song = (await session.execute(stmt)).unique().scalar_one_or_none()
+            song: Song = (await session.execute(stmt)).unique().scalar_one_or_none()
 
             if song is None:
                 logger.warning(f"Could not find song with chunithm_id {chunithm_id}")
@@ -709,6 +709,9 @@ async def update_cc_from_data(
                             continue
 
                         command = row[0]
+                        if command == "BPM_DEF" and song.bpm is None:
+                            song.bpm = int(row[1])
+                            tg.create_task(session.merge(song))
                         if command == "T_JUDGE_ALL":
                             db_chart.maxcombo = int(row[1])
                         if command == "T_JUDGE_TAP":
