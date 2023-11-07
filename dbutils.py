@@ -710,7 +710,7 @@ async def update_cc_from_data(
 
                         command = row[0]
                         if command == "BPM_DEF" and song.bpm is None:
-                            song.bpm = int(row[1])
+                            song.bpm = int(float(row[1]))
                             tg.create_task(session.merge(song))
                         if command == "T_JUDGE_ALL":
                             db_chart.maxcombo = int(row[1])
