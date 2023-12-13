@@ -292,6 +292,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "Session High": "Session High⤴",
         "Seyana": "Seyana. ～何でも言うことを聞いてくれるアカネチャン～",
         "Seyana. ~何でも言うことを聞いてくれるアカネチャン~": "Seyana. ～何でも言うことを聞いてくれるアカネチャン～",
+        "solips": "sølips",
         "Solstand": "Solstånd",
         "Super Lovely": "Super Lovely (Heavenly Remix)",
         "The Metaverse": "The Metaverse -First story of the SeelischTact-",
@@ -300,6 +301,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "ouroboros": "ouroboros -twin stroke of the end-",
         "”STAR”T": '"STAR"T',
         "まっすぐ→→→ストリーム!": "まっすぐ→→→ストリーム！",
+        "めっちゃ煽ってくる": "めっちゃ煽ってくるタイプの音ゲーボス曲ちゃんなんかに負けないが？？？？？",
         "めいど・うぃず・どらごんず": "めいど・うぃず・どらごんず♥",
         "ウソテイ": "イロドリミドリ杯花映塚全一決定戦公式テーマソング『ウソテイ』",
         "キュアリアス光吉古牌\u3000-祭-": "キュアリアス光吉古牌\u3000－祭－",
@@ -323,6 +325,11 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "私の中の幻想的世界観": "私の中の幻想的世界観及びその顕現を想起させたある現実での出来事に関する一考察",
         "萌豚功夫大乱舞": "萌豚♥功夫♥大乱舞",
         "ＧＯ！ＧＯ！ラブリズム ～あーりん書類審査通過記念Ver.～": "ＧＯ！ＧＯ！ラブリズム♥ ～あーりん書類審査通過記念Ver.～",
+        "《真紅》～ Pavane Pour La Flamme": "《真紅》 ～ Pavane Pour La Flamme",
+        "《楽土》～ One and Only One": "《楽土》 ～ One and Only One",
+        "《散華》～ EMBARK": "《散華》 ～ EMBARK",
+        "《慈雨》～ La Symphonie de Salacia: Agony Movement": "《慈雨》 ～ La Symphonie de Salacia: Agony Movement",
+        "《創造》～ Cries, beyond The End": "《創造》 ～ Cries, beyond The End",
     }
     # sdvx.in ID, song_id, difficulty
     inserted_data: list[dict] = []
