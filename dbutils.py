@@ -266,6 +266,7 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
         "AstroNotes.": "AstrøNotes.",
         "Athlete Killer ”Meteor”": 'Athlete Killer "Meteor"',
         "Aventyr": "Äventyr",
+        "Chaotic Order": "Chaotic Ørder",
         "DAZZLING SEASON": "DAZZLING♡SEASON",
         "DON`T STOP ROCKIN` ~[O_O] MIX~": "D✪N`T ST✪P R✪CKIN` ~[✪_✪] MIX~",
         "DON’T STOP ROCKIN’ ～[O_O] MIX～": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
