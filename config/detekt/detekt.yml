@@ -1,0 +1,11 @@
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreEnums: true
+  MaxLineLength:
+    excludeCommentStatements: true
+  ReturnCount:
+    excludeGuardClauses: true
+  WildcardImport:
+    excludeImports: []

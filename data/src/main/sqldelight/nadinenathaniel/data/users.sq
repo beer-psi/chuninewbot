@@ -1,0 +1,26 @@
+getCookiesBySnowflake:
+SELECT cookies
+FROM users
+WHERE discord_id = :snowflake;
+
+updateCookiesBySnowflake:
+UPDATE users
+SET cookies = :cookies
+WHERE discord_id = :snowflake;
+
+deleteUserWithSnowflake:
+DELETE FROM users
+WHERE discord_id = :snowflake;
+
+updateKtchiTokenBySnowflake:
+UPDATE users
+SET kamaitachi_token = :ktchiToken
+WHERE discord_id = :snowflake;
+
+upsert:
+INSERT INTO users(discord_id, cookies, kamaitachi_token)
+VALUES (:discordId, :cookies, :kamaitachiToken)
+ON CONFLICT (discord_id)
+DO UPDATE SET
+    cookies = COALESCE(excluded.cookies, users.cookies),
+    kamaitachi_token = COALESCE(excluded.kamaitachi_token, users.kamaitachi_token);

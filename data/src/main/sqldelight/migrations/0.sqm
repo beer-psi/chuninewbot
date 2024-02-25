@@ -1,0 +1,103 @@
+CREATE TABLE database_version(
+    database_version BIGINT NOT NULL
+);
+
+CREATE TABLE songs (
+    id SERIAL NOT NULL PRIMARY KEY,
+
+    -- In case this game survives for another 10 years and we have to deal
+    -- with reused IDs.
+    song_id INTEGER NOT NULL,
+
+    -- This is **NOT** the song's initial game version! This is an internal
+    -- index kept by the bot in case the game ever reuses IDs of removed songs.
+    -- While any song can be queried freely by the bot, only the highest version_id
+    -- will be used for operations against CHUNITHM-NET.
+    version_id INTEGER NOT NULL DEFAULT 1,
+
+    genre TEXT NOT NULL,
+
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL,
+
+    -- While all CHUNITHM songs have integer BPMs, there are songs out there
+    -- with decimal BPM (e.g. Nhelv at 174.59 BPM). To provide better metadata,
+    -- as well as to futureproof, we use decimal BPMs.
+    bpm REAL,
+    jacket_url TEXT,
+
+    UNIQUE (song_id, version_id)
+);
+
+CREATE TABLE game_versions (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name TEXT
+);
+
+
+CREATE TABLE song_aliases (
+    id SERIAL PRIMARY KEY NOT NULL,
+    song_id INTEGER NOT NULL,
+    guild_id INTEGER NOT NULL DEFAULT -1,
+    owner_id INTEGER NOT NULL DEFAULT -1,
+    alias TEXT NOT NULL,
+    FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE song_regions (
+    id SERIAL NOT NULL PRIMARY KEY,
+
+    song_id INTEGER NOT NULL,
+    song_version_id INTEGER NOT NULL,
+    -- ISO 3166-1 alpha-3 code denoting the region this data is for.
+    -- Use ZZY for the "international" region, and ZZZ for "all" as a convenience.
+    region TEXT NOT NULL,
+
+    game_version_id INTEGER,
+    removed BOOLEAN DEFAULT FALSE,
+    released_date DATE,
+
+    FOREIGN KEY (song_id, song_version_id) REFERENCES songs(song_id, version_id) ON DELETE CASCADE,
+    FOREIGN KEY (game_version_id) REFERENCES game_versions(id) ON DELETE SET NULL,
+    UNIQUE(song_id, song_version_id, region)
+);
+
+CREATE TABLE charts (
+    id SERIAL PRIMARY KEY NOT NULL,
+    song_region_id INTEGER NOT NULL,
+
+    difficulty TEXT NOT NULL,
+    level TEXT NOT NULL,
+    -- While chart constants are displayed to the user as decimals (i.e. 14.8)
+    -- for convenience of calculation chart constant is stored as a number
+    -- in the database.
+    chart_constant_100 INTEGER,
+
+    charter TEXT,
+
+    maxcombo INTEGER,
+    tap INTEGER,
+    hold INTEGER,
+    slide INTEGER,
+    air INTEGER,
+    flick INTEGER,
+
+    FOREIGN KEY (song_region_id) REFERENCES song_regions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE sdvxin_chart_views (
+    id SERIAL PRIMARY KEY NOT NULL,
+    chart_id INTEGER NOT NULL,
+    sdvxin_id TEXT NOT NULL,
+    sdvxin_chart_id TEXT NOT NULL,
+    FOREIGN KEY (chart_id) REFERENCES charts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE users (
+    id SERIAL NOT NULL PRIMARY KEY,
+    discord_id BIGINT UNIQUE NOT NULL,
+    cookies TEXT,
+    kamaitachi_token TEXT
+);
+
+INSERT INTO database_version VALUES (1);

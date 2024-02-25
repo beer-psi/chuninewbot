@@ -1,0 +1,4 @@
+getSongById:
+SELECT *
+FROM songs
+WHERE id = :id;

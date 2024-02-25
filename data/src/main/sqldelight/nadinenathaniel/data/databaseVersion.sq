@@ -1,0 +1,3 @@
+getDatabaseVersion:
+-- There should only ever be one version row.
+SELECT database_version FROM database_version LIMIT 1;
