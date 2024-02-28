@@ -98,12 +98,11 @@ class SearchCog(commands.Cog, name="Search"):
         # this command is guild-only
         assert ctx.guild is not None
 
-        added_alias_lower = added_alias.strip().lower()
-        song_title_or_alias_lower = song_title_or_alias.strip().lower()
-
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             stmt = (
-                select(Song).where(func.lower(Song.title) == added_alias_lower).limit(1)
+                select(Song)
+                .where(func.lower(Song.title) == func.lower(added_alias))
+                .limit(1)
             )
             song = (await session.execute(stmt)).scalar_one_or_none()
             if song is not None:
@@ -112,7 +111,7 @@ class SearchCog(commands.Cog, name="Search"):
                 )
 
             stmt = select(Alias).where(
-                (func.lower(Alias.alias) == added_alias_lower)
+                (func.lower(Alias.alias) == func.lower(added_alias))
                 & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
             )
             alias = (await session.execute(stmt)).scalar_one_or_none()
@@ -124,16 +123,16 @@ class SearchCog(commands.Cog, name="Search"):
             stmt = select(Song).where(
                 # Limit to non-WE entries. WE entries are redirected to
                 # their non-WE respectives when song-searching anyways.
-                (func.lower(Song.title) == song_title_or_alias_lower)
+                (func.lower(Song.title) == func.lower(song_title_or_alias))
                 & (Song.id < 8000)
             )
             song = (await session.execute(stmt)).scalar_one_or_none()
 
             if song is None:
                 stmt = select(Alias).where(
-                    (func.lower(Alias.alias) == song_title_or_alias_lower)
+                    (func.lower(Alias.alias) == func.lower(song_title_or_alias))
                     & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
-                )
+                ).options(joinedload(Alias.song))
                 alias = (await session.execute(stmt)).scalar_one_or_none()
                 if alias is None:
                     return await ctx.reply(
