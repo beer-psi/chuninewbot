@@ -49,8 +49,10 @@ def test_difficulty_full_form(value, expected):
     [
         (ClearType.FAILED, "FAILED"),
         (ClearType.CLEAR, "CLEAR"),
-        (ClearType.FULL_COMBO, "FULL COMBO"),
-        (ClearType.ALL_JUSTICE, "ALL JUSTICE"),
+        (ClearType.HARD, "HARD"),
+        (ClearType.ABSOLUTE, "ABSOLUTE"),
+        (ClearType.ABSOLUTE_PLUS, "ABSOLUTE+"),
+        (ClearType.CATASTROPHY, "CATASTROPHY"),
     ],
 )
 def test_clear_type_full_form(value, expected):

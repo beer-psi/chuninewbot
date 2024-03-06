@@ -80,7 +80,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.ABSOLUTE_PLUS_CLEAR),
+            (Rank.SSSp, ClearType.ABSOLUTE_PLUS),
         ),
         (
             """
@@ -91,7 +91,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.ABSOLUTE_CLEAR),
+            (Rank.SSSp, ClearType.ABSOLUTE),
         ),
         (
             """
@@ -102,7 +102,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.HARD_CLEAR),
+            (Rank.SSSp, ClearType.HARD),
         ),
         (
             """
@@ -113,7 +113,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.CATASTROPHY_CLEAR),
+            (Rank.SSSp, ClearType.CATASTROPHY),
         ),
     ],
 )

@@ -90,14 +90,14 @@ class Difficulty(Enum):
 class ClearType(Enum):
     FAILED = 0
     CLEAR = 1
-    HARD_CLEAR = 4
-    ABSOLUTE_CLEAR = 5
-    ABSOLUTE_PLUS_CLEAR = 6
-    CATASTROPHY_CLEAR = 7
+    HARD = 4
+    ABSOLUTE = 5
+    ABSOLUTE_PLUS = 6
+    CATASTROPHY = 7
 
     def __str__(self):
         if self.value == 6:
-            return "ABSOLUTE+ CLEAR"
+            return "ABSOLUTE+"
         return self.name.replace("_", " ")
 
 

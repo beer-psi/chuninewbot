@@ -62,13 +62,13 @@ def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType, ComboType]:
     if soup.select_one("img[src*=clear]") is not None:
         clear_type = ClearType.CLEAR
     elif soup.select_one("img[src*=hard]") is not None:
-        clear_type = ClearType.HARD_CLEAR
+        clear_type = ClearType.HARD
     elif soup.select_one("img[src*=absolutep]") is not None:
-        clear_type = ClearType.ABSOLUTE_PLUS_CLEAR
+        clear_type = ClearType.ABSOLUTE_PLUS
     elif soup.select_one("img[src*=absolute]") is not None:
-        clear_type = ClearType.ABSOLUTE_CLEAR
+        clear_type = ClearType.ABSOLUTE
     elif soup.select_one("img[src*=catastrophy]") is not None:
-        clear_type = ClearType.CATASTROPHY_CLEAR
+        clear_type = ClearType.CATASTROPHY
     else:
         clear_type = ClearType.FAILED
 
