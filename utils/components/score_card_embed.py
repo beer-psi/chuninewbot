@@ -3,7 +3,7 @@ from typing import Optional
 import discord
 from discord.utils import escape_markdown
 
-from chunithm_net.entities.enums import Difficulty
+from chunithm_net.entities.enums import ComboType, Difficulty
 from utils import floor_to_ndp
 from utils.calculation.overpower import calculate_play_overpower
 from utils.ranks import rank_icon
@@ -21,7 +21,7 @@ class ScoreCardEmbed(discord.Embed):
         | AnnotatedRecentRecord
         | AnnotatedDetailedRecentRecord,
         *,
-        show_clear_type: bool = True,
+        show_lamps: bool = True,
         index: Optional[int] = None,
     ):
         super().__init__(
@@ -29,8 +29,15 @@ class ScoreCardEmbed(discord.Embed):
         )
         self.set_thumbnail(url=record.jacket)
 
-        if show_clear_type:
-            score_data = f"▸ {rank_icon(record.rank)} ▸ {record.clear} ▸ {record.score}"
+        if show_lamps:
+            lamps = [str(record.clear_lamp)]
+
+            if record.combo_lamp != ComboType.NONE:
+                lamps.append(str(record.combo_lamp))
+
+            score_data = (
+                f"▸ {rank_icon(record.rank)} ▸ {' / '.join(lamps)} ▸ {record.score}"
+            )
         else:
             score_data = f"▸ {rank_icon(record.rank)} ▸ {record.score}"
 
@@ -41,7 +48,7 @@ class ScoreCardEmbed(discord.Embed):
 
             footer_sections = []
             if record.difficulty != Difficulty.WORLDS_END:
-                if show_clear_type:
+                if show_lamps:
                     footer_sections.append(
                         f"Rating: {floor_to_ndp(record.play_rating, 2)}"
                     )

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from chunithm_net.entities.enums import ClearType
+from chunithm_net.entities.enums import ClearType, ComboType
 from utils import floor_to_ndp
 from utils.types.annotated_records import AnnotatedMusicRecord
 
@@ -41,8 +41,8 @@ def calculate_play_overpower(score: AnnotatedMusicRecord) -> Decimal:
     play_overpower = score.overpower_base
     if score.score == 1010000:
         play_overpower = score.overpower_max
-    elif score.clear == ClearType.ALL_JUSTICE:
+    elif score.combo_lamp in {ComboType.ALL_JUSTICE, ComboType.ALL_JUSTICE_CRITICAL}:
         play_overpower += Decimal(1)
-    elif score.clear == ClearType.FULL_COMBO:
+    elif score.combo_lamp == ComboType.FULL_COMBO:
         play_overpower += Decimal(0.5)
     return play_overpower

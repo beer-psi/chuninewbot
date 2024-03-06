@@ -3,12 +3,13 @@ import sys
 from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
+from click import clear
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
 
-from chunithm_net.entities.enums import Difficulty, ClearType
+from chunithm_net.entities.enums import ComboType, Difficulty, ClearType
 from database.models import Cookie
 from utils import json_dumps, json_loads
 from utils.config import config
@@ -162,12 +163,17 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             content="Successfully unlinked with Kamaitachi.", mention_author=False
         )
 
-    def _tachi_lamp(self, lamp: ClearType) -> str:
-        str_lamp = str(lamp)
-        if "CLEAR" in str_lamp:
+    def _tachi_lamp(self, clear_lamp: ClearType, combo_lamp: ComboType) -> str:
+        if combo_lamp == ComboType.ALL_JUSTICE_CRITICAL:
+            return "ALL JUSTICE CRITICAL"
+
+        if combo_lamp != ComboType.NONE:
+            return str(combo_lamp)
+
+        if clear_lamp != ClearType.FAILED:
             return "CLEAR"
 
-        return str_lamp
+        return "FAILED"
 
     @kamaitachi.command("sync", aliases=["s"])
     async def kamaitachi_sync(
@@ -210,7 +216,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                 for recent in recents:
                     score_data = {
                         "score": recent.score,
-                        "lamp": self._tachi_lamp(recent.clear),
+                        "lamp": self._tachi_lamp(recent.clear_lamp, recent.combo_lamp),
                         "matchType": "inGameID",
                         "identifier": "",
                         "difficulty": str(recent.difficulty),
@@ -262,7 +268,9 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                             continue
                         score_data = {
                             "score": score.score,
-                            "lamp": self._tachi_lamp(score.clear),
+                            "lamp": self._tachi_lamp(
+                                score.clear_lamp, score.combo_lamp
+                            ),
                             "matchType": "inGameID",
                             "identifier": str(score.detailed.idx),
                             "difficulty": str(score.difficulty),

@@ -90,8 +90,6 @@ class Difficulty(Enum):
 class ClearType(Enum):
     FAILED = 0
     CLEAR = 1
-    FULL_COMBO = 2
-    ALL_JUSTICE = 3
     HARD_CLEAR = 4
     ABSOLUTE_CLEAR = 5
     ABSOLUTE_PLUS_CLEAR = 6
@@ -100,6 +98,18 @@ class ClearType(Enum):
     def __str__(self):
         if self.value == 6:
             return "ABSOLUTE+ CLEAR"
+        return self.name.replace("_", " ")
+
+
+class ComboType(Enum):
+    NONE = 0
+    FULL_COMBO = 1
+    ALL_JUSTICE = 2
+    ALL_JUSTICE_CRITICAL = 3
+
+    def __str__(self):
+        if self.value == 3:
+            return "AJC"
         return self.name.replace("_", " ")
 
 

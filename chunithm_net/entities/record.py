@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from chunithm_net.entities.enums import ClearType, Difficulty, Rank
+from chunithm_net.entities.enums import ClearType, ComboType, Difficulty, Rank
 
 
 @dataclass
@@ -43,7 +43,8 @@ class Record:
     score: int
 
     rank: Rank = Rank.D
-    clear: ClearType = ClearType.FAILED
+    clear_lamp: ClearType = ClearType.FAILED
+    combo_lamp: ComboType = ComboType.NONE
 
 
 @dataclass(kw_only=True)

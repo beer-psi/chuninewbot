@@ -3,7 +3,7 @@ from typing import Optional, cast
 
 from bs4 import BeautifulSoup, Tag
 
-from .entities.enums import ClearType, Possession, Rank, SkillClass
+from .entities.enums import ClearType, ComboType, Possession, Rank, SkillClass
 from .entities.player_data import (
     Currency,
     Nameplate,
@@ -173,10 +173,11 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     new_record = record.select_one(".play_musicdata_score_img") is not None
 
     if (rank_elem := record.select_one(".play_musicdata_icon")) is not None:
-        rank, clear = get_rank_and_cleartype(rank_elem)
+        rank, clear_lamp, combo_lamp = get_rank_and_cleartype(rank_elem)
     else:
         rank = Rank.D
-        clear = ClearType.FAILED
+        clear_lamp = ClearType.FAILED
+        combo_lamp = ComboType.NONE
 
     return RecentRecord(
         detailed=detailed,
@@ -189,7 +190,8 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
         ),
         score=score,
         rank=rank,
-        clear=clear,
+        clear_lamp=clear_lamp,
+        combo_lamp=combo_lamp,
         new_record=new_record,
     )
 
@@ -198,9 +200,7 @@ def parse_music_record(
     soup: BeautifulSoup, detailed: Optional[DetailedParams] = None
 ) -> list[MusicRecord]:
     jacket = (
-        str(elem["src"])
-        if (elem := soup.select_one(".play_jacket_img img"))
-        else ""
+        str(elem["src"]) if (elem := soup.select_one(".play_jacket_img img")) else ""
     )
     title = (
         elem.get_text(strip=True)
@@ -214,9 +214,10 @@ def parse_music_record(
     records = []
     for block in soup.select(".music_box"):
         if (musicdata := block.select_one(".play_musicdata_icon")) is not None:
-            rank, clear = get_rank_and_cleartype(musicdata)
+            rank, clear_lamp, combo_lamp = get_rank_and_cleartype(musicdata)
         else:
-            rank, clear = Rank.D, ClearType.FAILED
+            rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
+
         records.append(
             MusicRecord(
                 detailed=detailed,
@@ -230,7 +231,8 @@ def parse_music_record(
                     else "0"
                 ),
                 rank=rank,
-                clear=clear,
+                clear_lamp=clear_lamp,
+                combo_lamp=combo_lamp,
                 play_count=chuni_int(
                     elem.get_text().replace("times", "")
                     if (
@@ -253,9 +255,9 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
             continue
 
         if (musicdata := x.select_one(".play_musicdata_icon")) is not None:
-            rank, clear = get_rank_and_cleartype(musicdata)
+            rank, clear_lamp, combo_lamp = get_rank_and_cleartype(musicdata)
         else:
-            rank, clear = Rank.D, ClearType.FAILED
+            rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
 
         div = x.select_one(".w388.musiclist_box")
         records.append(
@@ -270,7 +272,8 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
                 difficulty=difficulty_from_imgurl(" ".join(div["class"])),
                 score=chuni_int(score_elem.get_text()),
                 rank=rank,
-                clear=clear,
+                clear_lamp=clear_lamp,
+                combo_lamp=combo_lamp,
             )
         )
     return records

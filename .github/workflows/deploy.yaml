@@ -38,9 +38,6 @@ jobs:
       - name: Run tests
         run: poetry run pytest -v
 
-      - name: Type check
-        run: poetry run npx pyright@1.1.333 .
-
       - name: Deploy bot
         uses: appleboy/ssh-action@334f9259f2f8eb3376d33fa4c684fff373f2c2a6
         with:

@@ -43,7 +43,7 @@ class B30View(PaginationView):
         self, items: Sequence["AnnotatedMusicRecord"], start_index: int = 0
     ) -> Sequence[discord.Embed]:
         embeds: list[discord.Embed] = [
-            ScoreCardEmbed(item, index=start_index + idx + 1, show_clear_type=False)
+            ScoreCardEmbed(item, index=start_index + idx + 1, show_lamps=False)
             for idx, item in enumerate(items)
         ]
         embeds.append(
