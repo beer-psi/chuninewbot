@@ -3,8 +3,8 @@ import importlib.util
 import pytest
 from bs4 import BeautifulSoup
 
-from chunithm_net.entities.enums import ClearType, Difficulty, Rank
-from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
+from chunithm_net.entities.enums import ClearType, ComboType, Difficulty, Rank
+from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_lamps
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_9.png">
             </div>
             """,
-            (Rank.Sp, ClearType.CLEAR),
+            (Rank.Sp, ClearType.CLEAR, ComboType.NONE),
         ),
         (
             """
@@ -28,7 +28,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_9.png">
             </div>
             """,
-            (Rank.Sp, ClearType.FAILED),
+            (Rank.Sp, ClearType.FAILED, ComboType.NONE),
         ),
         (
             """
@@ -37,7 +37,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_clear.png">
             </div>
             """,
-            (Rank.D, ClearType.CLEAR),
+            (Rank.D, ClearType.CLEAR, ComboType.NONE),
         ),
         (
             """
@@ -45,7 +45,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <!-- ◆クリア -->
             </div>
             """,
-            (Rank.D, ClearType.FAILED),
+            (Rank.D, ClearType.FAILED, ComboType.NONE),
         ),
         (
             """
@@ -57,7 +57,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_alljustice.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.ALL_JUSTICE),
+            (Rank.SSSp, ClearType.CLEAR, ComboType.ALL_JUSTICE),
         ),
         (
             """
@@ -69,7 +69,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_fullcombo.png">
             </div>
             """,
-            (Rank.SSS, ClearType.FULL_COMBO),
+            (Rank.SSS, ClearType.CLEAR, ComboType.FULL_COMBO),
         ),
         (
             """
@@ -80,7 +80,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.ABSOLUTE_PLUS),
+            (Rank.SSSp, ClearType.ABSOLUTE_PLUS, ComboType.NONE),
         ),
         (
             """
@@ -91,7 +91,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.ABSOLUTE),
+            (Rank.SSSp, ClearType.ABSOLUTE, ComboType.NONE),
         ),
         (
             """
@@ -102,7 +102,7 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.HARD),
+            (Rank.SSSp, ClearType.HARD, ComboType.NONE),
         ),
         (
             """
@@ -113,14 +113,14 @@ from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_cleartype
                 <img src="https://chunithm-net-eng.com/mobile/images/icon_rank_13.png">
             </div>
             """,
-            (Rank.SSSp, ClearType.CATASTROPHY),
+            (Rank.SSSp, ClearType.CATASTROPHY, ComboType.NONE),
         ),
     ],
 )
 def test_get_rank_and_cleartype(html, expected):
     bs4_features = "lxml" if importlib.util.find_spec("lxml") else "html.parser"
     soup = BeautifulSoup(html, bs4_features)
-    assert get_rank_and_cleartype(soup) == expected
+    assert get_rank_and_lamps(soup) == expected
 
 
 @pytest.mark.parametrize(

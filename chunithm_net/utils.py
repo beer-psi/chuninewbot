@@ -52,7 +52,7 @@ def difficulty_from_imgurl(url: str) -> Difficulty:
             raise ValueError(msg)
 
 
-def get_rank_and_cleartype(soup: Tag) -> tuple[Rank, ClearType, ComboType]:
+def get_rank_and_lamps(soup: Tag) -> tuple[Rank, ClearType, ComboType]:
     if (rank_img_elem := soup.select_one("img[src*=_rank_]")) is not None:
         rank_img_url = cast(str, rank_img_elem["src"])
         rank = Rank(int(extract_last_part(rank_img_url)))

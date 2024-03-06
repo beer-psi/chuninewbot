@@ -3,7 +3,6 @@ import sys
 from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
-from click import clear
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context

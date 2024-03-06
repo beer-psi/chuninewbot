@@ -27,7 +27,7 @@ from .utils import (
     chuni_int,
     difficulty_from_imgurl,
     extract_last_part,
-    get_rank_and_cleartype,
+    get_rank_and_lamps,
     parse_player_rating,
     parse_time,
 )
@@ -173,7 +173,7 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
     new_record = record.select_one(".play_musicdata_score_img") is not None
 
     if (rank_elem := record.select_one(".play_musicdata_icon")) is not None:
-        rank, clear_lamp, combo_lamp = get_rank_and_cleartype(rank_elem)
+        rank, clear_lamp, combo_lamp = get_rank_and_lamps(rank_elem)
     else:
         rank = Rank.D
         clear_lamp = ClearType.FAILED
@@ -214,7 +214,7 @@ def parse_music_record(
     records = []
     for block in soup.select(".music_box"):
         if (musicdata := block.select_one(".play_musicdata_icon")) is not None:
-            rank, clear_lamp, combo_lamp = get_rank_and_cleartype(musicdata)
+            rank, clear_lamp, combo_lamp = get_rank_and_lamps(musicdata)
         else:
             rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
 
@@ -255,7 +255,7 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
             continue
 
         if (musicdata := x.select_one(".play_musicdata_icon")) is not None:
-            rank, clear_lamp, combo_lamp = get_rank_and_cleartype(musicdata)
+            rank, clear_lamp, combo_lamp = get_rank_and_lamps(musicdata)
         else:
             rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
 
