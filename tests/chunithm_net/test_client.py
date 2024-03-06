@@ -50,7 +50,7 @@ async def test_client_throws_chuninet_errors(
     aioresponses: original_aioresponses, clal: str, user_id: str, token: str
 ):
     aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home",
+        "https://chunithm-net-eng.com/mobile/home/",
         status=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/error"},
     )
@@ -67,7 +67,7 @@ async def test_client_throws_chuninet_errors(
         async with ChuniNet(clal, user_id=user_id, token=token) as client:
             await client.authenticate()
 
-    aioresponses.assert_called_once_with("https://chunithm-net-eng.com/mobile/home")
+    aioresponses.assert_called_once_with("https://chunithm-net-eng.com/mobile/home/")
 
 
 @pytest.mark.asyncio
@@ -132,7 +132,7 @@ async def test_client_reauthenticates_on_error(
     new_token = "".join(choices("abcdef" + string.digits, k=32))
 
     aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home",
+        "https://chunithm-net-eng.com/mobile/home/",
         status=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/error"},
     )
@@ -180,7 +180,7 @@ async def test_client_reauthenticates_on_error(
     async with ChuniNet(clal, user_id=user_id, token=token) as client:
         await client.authenticate()
 
-    aioresponses.assert_any_call("https://chunithm-net-eng.com/mobile/home")
+    aioresponses.assert_any_call("https://chunithm-net-eng.com/mobile/home/")
     aioresponses.assert_any_call(
         "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
     )
@@ -194,7 +194,7 @@ async def test_client_handles_failed_reauthentication(
     token: str,
 ):
     aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home",
+        "https://chunithm-net-eng.com/mobile/home/",
         status=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/"},
     )
@@ -224,7 +224,7 @@ async def test_client_throws_when_on_maintenance(
     token: str,
 ):
     aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home",
+        "https://chunithm-net-eng.com/mobile/home/",
         status=503,
     )
 
@@ -242,7 +242,7 @@ async def test_client_parses_homepage(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
@@ -343,7 +343,7 @@ async def test_client_parses_playerdata(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
@@ -462,7 +462,7 @@ async def test_client_parses_playlog(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
@@ -521,22 +521,22 @@ async def test_client_parses_detailed_playlog(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
 
     aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/playlog/sendPlaylogDetail",
+        "https://chunithm-net-eng.com/mobile/record/playlog/sendPlaylogDetail/",
         status=302,
         headers={
-            "Location": "https://chunithm-net-eng.com/mobile/record/playlogDetail"
+            "Location": "https://chunithm-net-eng.com/mobile/record/playlogDetail/"
         },
     )
 
     with (BASE_DIR / "assets" / "playlog_detail.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/playlogDetail",
+            "https://chunithm-net-eng.com/mobile/record/playlogDetail/",
             status=200,
             body=f.read(),
         )
@@ -604,20 +604,20 @@ async def test_client_parses_music_record(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
 
     aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/musicGenre/sendMusicDetail",
+        "https://chunithm-net-eng.com/mobile/record/musicGenre/sendMusicDetail/",
         status=302,
-        headers={"Location": "https://chunithm-net-eng.com/mobile/record/musicDetail"},
+        headers={"Location": "https://chunithm-net-eng.com/mobile/record/musicDetail/"},
     )
 
     with (BASE_DIR / "assets" / "music_record.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/musicDetail",
+            "https://chunithm-net-eng.com/mobile/record/musicDetail/",
             status=200,
             body=f.read(),
         )
@@ -667,22 +667,22 @@ async def test_clients_parses_we_music_record(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
 
     aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/worldsEndList/sendWorldsEndDetail",
+        "https://chunithm-net-eng.com/mobile/record/worldsEndList/sendWorldsEndDetail/",
         status=302,
         headers={
-            "Location": "https://chunithm-net-eng.com/mobile/record/worldsEndDetail"
+            "Location": "https://chunithm-net-eng.com/mobile/record/worldsEndDetail/"
         },
     )
 
     with (BASE_DIR / "assets" / "worlds_end_music_record.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/worldsEndDetail",
+            "https://chunithm-net-eng.com/mobile/record/worldsEndDetail/",
             status=200,
             body=f.read(),
         )
@@ -725,21 +725,21 @@ async def test_client_parses_music_for_rating(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
         )
 
     with (BASE_DIR / "assets" / "best30.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailBest",
+            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailBest/",
             status=200,
             body=f.read(),
         )
 
     with (BASE_DIR / "assets" / "recent10.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailRecent",
+            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailRecent/",
             status=200,
             body=f.read(),
         )
@@ -777,7 +777,7 @@ async def test_client_parses_music_record_by_folder(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
             repeat=True,
@@ -785,7 +785,7 @@ async def test_client_parses_music_record_by_folder(
 
     with (BASE_DIR / "assets" / "music_record_by_level_folder.html").open("rb") as f:
         aioresponses.post(
-            "https://chunithm-net-eng.com/mobile/record/musicLevel/sendSearch",
+            "https://chunithm-net-eng.com/mobile/record/musicLevel/sendSearch/",
             status=200,
             body=f.read(),
         )
@@ -820,14 +820,14 @@ async def test_client_can_rename(
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
         aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home",
+            "https://chunithm-net-eng.com/mobile/home/",
             status=200,
             body=f.read(),
             repeat=True,
         )
 
     aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/home/userOption/updateUserName/update",
+        "https://chunithm-net-eng.com/mobile/home/userOption/updateUserName/update/",
         status=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/home/userOption/"},
     )
