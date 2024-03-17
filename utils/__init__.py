@@ -123,11 +123,7 @@ def sdvxin_link(view: "SdvxinChartView") -> str:
 
 
 def get_jacket_url(song: "Song") -> str:
-    return (
-        f"{INTERNATIONAL_JACKET_BASE}/{song.jacket}"
-        if song.international_only
-        else f"{JACKET_BASE}/{song.jacket}"
-    )
+    return f"{INTERNATIONAL_JACKET_BASE}/{song.jacket}"
 
 
 def release_to_chunithm_version(date: datetime) -> str:

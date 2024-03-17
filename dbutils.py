@@ -527,7 +527,6 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
             "jacket": jacket,
             "zetaraku_jacket": zetaraku_jacket,
-            "international_only": 0,
         }
 
         if inserted_song["bpm"] is None and zetaraku_song is not None:
