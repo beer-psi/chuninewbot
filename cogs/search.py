@@ -192,8 +192,13 @@ class SearchCog(commands.Cog, name="Search"):
             )
 
         await self.utils._reload_alias_cache()
+
+        alias = "an alias"
+        if global_alias:
+            alias = "a global alias"
+
         await ctx.reply(
-            f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
+            f"Added **{emd(added_alias)}** as {alias} for **{emd(song_title_or_alias)}**.",
             mention_author=False,
         )
         return None
