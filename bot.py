@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import functools
 import importlib.util
 import logging
 import logging.handlers
@@ -12,7 +13,7 @@ import discord
 import sqlalchemy.event
 from aiohttp import web
 from discord.ext import commands
-from jarowinkler import jarowinkler_similarity
+from rapidfuzz import fuzz, utils
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -65,7 +66,11 @@ class ChuniBot(commands.Bot):
 
         def setup_database(conn, _):
             conn.execute("PRAGMA journal_mode=WAL")
-            conn.create_function("jwsim", 2, jarowinkler_similarity)
+            conn.create_function(
+                "fuzz_qratio",
+                2,
+                functools.partial(fuzz.QRatio, processor=utils.default_process),
+            )
 
         sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)
 

@@ -27,9 +27,7 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
         if interaction.guild is not None:
             condition |= Alias.guild_id == interaction.guild.id
 
-        song_query = select(Song.title, Song.title.label("alias")).where(
-            Song.id < 8000
-        )
+        song_query = select(Song.title, Song.title.label("alias")).where(Song.id < 8000)
         aliases_query = (
             select(
                 Song.title,
@@ -41,7 +39,9 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
 
         subquery = song_query.union_all(aliases_query).subquery()
 
-        sim_col = func.jwsim(func.lower(subquery.c.alias), current.lower()).label("sim")
+        sim_col = func.fuzz_qratio(func.lower(subquery.c.alias), current.lower()).label(
+            "sim"
+        )
         stmt = (
             select(
                 subquery.c.title,

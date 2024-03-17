@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord.ext import commands
-from jarowinkler import jarowinkler_similarity
+from rapidfuzz import fuzz, utils
 from sqlalchemy import (
     BigInteger,
     ColumnElement,
@@ -61,12 +61,12 @@ class Song(Base):
 
     @hybrid_method
     def similarity(self, search: str) -> float:
-        return jarowinkler_similarity(self.title.lower(), search.lower())
+        return fuzz.QRatio(search, self.title, processor=utils.default_process)
 
     @similarity.inplace.expression
     @classmethod
     def _similarity_expr(cls, search: str) -> ColumnElement[float]:
-        return type_coerce(func.jwsim(func.lower(cls.title), search.lower()), Float)
+        return type_coerce(func.fuzz_qratio(search, cls.title), Float)
 
     def raise_if_not_available(self):
         if not self.available:
@@ -139,12 +139,12 @@ class Alias(Base):
 
     @hybrid_method
     def similarity(self, search: str) -> float:
-        return jarowinkler_similarity(self.alias.lower(), search.lower())
+        return fuzz.QRatio(search, self.alias, processor=utils.default_process)
 
     @similarity.inplace.expression
     @classmethod
     def _similarity_expr(cls, search: str) -> ColumnElement[float]:
-        return type_coerce(func.jwsim(func.lower(cls.alias), search.lower()), Float)
+        return type_coerce(func.fuzz_qratio(search, cls.alias), Float)
 
 
 class Prefix(Base):
