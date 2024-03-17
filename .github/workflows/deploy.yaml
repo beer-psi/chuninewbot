@@ -34,6 +34,9 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
+      
+      - name: Run type checking
+        run: poetry run basedpyright
 
       - name: Run tests
         run: poetry run pytest -v
