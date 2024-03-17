@@ -61,7 +61,7 @@ class Song(Base):
 
     @hybrid_method
     def similarity(self, search: str) -> float:
-        return fuzz.QRatio(search, self.title, processor=utils.default_process)
+        return fuzz.QRatio(search, self.title, processor=str.lower)
 
     @similarity.inplace.expression
     @classmethod
@@ -139,7 +139,7 @@ class Alias(Base):
 
     @hybrid_method
     def similarity(self, search: str) -> float:
-        return fuzz.QRatio(search, self.alias, processor=utils.default_process)
+        return fuzz.QRatio(search, self.alias, processor=str.lower)
 
     @similarity.inplace.expression
     @classmethod

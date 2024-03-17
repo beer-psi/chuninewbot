@@ -13,7 +13,7 @@ import discord
 import sqlalchemy.event
 from aiohttp import web
 from discord.ext import commands
-from rapidfuzz import fuzz, utils
+from rapidfuzz import fuzz
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -69,7 +69,7 @@ class ChuniBot(commands.Bot):
             conn.create_function(
                 "fuzz_qratio",
                 2,
-                functools.partial(fuzz.QRatio, processor=utils.default_process),
+                functools.partial(fuzz.QRatio, processor=str.lower),
             )
 
         sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)

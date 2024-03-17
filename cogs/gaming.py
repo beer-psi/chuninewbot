@@ -10,7 +10,7 @@ from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
 from PIL import Image
-from rapidfuzz import fuzz, utils
+from rapidfuzz import fuzz
 from sqlalchemy import delete, select, text
 
 from database.models import Alias, GuessScore, Song
@@ -101,7 +101,7 @@ class GamingCog(commands.Cog, name="Games"):
                 m.channel == ctx.channel
                 and max(
                     [
-                        fuzz.QRatio(m.content, alias, processor=utils.default_process)
+                        fuzz.QRatio(m.content, alias, processor=str.lower)
                         for alias in aliases
                     ]
                 )

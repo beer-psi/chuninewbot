@@ -271,7 +271,7 @@ class UtilsCog(commands.Cog, name="Utils"):
             query,
             [x.alias for x in aliases],
             scorer=fuzz.QRatio,
-            processor=utils.default_process,
+            processor=str.lower,
         )
         matching_alias = aliases[index]
 
