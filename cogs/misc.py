@@ -139,6 +139,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         embed.add_field(
             name="Version",
             value=revision + (f" ({version_name})" if version_name else ""),
+            inline=False,
         )
         embed.add_field(
             name="Python",
@@ -151,6 +152,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         embed.add_field(name="Uptime", value=f"<t:{int(self.bot.launch_time)}:R>")
         embed.add_field(name="Total servers", value=len(self.bot.guilds))
         embed.add_field(name="Total users", value=str(users))
+        embed.add_field(name="\u200B", value="\u200B")
 
         await ctx.reply(embed=embed, mention_author=False)
 
