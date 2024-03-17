@@ -213,7 +213,7 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
             "https://github.com/TNG-dev/Tachi/raw/staging/database-seeds/collections/songs-chunithm.json"
         )
         aliases = [x.split("\t") for x in (await resp.text()).splitlines()]
-        tachi_songs = await tachi_resp.json(loads=json_loads)
+        tachi_songs = await tachi_resp.json(loads=json_loads, content_type=None)
 
         inserted_aliases = []
         for alias in aliases:
