@@ -662,6 +662,12 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 inserted_charts.append(inserted_chart)
 
         if (chart := song["data"].get("WE")) is not None:
+            if len(chunithm_song["we_star"]) < 1:
+                logger.warning(
+                    f"matching chunithm_song is not a world's end song: {chunithm_song}"
+                )
+                continue
+
             we_stars = ""
             for _ in range(-1, int(chunithm_song["we_star"]), 2):
                 we_stars += "☆"
