@@ -81,6 +81,7 @@ class Song(Base):
 
 class SongJacket(Base):
     __tablename__ = "song_jackets"
+    __table_args__ = (UniqueConstraint("jacket_url", name="_jacket_url_uc"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     song_id: Mapped[int] = mapped_column(
