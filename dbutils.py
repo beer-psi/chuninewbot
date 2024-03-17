@@ -495,7 +495,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             jacket = chunithm_song["image"]
         except StopIteration:
             logger.warning(f"Couldn't find {song['meta']}")
-            return
+            continue
 
         if not jacket:
             chunithm_song = next(
