@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
@@ -133,8 +134,9 @@ class ProfileCog(commands.Cog, name="Profile"):
             avatar_urls = basic_data.avatar
 
             async def task(url):
-                async with client.session.get(url) as resp:
-                    return await resp.read()
+                resp = await client.session.get(url)
+                async with contextlib.aclosing(resp) as resp:
+                    return await resp.aread()
 
             tasks = [
                 task(avatar_urls.base),

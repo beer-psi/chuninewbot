@@ -1,7 +1,7 @@
 import contextlib
 import decimal
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -44,8 +44,12 @@ class asuppress(contextlib.AbstractAsyncContextManager):
     async def __aenter__(self):
         pass
 
+    # Pyright is stupid on this one.
     async def __aexit__(
-        self, exctype: type[BaseException] | None, __exc_value, __traceback
+        self,
+        exctype: type[BaseException] | None,
+        __exc_value,  # type: ignore[reportGeneralTypeIssues]
+        __traceback,  # type: ignore[reportGeneralTypeIssues]
     ) -> Optional[bool]:
         return exctype is not None and issubclass(exctype, self._exceptions)
 

@@ -45,7 +45,6 @@ class RecentRecordsView(PaginationView):
         self.chuni_client_manager = chuni_client_manager
 
         self.userinfo = userinfo
-        self.page = 0
         self.max_index = len(self.items) - 1
 
         self.utils: "UtilsCog" = bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]

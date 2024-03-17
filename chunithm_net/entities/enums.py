@@ -253,7 +253,7 @@ class Genres(Enum):
     IRODORIMIDORI = 7
     GEKIMAI = 9
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.value == 99:
             return "All genres"
         if self.value == 0:
@@ -270,4 +270,6 @@ class Genres(Enum):
             return "イロドリミドリ"
         if self.value == 9:
             return "ゲキマイ"
-        return None
+
+        msg = f"Unknown genre ID: {self.value}"
+        raise ValueError(msg)

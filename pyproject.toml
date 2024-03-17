@@ -4,6 +4,7 @@ version = "0.2.1"
 description = ""
 authors = ["beerpiss <lacvtg.a1.2023@gmail.com>"]
 license = "0BSD"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"

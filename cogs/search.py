@@ -113,6 +113,14 @@ class SearchCog(commands.Cog, name="Search"):
             msg = "You are not allowed to add global aliases."
             raise commands.CheckFailure(msg)
 
+        if global_alias:
+            guild_id = -1
+        elif ctx.guild is not None:
+            guild_id = ctx.guild.id
+        else:
+            msg = "ctx.guild == None and global_alias == True"
+            raise RuntimeError(msg)
+
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             stmt = (
                 select(Song)
@@ -154,7 +162,7 @@ class SearchCog(commands.Cog, name="Search"):
                     select(Alias)
                     .where(
                         (func.lower(Alias.alias) == func.lower(added_alias))
-                        & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
+                        & ((Alias.guild_id == -1) | (Alias.guild_id == guild_id))
                     )
                     .options(joinedload(Alias.song))
                 )
@@ -180,7 +188,7 @@ class SearchCog(commands.Cog, name="Search"):
 
                 if not global_alias:
                     condition = condition & (
-                        (Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id)
+                        (Alias.guild_id == -1) | (Alias.guild_id == guild_id)
                     )
 
                 stmt = select(Alias).where(condition).options(joinedload(Alias.song))
@@ -195,7 +203,7 @@ class SearchCog(commands.Cog, name="Search"):
             session.add(
                 Alias(
                     alias=added_alias,
-                    guild_id=-1 if global_alias else ctx.guild.id,
+                    guild_id=guild_id,
                     song_id=song.id,
                     owner_id=None if global_alias else ctx.author.id,
                 )
@@ -231,7 +239,7 @@ class SearchCog(commands.Cog, name="Search"):
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             condition = func.lower(Alias.alias) == func.lower(removed_alias)
 
-            if not is_alias_manager:
+            if not is_alias_manager and ctx.guild is not None:
                 condition = condition & (Alias.guild_id == ctx.guild.id)
 
             stmt = select(Alias).where(condition)

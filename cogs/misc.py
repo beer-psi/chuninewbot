@@ -82,6 +82,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def invite(self, ctx: Context):
         """Invite this bot to your server!"""
 
+        if self.bot.user is None:
+            msg = "The bot is not logged in."
+            raise commands.CommandError(msg)
+
         permissions = discord.Permissions(
             read_messages=True,
             send_messages=True,

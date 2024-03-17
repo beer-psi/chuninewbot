@@ -152,6 +152,22 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "we_star": "7",
         "image": "43bd6cbc31e4c02c.jpg",
     },
+    "1ce51015f2293d1a": {
+        "id": "8281",
+        "catname": "ORIGINAL",
+        "title": "Parad'ox",
+        "we_kanji": "狂",
+        "we_star": "9",
+        "image": "",
+    },
+    "67be895064262b87": {
+        "id": "8282",
+        "catname": "ORIGINAL",
+        "title": "otorii INNOVATED -[i]3-",
+        "we_kanji": "狂",
+        "we_star": "9",
+        "image": "",
+    },
 }
 for idx, random in enumerate(
     # Random WE, A through F
@@ -729,7 +745,9 @@ async def update_cc_from_data(
                 .where(Song.id == chunithm_id)
                 .options(joinedload(Song.charts))
             )
-            song: Song = (await session.execute(stmt)).unique().scalar_one_or_none()
+            song: Song | None = (
+                (await session.execute(stmt)).unique().scalar_one_or_none()
+            )
 
             if song is None:
                 logger.warning(f"Could not find song with chunithm_id {chunithm_id}")

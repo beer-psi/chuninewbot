@@ -91,7 +91,7 @@ class ScoreCardEmbed(discord.Embed):
             )
 
         if isinstance(record, (AnnotatedRecentRecord, AnnotatedDetailedRecentRecord)):
-            self.timestamp = record.date
+            self._timestamp = record.date
 
             self.set_author(name=f"TRACK {record.track}")
             self.description = (

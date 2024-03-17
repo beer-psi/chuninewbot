@@ -98,7 +98,9 @@ class EventsCog(commands.Cog, name="Events"):
 
         if embed.description is not None:
             return await ctx.reply(
-                embed=embed, mention_author=False, delete_after=delete_after
+                embed=embed,
+                mention_author=False,
+                delete_after=delete_after,  # type: ignore[reportCallIssue, reportArgumentType]
             )
 
         logger.error("Exception in command %s", ctx.command, exc_info=exc)

@@ -1,3 +1,5 @@
+# type: ignore  # noqa: PGH003
+
 """Discord argument parsing library.
 
 This module is a patch of the original argparse module, modifications being:
