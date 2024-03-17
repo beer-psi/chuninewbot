@@ -227,7 +227,12 @@ class UtilsCog(commands.Cog, name="Utils"):
             if worlds_end:
                 stmt = stmt.where(Song.genre == "WORLD'S END")
 
-            song, similarity = (await session.execute(stmt)).one()
+            result = (await session.execute(stmt)).one_or_none()
+
+            if result is None:
+                return None, None, 0.0
+
+            song, similarity = result
 
             # similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
             alias: Alias | None = None
