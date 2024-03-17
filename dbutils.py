@@ -257,12 +257,12 @@ async def update_aliases(async_session: async_sessionmaker[AsyncSession]):
                 ]
             )
 
-        insert_statement = insert(Alias).values(inserted_aliases)
+        insert_statement = insert(Alias)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Alias.alias, Alias.guild_id],
             set_={"song_id": insert_statement.excluded.song_id},
         )
-        await session.execute(upsert_statement)
+        await session.execute(upsert_statement, inserted_aliases)
 
 
 async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
@@ -456,8 +456,8 @@ async def update_sdvxin(async_session: async_sessionmaker[AsyncSession]):
                             }
                         )
 
-        stmt = insert(SdvxinChartView).values(inserted_data).on_conflict_do_nothing()
-        await session.execute(stmt)
+        stmt = insert(SdvxinChartView).on_conflict_do_nothing()
+        await session.execute(stmt, inserted_data)
 
 
 async def update_db(async_session: async_sessionmaker[AsyncSession]):
@@ -688,7 +688,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             )
 
     async with async_session() as session, session.begin():
-        insert_statement = insert(Song).values(inserted_songs)
+        insert_statement = insert(Song)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Song.id],
             set_={
@@ -703,9 +703,9 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "removed": insert_statement.excluded.removed,
             },
         )
-        await session.execute(upsert_statement)
+        await session.execute(upsert_statement, inserted_songs)
 
-        insert_statement = insert(Chart).values(inserted_charts)
+        insert_statement = insert(Chart)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[Chart.song_id, Chart.difficulty],
             set_={
@@ -724,16 +724,16 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 ),
             },
         )
-        await session.execute(upsert_statement)
+        await session.execute(upsert_statement, inserted_charts)
 
-        insert_statement = insert(SongJacket).values(inserted_jackets)
+        insert_statement = insert(SongJacket)
         upsert_statement = insert_statement.on_conflict_do_update(
             index_elements=[SongJacket.jacket_url],
             set_={
                 "song_id": insert_statement.excluded.song_id,
             },
         )
-        await session.execute(upsert_statement)
+        await session.execute(upsert_statement, inserted_jackets)
 
 
 async def update_cc_from_data(
