@@ -238,7 +238,8 @@ class SearchCog(commands.Cog, name="Search"):
                 raise commands.BadArgument(msg)
 
             if (
-                alias.guild_id != -1
+                not is_alias_manager
+                and alias.guild_id != -1
                 and alias.owner_id != ctx.author.id
                 and not (
                     isinstance(ctx.author, discord.Member)
@@ -255,6 +256,55 @@ class SearchCog(commands.Cog, name="Search"):
             f"Removed {'global ' if alias.guild_id == -1 else ''}alias **{emd(removed_alias)}**.",
             mention_author=False,
         )
+
+    @commands.hybrid_command("listalias")
+    async def listalias(self, ctx: Context, *, query: str):
+        """List aliases for a given song
+
+        Parameters
+        ----------
+        query: str
+            The song to get aliases for. You don't have to be exact; this works
+            the same way as `c>info`.
+        """
+        guild_id = ctx.guild.id if ctx.guild is not None else None
+        song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
+
+        if song is None or similarity < 90:
+            return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
+
+        async with self.bot.begin_db_session() as session:
+            stmt = select(Alias).where(Alias.song_id == song.id)
+            aliases = (await session.execute(stmt)).scalars().all()
+
+        embed = discord.Embed(
+            title=f"Aliases for {song.title}",
+            color=discord.Color.yellow(),
+        )
+        embed.description = ""
+        global_aliases = [x.alias for x in aliases if x.guild_id == -1]
+
+        if len(global_aliases) > 0:
+            embed.description += (
+                "**Global aliases:**\n"
+                f"{', '.join([x.alias for x in aliases if x.guild_id == -1])}"
+            )
+
+        if ctx.guild is not None:
+            local_aliases = [x.alias for x in aliases if x.guild_id == ctx.guild.id]
+
+            if len(local_aliases) > 0:
+                embed.description += (
+                    "\n\n"
+                    "**Local aliases:**\n"
+                    f"{', '.join([x.alias for x in aliases if x.guild_id == ctx.guild.id])}"
+                )
+
+        embed.description = embed.description.strip()
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+        return None
 
     async def song_title_autocomplete(
         self,
