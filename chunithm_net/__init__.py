@@ -1,14 +1,11 @@
 from http.cookiejar import CookieJar
-from http import HTTPStatus
 from typing import TYPE_CHECKING, Optional
 
 import httpx
 from bs4 import BeautifulSoup
-from yarl import URL
 
 from ._bs4 import BS4_FEATURE
 from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
-from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
 from .entities.enums import Difficulty, Genres, Rank
 from .entities.record import DetailedParams, MusicRecord, RecentRecord, Record
 from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException

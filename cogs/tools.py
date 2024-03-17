@@ -19,6 +19,7 @@ from utils.calculation.overpower import (
 )
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
 from utils.components import ChartCardEmbed
+from utils.constants import SIMILARITY_THRESHOLD
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -331,7 +332,7 @@ class ToolsCog(commands.Cog, name="Tools"):
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id, worlds_end=False
             )
-            if song is None or similarity < 65:
+            if song is None or similarity < SIMILARITY_THRESHOLD:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

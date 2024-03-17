@@ -18,6 +18,7 @@ from database.models import SongJacket
 from utils import did_you_mean_text, shlex_split
 from utils.argparse import DiscordArguments
 from utils.components import ScoreCardEmbed
+from utils.constants import SIMILARITY_THRESHOLD
 from utils.views import B30View, CompareView, RecentRecordsView, SelectToCompareView
 
 if TYPE_CHECKING:
@@ -272,7 +273,7 @@ class RecordsCog(commands.Cog, name="Records"):
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id, worlds_end=args.worlds_end
             )
-            if song is None or similarity < 65:
+            if song is None or similarity < SIMILARITY_THRESHOLD:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

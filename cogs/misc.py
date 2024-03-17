@@ -1,10 +1,12 @@
 import asyncio
 import platform
 import time
+from pathlib import Path
 from random import random
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
+import tomllib
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 from discord.utils import oauth_url
@@ -12,6 +14,7 @@ from sqlalchemy import delete, func, select
 
 from database.models import Cookie, Prefix
 from utils.config import config
+from utils.constants import VERSION_NAMES
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -87,7 +90,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             read_message_history=True,
         )
 
-        await ctx.reply(oauth_url(self.bot.user.id, permissions=permissions), mention_author=False)  # type: ignore[reportGeneralTypeIssues]
+        await ctx.reply(
+            oauth_url(self.bot.user.id, permissions=permissions), mention_author=False
+        )  # type: ignore[reportGeneralTypeIssues]
 
     @commands.hybrid_command("botinfo")
     async def botinfo(self, ctx: Context):
@@ -119,16 +124,22 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
             # vX.Y.Z-n-gHASH
             if "-" in revision:
-                revision = "-".join(revision.split("-")[:2])
+                revision = revision.rsplit("-", 1)[0]
         except FileNotFoundError:
             revision = "unknown"
-        if not revision:
-            revision = "unknown"
+
+        if not revision or revision == "unknown":
+            revision = await asyncio.to_thread(_get_version_from_pyproject)
+
+        version_name = VERSION_NAMES.get(revision.split("-", 1)[0])
 
         async with self.bot.begin_db_session() as session:
             users = await session.scalar(select(func.count()).select_from(Cookie))
 
-        embed.add_field(name="Version", value=revision)
+        embed.add_field(
+            name="Version",
+            value=revision + (f" ({version_name})" if version_name else ""),
+        )
         embed.add_field(
             name="Python",
             value=f"[{platform.python_version()}](https://www.python.org/)",
@@ -219,3 +230,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
 async def setup(bot: "ChuniBot") -> None:
     await bot.add_cog(MiscCog(bot))
+
+
+def _get_version_from_pyproject() -> str:
+    with Path("pyproject.toml").open("rb") as f:
+        pyproject = tomllib.load(f)
+
+    return "v" + pyproject["tool"]["poetry"]["version"]

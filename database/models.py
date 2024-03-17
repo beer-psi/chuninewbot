@@ -1,7 +1,7 @@
 from typing import Optional
 
 from discord.ext import commands
-from rapidfuzz import fuzz, utils
+from rapidfuzz import fuzz
 from sqlalchemy import (
     BigInteger,
     ColumnElement,

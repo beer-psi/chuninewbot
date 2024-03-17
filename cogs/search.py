@@ -21,6 +21,7 @@ from utils import (
     yt_search_link,
 )
 from utils.config import config
+from utils.constants import SIMILARITY_THRESHOLD
 from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
@@ -279,7 +280,7 @@ class SearchCog(commands.Cog, name="Search"):
         guild_id = ctx.guild.id if ctx.guild is not None else None
         song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
 
-        if song is None or similarity < 65:
+        if song is None or similarity < SIMILARITY_THRESHOLD:
             return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
 
         async with self.bot.begin_db_session() as session:
@@ -373,7 +374,7 @@ class SearchCog(commands.Cog, name="Search"):
                 query, guild_id=guild_id, worlds_end=args.worlds_end
             )
 
-            if song is None or similarity < 65:
+            if song is None or similarity < SIMILARITY_THRESHOLD:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

@@ -2381,4 +2381,4 @@ speedups = ["aiodns", "brotli", "faust-cchardet", "lxml", "orjson", "uvloop", "w
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e7e61a822c6bee9514673e97c0e323b1141174d58fefbdd06bd22d24ba9365da"
+content-hash = "5481de6c0a96e1e140878b916167762ed80db545dc53932b6d0c55901a2c178d"
