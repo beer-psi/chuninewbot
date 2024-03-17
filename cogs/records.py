@@ -102,9 +102,12 @@ class RecordsCog(commands.Cog, name="Records"):
                 ]
                 message = messages[0]
 
-            thumbnail_urls = [
-                e.thumbnail.url for e in message.embeds if e.thumbnail.url is not None
-            ]
+            thumbnail_urls = []
+            for e in message.embeds:
+                if e.thumbnail.url is not None:
+                    thumbnail_urls.append(e.thumbnail.url)
+                elif e.image.url is not None:
+                    thumbnail_urls.append(e.image.url)
 
             if len(thumbnail_urls) == 0:
                 msg = "The message replied to does not contain any charts/scores."
@@ -145,7 +148,9 @@ class RecordsCog(commands.Cog, name="Records"):
                 song = jacket.song
 
             embed = next(
-                x for x in message.embeds if x.thumbnail.url == jacket.jacket_url
+                x
+                for x in message.embeds
+                if jacket.jacket_url in {e.thumbnail.url, e.image.url}
             )
             userinfo = await client.authenticate()
             records = await client.music_record(song.id)
