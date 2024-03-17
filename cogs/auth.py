@@ -84,7 +84,7 @@ class AuthCog(commands.Cog, name="Auth"):
 
         async with self.bot.begin_db_session() as session, session.begin():
             await session.merge(
-                Cookie(discord_id=id, cookie=f"#LWP-Cookie-2.0\n{jar.as_lwp_str()}")
+                Cookie(discord_id=id, cookie=f"#LWP-Cookies-2.0\n{jar.as_lwp_str()}")
             )
             return None
 
