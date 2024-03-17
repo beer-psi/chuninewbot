@@ -23,7 +23,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import joinedload
 
-from database.models import Alias, Base, Chart, SdvxinChartView, Song
+from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
+from database.models import Alias, Base, Chart, SdvxinChartView, Song, SongJacket
 from utils import json_loads
 from utils.config import config
 from utils.logging import setup_logging
@@ -84,6 +85,7 @@ class ZetarakuSheet(TypedDict):
     internalLevelValue: float
     noteDesigner: Optional[str]
     noteCounts: ZetarakuNoteCounts
+    regions: dict[str, str]
 
 
 class ZetarakuSong(TypedDict):
@@ -448,17 +450,22 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         chuni_resp = await client.get(
             "https://chunithm.sega.jp/storage/json/music.json"
         )
+        maimai_resp = await client.get(
+            "https://maimai.sega.jp/data/maimai_songs.json",
+        )
         zetaraku_resp = await client.get(
             "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/data.json"
         )
         songs: list[ChunirecSong] = await resp.json(loads=json_loads)
         chuni_songs: list[dict[str, str]] = await chuni_resp.json(loads=json_loads)
+        maimai_songs: list[dict[str, str]] = await maimai_resp.json(loads=json_loads)
         zetaraku_songs: ZetarakuChunithmData = await zetaraku_resp.json(
             loads=json_loads
         )
 
     inserted_songs = []
     inserted_charts = []
+    inserted_jackets = []
     for song in songs:
         chunithm_id = -1
         chunithm_catcode = -1
@@ -512,10 +519,14 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             ),
             None,
         )
-        zetaraku_jacket = (
-            zetaraku_song["imageName"] if zetaraku_song is not None else ""
+        maimai_song = next(
+            (
+                x
+                for x in maimai_songs
+                if normalize_title(x["title"]) == normalize_title(song["meta"]["title"])
+            ),
+            None,
         )
-
         inserted_song = {
             "id": chunithm_id,
             # Don't use song["meta"]["title"]
@@ -526,13 +537,48 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             "release": song["meta"]["release"],
             "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
             "jacket": jacket,
-            "zetaraku_jacket": zetaraku_jacket,
+            "available": (
+                int(zetaraku_song["sheets"][0]["regions"].get("intl", False))
+                if zetaraku_song is not None and len(zetaraku_song["sheets"]) > 1
+                else 0
+            ),
+            "removed": (
+                int(zetaraku_song["sheets"][0]["regions"].get("jp", False))
+                if zetaraku_song is not None and len(zetaraku_song["sheets"]) > 1
+                else 0
+            ),
         }
 
         if inserted_song["bpm"] is None and zetaraku_song is not None:
             inserted_song["bpm"] = zetaraku_song["bpm"]
 
         inserted_songs.append(inserted_song)
+        inserted_jackets.append(
+            {"song_id": chunithm_id, "jacket_url": f"{JACKET_BASE}/{jacket}"}
+        )
+        inserted_jackets.append(
+            {
+                "song_id": chunithm_id,
+                "jacket_url": f"{INTERNATIONAL_JACKET_BASE}/{jacket}",
+            }
+        )
+        if maimai_song is not None:
+            inserted_jackets.extend(
+                [
+                    {
+                        "song_id": chunithm_id,
+                        "jacket_url": f"https://{domain}/maimai-mobile/img/Music/{maimai_song['image_url']}",
+                    }
+                    for domain in {"maimaidx-eng.com", "maimaidx.jp"}
+                ]
+            )
+        if zetaraku_song is not None:
+            inserted_jackets.append(
+                {
+                    "song_id": chunithm_id,
+                    "jacket_url": f"https://dp4p6x0xfi5o9.cloudfront.net/chunithm/img/cover/{zetaraku_song['imageName']}",
+                }
+            )
 
         for difficulty in ["BAS", "ADV", "EXP", "MAS", "ULT"]:
             if (chart := song["data"].get(difficulty)) is not None:
@@ -624,9 +670,8 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "release": insert_statement.excluded.release,
                 "bpm": func.coalesce(insert_statement.excluded.bpm, Song.bpm),
                 "jacket": func.coalesce(insert_statement.excluded.jacket, Song.jacket),
-                "zetaraku_jacket": func.coalesce(
-                    insert_statement.excluded.zetaraku_jacket, Song.zetaraku_jacket
-                ),
+                "available": insert_statement.excluded.available,
+                "removed": insert_statement.excluded.removed,
             },
         )
         await session.execute(upsert_statement)
@@ -648,6 +693,15 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "charter": func.coalesce(
                     insert_statement.excluded.charter, Chart.charter
                 ),
+            },
+        )
+        await session.execute(upsert_statement)
+
+        insert_statement = insert(SongJacket).values(inserted_jackets)
+        upsert_statement = insert_statement.on_conflict_do_update(
+            index_elements=[SongJacket.jacket_url],
+            set_={
+                "song_id": insert_statement.excluded.song_id,
             },
         )
         await session.execute(upsert_statement)
