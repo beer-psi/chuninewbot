@@ -543,7 +543,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 else 0
             ),
             "removed": (
-                int(zetaraku_song["sheets"][0]["regions"].get("jp", False))
+                int(not zetaraku_song["sheets"][0]["regions"].get("jp", False))
                 if zetaraku_song is not None and len(zetaraku_song["sheets"]) > 1
                 else 0
             ),
