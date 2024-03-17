@@ -125,10 +125,16 @@ class SearchCog(commands.Cog, name="Search"):
                 raise commands.BadArgument(msg)
 
             if global_alias:
-                stmt = select(Alias).where(
-                    func.lower(Alias.alias) == func.lower(added_alias)
+                stmt = (
+                    select(Alias)
+                    .where(func.lower(Alias.alias) == func.lower(added_alias))
+                    .options(joinedload(Alias.song))
                 )
                 aliases = (await session.execute(stmt)).scalars().all()
+
+                if len(aliases) > 0 and aliases[0].guild_id == -1:
+                    msg = f"**{emd(added_alias)}** already exists (global alias for **{emd(aliases[0].song.title)}**)"
+                    raise commands.BadArgument(msg)
 
                 if len(aliases) > 0 and aliases[0].guild_id != -1:
                     aliases[0].guild_id = -1
