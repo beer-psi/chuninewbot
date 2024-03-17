@@ -150,7 +150,7 @@ class RecordsCog(commands.Cog, name="Records"):
             embed = next(
                 x
                 for x in message.embeds
-                if jacket.jacket_url in {e.thumbnail.url, e.image.url}
+                if jacket.jacket_url in {x.thumbnail.url, x.image.url}
             )
             userinfo = await client.authenticate()
             records = await client.music_record(song.id)
