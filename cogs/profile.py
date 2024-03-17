@@ -189,8 +189,11 @@ class ProfileCog(commands.Cog, name="Profile"):
                 f"▸ **Level**: {level}\n"
                 f"▸ **Rating**: {player_data.rating.current:.2f} (MAX {player_data.rating.max:.2f})\n"
                 f"▸ **OVER POWER**: {player_data.overpower.value:.2f} ({player_data.overpower.progress * 100:.2f}%)\n"
-                f"▸ **Playcount**: {player_data.playcount}\n"
+                f"▸ **Plays**: {player_data.playcount}\n"
             )
+
+            if player_data.last_play_date:
+                description += f"▸ **Last played**: <t:{int(player_data.last_play_date.timestamp())}:f>\n"
 
             embed = (
                 discord.Embed(
@@ -214,7 +217,7 @@ class ProfileCog(commands.Cog, name="Profile"):
 
     @commands.hybrid_command(name="rename")
     async def rename(self, ctx: Context, *, new_name: str):
-        """Use magical power to change your IGN.
+        """Use magical powers to change your IGN.
 
         Please note that this will change the actual display name of your CHUNITHM account.
 
