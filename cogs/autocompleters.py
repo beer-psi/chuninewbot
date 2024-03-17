@@ -47,7 +47,7 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
                 subquery.c.title,
                 func.max(sim_col),
             )
-            .where(sim_col > 0.7)
+            .where(sim_col > 70)
             .group_by(subquery.c.title)
             .order_by(sim_col.desc())
             .limit(25)

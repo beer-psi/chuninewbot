@@ -258,7 +258,7 @@ class SearchCog(commands.Cog, name="Search"):
                 query, guild_id=guild_id, worlds_end=args.worlds_end
             )
 
-            if song is None or similarity < 0.9:
+            if song is None or similarity < 90:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

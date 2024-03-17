@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
-from jarowinkler import jarowinkler_similarity
 from sqlalchemy import select, text, update
+from sqlalchemy.orm import joinedload
 
 from chunithm_net import ChuniNet
 from chunithm_net.entities.enums import Rank
@@ -39,6 +39,31 @@ if TYPE_CHECKING:
 class UtilsCog(commands.Cog, name="Utils"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
+        self.alias_cache = []
+
+    async def cog_load(self) -> None:
+        await self._populate_alias_cache()
+
+    async def _populate_alias_cache(self) -> None:
+        async with self.bot.begin_db_session() as session:
+            sql = select(Song).options(joinedload(Song.aliases))
+            results = (await session.execute(sql)).scalars().all()
+
+        self.alias_cache.clear()
+
+        for song in results:
+            self.alias_cache.append(
+                {"alias": song.title, "guild_id": -1, "song_id": song.id}
+            )
+
+            for alias in song.aliases:
+                self.alias_cache.append(
+                    {
+                        "alias": alias.alias,
+                        "guild_id": alias.guild_id,
+                        "song_id": alias.song_id,
+                    }
+                )
 
     async def guild_prefix(self, ctx: Context) -> str:
         default_prefix: str = config.bot.default_prefix
@@ -216,7 +241,6 @@ class UtilsCog(commands.Cog, name="Utils"):
         tuple[Song, Alias | None, float]
             The third item is the similarity of the matched song.
         """
-        query = query.lower()
         async with self.bot.begin_db_session() as session:
             stmt = (
                 select(Song, Song.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
@@ -236,7 +260,7 @@ class UtilsCog(commands.Cog, name="Utils"):
 
             # similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
             alias: Alias | None = None
-            if similarity < 0.9:
+            if similarity < 90:
                 guild_ids = [-1]
                 if guild_id is not None:
                     guild_ids.append(guild_id)

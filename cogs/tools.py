@@ -331,7 +331,7 @@ class ToolsCog(commands.Cog, name="Tools"):
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id, worlds_end=False
             )
-            if song is None or similarity < 0.9:
+            if song is None or similarity < 90:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )
@@ -360,7 +360,9 @@ class ToolsCog(commands.Cog, name="Tools"):
                 )
                 return None
 
-            await ctx.reply(embed=ChartCardEmbed(chart, border=True), mention_author=False)
+            await ctx.reply(
+                embed=ChartCardEmbed(chart, border=True), mention_author=False
+            )
             return None
 
 
