@@ -272,7 +272,7 @@ class RecordsCog(commands.Cog, name="Records"):
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id, worlds_end=args.worlds_end
             )
-            if song is None or similarity < 90:
+            if song is None or similarity < 85:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

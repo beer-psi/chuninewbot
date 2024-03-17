@@ -331,7 +331,7 @@ class ToolsCog(commands.Cog, name="Tools"):
             song, alias, similarity = await self.utils.find_song(
                 query, guild_id=guild_id, worlds_end=False
             )
-            if song is None or similarity < 90:
+            if song is None or similarity < 85:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )

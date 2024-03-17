@@ -279,7 +279,7 @@ class SearchCog(commands.Cog, name="Search"):
         guild_id = ctx.guild.id if ctx.guild is not None else None
         song, alias, similarity = await self.utils.find_song(query, guild_id=guild_id)
 
-        if song is None or similarity < 90:
+        if song is None or similarity < 85:
             return await ctx.reply(did_you_mean_text(song, alias), mention_author=False)
 
         async with self.bot.begin_db_session() as session:
@@ -373,7 +373,7 @@ class SearchCog(commands.Cog, name="Search"):
                 query, guild_id=guild_id, worlds_end=args.worlds_end
             )
 
-            if song is None or similarity < 90:
+            if song is None or similarity < 85:
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )
