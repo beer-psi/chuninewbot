@@ -122,7 +122,7 @@ class AuthCog(commands.Cog, name="Auth"):
             if (e := await self._verify_and_login(ctx.author.id, clal)) is None:
                 return await channel.send("Successfully logged in.")
 
-            msg = f"Invalid cookie: {e}"
+            msg = "Invalid cookie."
             raise commands.BadArgument(msg)
 
         passcode = (
@@ -160,7 +160,7 @@ class AuthCog(commands.Cog, name="Auth"):
                     content=None,
                     embed=discord.Embed(
                         title="Failed to login",
-                        description=f"Invalid cookie: {e}",
+                        description="Invalid cookie.",
                     ),
                 )
         except TimeoutError:
