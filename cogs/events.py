@@ -51,12 +51,16 @@ class EventsCog(commands.Cog, name="Events"):
             )
             if self.bot.dev:
                 embed.description += f"\nDetailed error: {exc}"
+
         if isinstance(exc, ChuniNetError):
             embed.description = f"CHUNITHM-NET error {exc.code}: {exc.description}"
-        if isinstance(exc, ChuniNetException):
+        elif isinstance(exc, InvalidTokenException):
+            embed.description = f"The token has expired. Please log in again with `{ctx.prefix}login` in my DMs."
+        elif isinstance(exc, ChuniNetException):
             embed.description = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
             if self.bot.dev:
                 embed.description += f"\nDetailed error: {exc}"
+
         if isinstance(exc, commands.errors.CommandOnCooldown):
             embed.description = (
                 f"You're too fast. Take a break for {exc.retry_after:.2f} seconds."
