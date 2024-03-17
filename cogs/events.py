@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from chunithm_net.exceptions import (
+    ChuniNetError,
     ChuniNetException,
     InvalidTokenException,
     MaintenanceException,
@@ -36,57 +37,49 @@ class EventsCog(commands.Cog, name="Events"):
         while hasattr(exc, "original"):
             exc = exc.original  # type: ignore[reportGeneralTypeIssues]
 
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            title="Error",
+        )
+        delete_after = None
+
         if isinstance(exc, MaintenanceException):
-            return await ctx.reply(
-                "CHUNITHM-NET is currently undergoing maintenance. Please try again later.",
-                mention_author=False,
-            )
+            embed.description = "CHUNITHM-NET is currently undergoing maintenance. Please try again later."
         if isinstance(exc, InvalidTokenException):
-            message = (
+            embed.description = (
                 "CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in."
             )
             if self.bot.dev:
-                message += f"\nDetailed error: {exc}"
-            return await ctx.reply(message, mention_author=False)
+                embed.description += f"\nDetailed error: {exc}"
+        if isinstance(exc, ChuniNetError):
+            embed.description = f"CHUNITHM-NET error {exc.code}: {exc.description}"
         if isinstance(exc, ChuniNetException):
-            message = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
+            embed.description = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
             if self.bot.dev:
-                message += f"\nDetailed error: {exc}"
-            return await ctx.reply(message, mention_author=False)
-
+                embed.description += f"\nDetailed error: {exc}"
         if isinstance(exc, commands.errors.CommandOnCooldown):
-            return await ctx.reply(
-                f"You're too fast. Take a break for {exc.retry_after:.2f} seconds.",
-                mention_author=False,
-                delete_after=exc.retry_after,
+            embed.description = (
+                f"You're too fast. Take a break for {exc.retry_after:.2f} seconds."
             )
+            delete_after = exc.retry_after
         if isinstance(exc, commands.errors.ExpectedClosingQuoteError):
-            return await ctx.reply(
-                "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?",
-                mention_author=False,
-            )
+            embed.description = "You're missing a quote somewhere. Perhaps you're using the wrong kind of quote (`\"` vs `”`)?"
         if isinstance(exc, commands.errors.UnexpectedQuoteError):
-            return await ctx.reply(
-                (
-                    f"Unexpected quote mark, {exc.quote!r}, in non-quoted string. If this was intentional, "
-                    "escape the quote with a backslash (\\\\)."
-                ),
-                mention_author=False,
+            embed.description = (
+                f"Unexpected quote mark, {exc.quote!r}, in non-quoted string. If this was intentional, "
+                "escape the quote with a backslash (\\\\)."
             )
         if isinstance(
             exc, (commands.errors.NotOwner, commands.errors.MissingPermissions)
         ):
-            return await ctx.reply("Insufficient permissions.", mention_author=False)
+            embed.description = "Insufficient permissions."
         if isinstance(exc, commands.BadLiteralArgument):
             to_string = [repr(x) for x in exc.literals]
             if len(to_string) > 2:
                 fmt = "{}, or {}".format(", ".join(to_string[:-1]), to_string[-1])
             else:
                 fmt = " or ".join(to_string)
-            return await ctx.reply(
-                f"`{exc.param.displayed_name or exc.param.name}` must be one of {fmt}, received {exc.argument!r}",
-                mention_author=False,
-            )
+            embed.description = f"`{exc.param.displayed_name or exc.param.name}` must be one of {fmt}, received {exc.argument!r}"
         if isinstance(
             exc,
             (
@@ -100,17 +93,20 @@ class EventsCog(commands.Cog, name="Events"):
                 commands.PrivateMessageOnly,
             ),
         ):
-            return await ctx.reply(str(error), mention_author=False)
+            embed.description = str(error)
+
+        if embed.description is not None:
+            return await ctx.reply(
+                embed=embed, mention_author=False, delete_after=delete_after
+            )
 
         logger.error("Exception in command %s", ctx.command, exc_info=exc)
-        await ctx.reply(
-            (
-                "Something really terrible happened. "
-                f"The owner <@{self.bot.owner_id}> has been notified.\n"
-                "Please try again in a couple of hours."
-            ),
-            mention_author=False,
+        embed.description = (
+            "Something really terrible happened. "
+            f"The owner <@{self.bot.owner_id}> has been notified.\n"
+            "Please try again in a couple of hours."
         )
+        await ctx.reply(embed=embed, mention_author=False)
 
         if webhook_url := config.bot.error_reporting_webhook:
             async with aiohttp.ClientSession() as session:

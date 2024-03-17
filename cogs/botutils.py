@@ -1,9 +1,12 @@
 import contextlib
+from http.cookiejar import LWPCookieJar
+import io
 from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
-from sqlalchemy import select, text
+from jarowinkler import jarowinkler_similarity
+from sqlalchemy import select, text, update
 
 from chunithm_net import ChuniNet
 from chunithm_net.entities.enums import Rank
@@ -44,7 +47,7 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         return self.bot.prefixes.get(ctx.guild.id, default_prefix)
 
-    async def login_check(self, ctx_or_id: Context | int) -> str:
+    async def login_check(self, ctx_or_id: Context | int) -> LWPCookieJar:
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
         clal = await self.fetch_cookie(id)
         if clal is None:
@@ -52,7 +55,7 @@ class UtilsCog(commands.Cog, name="Utils"):
             raise commands.BadArgument(msg)
         return clal
 
-    async def fetch_cookie(self, id: int) -> str | None:
+    async def fetch_cookie(self, id: int) -> LWPCookieJar | None:
         async with self.bot.begin_db_session() as session:
             stmt = select(Cookie).where(Cookie.discord_id == id)
             cookie = (await session.execute(stmt)).scalar_one_or_none()
@@ -60,20 +63,31 @@ class UtilsCog(commands.Cog, name="Utils"):
         if cookie is None:
             return None
 
-        return cookie.cookie
-    
+        jar = LWPCookieJar()
+        jar._really_load(  # type: ignore[reportAttributeAccessIssue]
+            io.StringIO(cookie.cookie), "?", ignore_discard=False, ignore_expires=False
+        )
+
+        return jar
+
     @contextlib.asynccontextmanager
     async def chuninet(self, ctx_or_id: Context | int):
         id = ctx_or_id if isinstance(ctx_or_id, int) else ctx_or_id.author.id
-        cookie = await self.login_check(ctx_or_id)
-        user_id, token = self.bot.sessions.get(id, (None, None))
+        jar = await self.login_check(ctx_or_id)
 
-        session = ChuniNet(cookie, user_id=user_id, token=token)
+        session = ChuniNet(jar)
         try:
             yield session
         finally:
+            async with self.bot.begin_db_session() as db_session:
+                await db_session.execute(
+                    update(Cookie)
+                    .where(Cookie.discord_id == id)
+                    .values(cookie=f"#LWP-Cookies-2.0\n{jar.as_lwp_str()}")
+                )
+                await db_session.commit()
+
             await session.close()
-            self.bot.sessions[id] = (session.user_id, session.token)
 
     @overload
     async def annotate_song(
@@ -84,11 +98,9 @@ class UtilsCog(commands.Cog, name="Utils"):
     @overload
     async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
         ...
-    
+
     @overload
-    async def annotate_song(
-        self, song: Record | MusicRecord
-    ) -> AnnotatedMusicRecord:
+    async def annotate_song(self, song: Record | MusicRecord) -> AnnotatedMusicRecord:
         ...
 
     async def annotate_song(

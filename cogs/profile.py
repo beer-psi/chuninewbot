@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from PIL import Image
 
+from chunithm_net.exceptions import ChuniNetError
 from utils.views.profile import ProfileView
 
 if TYPE_CHECKING:
@@ -226,18 +227,23 @@ class ProfileCog(commands.Cog, name="Profile"):
 
         async with ctx.typing(), self.utils.chuninet(ctx) as client:
             await client.authenticate()
+
             try:
-                if await client.change_player_name(new_name):
-                    await ctx.reply(
-                        "Your username has been changed.", mention_author=False
-                    )
-                else:
-                    await ctx.reply(
-                        "There was an error changing your username.",
-                        mention_author=False,
-                    )
+                await client.change_player_name(new_name)
+                await ctx.reply("Your username has been changed.", mention_author=False)
             except ValueError as e:
-                raise commands.BadArgument(str(e)) from None
+                msg = str(e)
+
+                if msg == "文字数が多すぎます。":  # Too many characters
+                    msg = "The new username is too long (only 8 characters allowed)."
+
+                raise commands.BadArgument(msg) from None
+            except ChuniNetError as e:
+                if e.code == 110106:
+                    msg = "The new username contains a banned word."
+                    raise commands.BadArgument(msg) from None
+
+                raise
 
 
 async def setup(bot: "ChuniBot"):

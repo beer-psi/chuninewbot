@@ -1,11 +1,13 @@
-import importlib.util
+from http.cookiejar import CookieJar
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Optional
 
-import aiohttp
+import httpx
 from bs4 import BeautifulSoup
 from yarl import URL
 
+from ._bs4 import BS4_FEATURE
+from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
 from .consts import PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
 from .entities.enums import Difficulty, Genres, Rank
 from .entities.record import DetailedParams, MusicRecord, RecentRecord, Record
@@ -26,180 +28,100 @@ if TYPE_CHECKING:
 
 __all__ = ["ChuniNet"]
 
+_AUTHENTICATION_URL = httpx.URL(
+    "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
+)
+_BASE_URL = httpx.URL("https://chunithm-net-eng.com")
+
 
 class ChuniNet:
-    AUTH_URL = "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
-
-    def __init__(
-        self,
-        clal: str,
-        *,
-        user_id: Optional[str] = None,
-        token: Optional[str] = None,
-        base: Optional[URL] = None,
-    ) -> None:
-        if base is None:
-            self.base = URL("https://chunithm-net-eng.com")
-        else:
-            self.base = base
-        self.clal = clal
-
-        self.session = aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar())
-        self.session.cookie_jar.update_cookies(
-            {"clal": clal}, URL("https://lng-tgk-aime-gw.am-all.net")
+    def __init__(self, cookies: CookieJar) -> None:
+        self.session = httpx.AsyncClient(
+            cookies=cookies,
+            event_hooks={
+                "response": [
+                    raise_on_scheduled_maintenance,
+                    raise_on_chunithm_net_error,
+                ],
+            },
+            follow_redirects=True,
         )
-
-        self.bs4_features = (
-            "lxml" if importlib.util.find_spec("lxml") else "html.parser"
-        )
-
-        if user_id is not None:
-            self.session.cookie_jar.update_cookies({"userId": user_id}, self.base)
-        if token is not None:
-            self.session.cookie_jar.update_cookies({"_t": token}, self.base)
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, type, value, traceback):
-        await self.session.close()
+        await self.session.aclose()
 
     async def close(self):
-        await self.session.close()
-
-    @property
-    def user_id(self):
-        cookie = self.session.cookie_jar.filter_cookies(self.base).get("userId")
-        if cookie is None:
-            return None
-        return cookie.value
-
-    @property
-    def token(self):
-        cookie = self.session.cookie_jar.filter_cookies(self.base).get("_t")
-        if cookie is None:
-            return None
-        return cookie.value
-
-    def clear_cookies(self):
-        self.session.cookie_jar.clear_domain(self.base.host or "chunithm-net-eng.com")
-
-    async def validate_cookie(self):
-        async with self.session.get(self.AUTH_URL, allow_redirects=False) as req:
-            if req.status != HTTPStatus.FOUND:
-                msg = f"Invalid cookie. Received status code was {req.status}"
-                raise InvalidTokenException(msg)
-            return req.headers["Location"]
+        await self.session.aclose()
 
     async def authenticate(self) -> "PlayerData":
-        if self.user_id is not None:
-            try:
-                # In some cases, the site token is refreshed automatically.
-                resp = await self._request("mobile/home/")
-            except ChuniNetError as e:
-                # In other cases, the token is invalidated and a relogin is required.
-                # Error code for when site token is invalidated
-                if e.code != 200004:
-                    raise
-                uid_redemption_url = await self.validate_cookie()
-                resp = await self.session.get(uid_redemption_url)
-        else:
-            uid_redemption_url = await self.validate_cookie()
-            resp = await self.session.get(uid_redemption_url)
+        soup = await self._request_soup("GET", "/mobile/home/")
 
-        if resp.status == HTTPStatus.SERVICE_UNAVAILABLE:
-            msg = "Service under maintenance"
-            raise MaintenanceException(msg)
-        if self.session.cookie_jar.filter_cookies(self.base).get("userId") is None:
-            msg = "Invalid cookie: No userId cookie found"
-            raise InvalidTokenException(msg)
-
-        return parse_player_card_and_avatar(
-            BeautifulSoup(await resp.text(), self.bs4_features)
-        )
-
-    async def _request(self, endpoint: str, method="GET", **kwargs) -> "ClientResponse":
-        if self.user_id is None:
-            await self.authenticate()
-
-        response = await self.session.request(method, self.base / endpoint, **kwargs)
-        # We could be here because the client attempted to reauthenticate
-        # but the clal was invalid.
-        if response.url.path == "/mobile/" and self.AUTH_URL in (await response.text()):
-            self.clear_cookies()
-            await self.authenticate()
-            return await self._request(endpoint, method, **kwargs)
-
-        if response.url.path.startswith("/mobile/error"):
-            soup = BeautifulSoup(await response.text(), self.bs4_features)
-            err = soup.select(".block.text_l .font_small")
-
-            errcode = int(err[0].get_text().split(":")[1])
-            description = err[1].get_text() if len(err) > 1 else ""
-            raise ChuniNetError(errcode, description)
-
-        return response
+        return parse_player_card_and_avatar(soup)
 
     async def player_data(self):
-        resp = await self._request("mobile/home/playerData")
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
+        soup = await self._request_soup("GET", "/mobile/home/playerData")
+
         return parse_player_data(soup)
 
     async def recent_record(self) -> list[RecentRecord]:
-        resp = await self._request("mobile/record/playlog")
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
-
+        soup = await self._request_soup("GET", "/mobile/record/playlog")
         web_records = soup.select(".frame02.w400")
+
         return [parse_basic_recent_record(record) for record in web_records]
 
     async def detailed_recent_record(self, idx: int):
-        resp = await self._request(
-            "mobile/record/playlog/sendPlaylogDetail/",
-            method="POST",
+        soup = await self._request_soup(
+            "POST",
+            "/mobile/record/playlog/sendPlaylogDetail/",
             data={
                 "idx": idx,
-                "token": self.token,
+                "token": self._token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
+
         return parse_detailed_recent_record(soup)
 
     async def music_record(self, idx: int) -> list[MusicRecord]:
         if idx >= 8000:
             return await self._worlds_end_music_record(idx)
 
-        resp = await self._request(
-            "mobile/record/musicGenre/sendMusicDetail/",
-            method="POST",
+        soup = await self._request_soup(
+            "POST",
+            "/mobile/record/musicGenre/sendMusicDetail/",
             data={
                 "idx": idx,
-                "token": self.token,
+                "token": self._token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
-        return parse_music_record(soup, DetailedParams(idx, self.token or ""))
+
+        return parse_music_record(soup, DetailedParams(idx, self._token or ""))
 
     async def _worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
-        resp = await self._request(
-            "mobile/record/worldsEndList/sendWorldsEndDetail/",
-            method="POST",
+        soup = await self._request_soup(
+            "POST",
+            "/mobile/record/worldsEndList/sendWorldsEndDetail/",
             data={
                 "idx": idx,
-                "token": self.token,
+                "token": self._token,
             },
         )
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
-        return parse_music_record(soup, DetailedParams(idx, self.token or ""))
+
+        return parse_music_record(soup, DetailedParams(idx, self._token or ""))
 
     async def best30(self) -> list[Record]:
-        resp = await self._request("mobile/home/playerData/ratingDetailBest/")
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
+        soup = await self._request_soup(
+            "GET", "/mobile/home/playerData/ratingDetailBest/"
+        )
 
         return parse_music_for_rating(soup)
 
     async def recent10(self) -> list[Record]:
-        resp = await self._request("mobile/home/playerData/ratingDetailRecent/")
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
+        soup = await self._request_soup(
+            "GET", "/mobile/home/playerData/ratingDetailRecent/"
+        )
 
         return parse_music_for_rating(soup)
 
@@ -244,7 +166,7 @@ class ChuniNet:
             criteria is provided.
         """
         if difficulty == Difficulty.WORLDS_END:
-            resp = await self._request("mobile/record/worldsEndList")
+            soup = await self._request_soup("GET", "/mobile/record/worldsEndList")
         elif level is not None:
             plus_level = level[-1] == "+"
             level_num = int(level[:-1] if plus_level else level)
@@ -252,12 +174,12 @@ class ChuniNet:
                 level_num - 1 + max(0, level_num - 7) + (1 if plus_level else 0)
             )
 
-            resp = await self._request(
-                "mobile/record/musicLevel/sendSearch/",
-                method="POST",
+            soup = await self._request_soup(
+                "POST",
+                "/mobile/record/musicLevel/sendSearch/",
                 data={
                     "level": str(level_value),
-                    "token": self.token,
+                    "token": self._token,
                 },
             )
         elif genre is not None:
@@ -265,12 +187,12 @@ class ChuniNet:
                 msg = "Difficulty cannot be None when genre is specified"
                 raise ValueError(msg)
 
-            resp = await self._request(
-                f"mobile/record/musicGenre/send{str(difficulty).capitalize()}",
-                method="POST",
+            soup = await self._request_soup(
+                "POST",
+                f"/mobile/record/musicGenre/send{str(difficulty).capitalize()}",
                 data={
                     "genre": genre.value,
-                    "token": self.token,
+                    "token": self._token,
                 },
             )
         elif rank is not None:
@@ -282,59 +204,103 @@ class ChuniNet:
             if value < Rank.S.value:
                 value = 7
 
-            resp = await self._request(
-                f"mobile/record/musicRank/send{str(difficulty).capitalize()}",
-                method="POST",
+            soup = await self._request_soup(
+                "POST",
+                f"/mobile/record/musicRank/send{str(difficulty).capitalize()}",
                 data={
                     "rank": str(rank.value),
-                    "token": self.token,
+                    "token": self._token,
                 },
             )
         elif difficulty is not None:
-            resp = await self._request(
-                f"mobile/record/musicGenre/send{str(difficulty).capitalize()}",
-                method="POST",
+            soup = await self._request_soup(
+                "POST",
+                f"/mobile/record/musicGenre/send{str(difficulty).capitalize()}",
                 data={
                     "genre": "99",
-                    "token": self.token,
+                    "token": self._token,
                 },
             )
         else:
             msg = "No search criteria specified"
             raise ValueError(msg)
 
-        soup = BeautifulSoup(await resp.text(), self.bs4_features)
         return parse_music_for_rating(soup)
 
     async def change_player_name(self, new_name: str) -> bool:
-        if len(new_name) > 8 or len(new_name) < 1:
-            msg = "Player name must be between 1 and 8 characters"
-            raise ValueError(msg)
-        if any(
-            not (
-                c in PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS
-                or c.isdigit()
-                or (c.isalpha() and c.isascii())
-                or c.isspace()
-            )
-            for c in new_name
-        ):
-            msg = "Player name contains invalid characters"
-            raise ValueError(msg)
-
         resp = await self._request(
+            "POST",
             "mobile/home/userOption/updateUserName/update/",
-            method="POST",
             data={
                 "userName": new_name,
-                "token": self.token,
+                "token": self._token,
             },
             headers={
-                "Referer": str(self.base / "mobile/home/userOption/updateUserName"),
+                "Referer": str(
+                    _BASE_URL.join("/mobile/home/userOption/updateUserName")
+                ),
             },
         )
-        return resp.url.path == "/mobile/home/userOption/"
+
+        if resp.url.path == "/mobile/home/userOption/":
+            return True
+
+        text = "".join([part async for part in resp.aiter_text()])
+        soup = BeautifulSoup(text, BS4_FEATURE)
+
+        if (error_message := soup.select_one(".text_red")) is not None:
+            msg = error_message.get_text(strip=True)
+        else:
+            msg = "An unknown error happened when changing the player name."
+
+        raise ValueError(msg)
 
     async def logout(self) -> bool:
-        resp = await self._request("mobile/home/userOption/logout/")
-        return resp.url.host == URL(self.AUTH_URL).host
+        resp = await self._request("GET", "mobile/home/userOption/logout/")
+        return resp.url.host == _AUTHENTICATION_URL.host
+
+    @property
+    def _token(self):
+        return self.session.cookies.get("_t", domain=_BASE_URL.host)
+
+    async def _request_soup(
+        self,
+        method: str,
+        path: str,
+        **kwargs,
+    ) -> BeautifulSoup:
+        resp = await self._request(method, path, **kwargs)
+        text = "".join([part async for part in resp.aiter_text()])
+
+        return BeautifulSoup(text, BS4_FEATURE)
+
+    async def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
+        url = _BASE_URL.join(path)
+
+        try:
+            response = await self.session.request(method, url, **kwargs)
+
+            if response.url.path == "/mobile/":
+                await response.aclose()
+
+                raise ChuniNetError(200004, "")  # noqa: TRY301
+        except ChuniNetError as e:
+            if e.code not in {
+                200004,  # invalid session
+                200002,  # connection time expired
+            }:
+                raise
+        else:
+            return response
+
+        auth_response = await self.session.get(_AUTHENTICATION_URL)
+
+        if auth_response.url.host == _AUTHENTICATION_URL.host:
+            await auth_response.aclose()
+            raise InvalidTokenException
+
+        if str(url) == str(auth_response.url):
+            return auth_response
+
+        await auth_response.aclose()
+        return await self.session.request(method, url, **kwargs)
