@@ -123,7 +123,13 @@ def sdvxin_link(view: "SdvxinChartView") -> str:
 
 
 def get_jacket_url(song: "Song") -> str:
-    return f"{INTERNATIONAL_JACKET_BASE}/{song.jacket}"
+    if song.available:
+        return f"{INTERNATIONAL_JACKET_BASE}/{song.jacket}"
+
+    if not song.removed:
+        return f"{JACKET_BASE}/{song.jacket}"
+
+    return song.jacket
 
 
 def release_to_chunithm_version(date: datetime) -> str:
@@ -217,4 +223,10 @@ def release_to_chunithm_version(date: datetime) -> str:
         <= datetime(2023, 4, 26, tzinfo=TOKYO_TZ)
     ):
         return "SUN"
-    return "SUN PLUS"
+    if (
+        datetime(2023, 5, 11, tzinfo=TOKYO_TZ)
+        <= date
+        <= datetime(2023, 11, 22, tzinfo=TOKYO_TZ)
+    ):
+        return "SUN PLUS"
+    return "LUMINOUS"
