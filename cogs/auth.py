@@ -1,4 +1,5 @@
 from asyncio import TimeoutError
+from http.cookiejar import LWPCookieJar, Cookie as HTTPCookie
 from secrets import SystemRandom
 from typing import TYPE_CHECKING, Optional
 
@@ -35,7 +36,9 @@ class AuthCog(commands.Cog, name="Auth"):
         """
         msg = "Successfully logged out."
         if invalidate:
-            async with asuppress(InvalidTokenException), self.utils.chuninet(ctx) as client:
+            async with asuppress(InvalidTokenException), self.utils.chuninet(
+                ctx
+            ) as client:
                 result = await client.logout()
                 if not result:
                     msg = (
@@ -52,14 +55,37 @@ class AuthCog(commands.Cog, name="Auth"):
         if clal.startswith("clal="):
             clal = clal[5:]
 
-        async with ChuniNet(clal) as client:
+        cookie = HTTPCookie(
+            version=0,
+            name="clal",
+            value=clal,
+            port=None,
+            port_specified=False,
+            domain="lng-tgk-aime-gw.am-all.net",
+            domain_specified=True,
+            domain_initial_dot=False,
+            path="/common_auth",
+            path_specified=True,
+            secure=False,
+            expires=3856586927,  # 2092-03-17 10:08:47Z
+            discard=False,
+            comment=None,
+            comment_url=None,
+            rest={},
+        )
+        jar = LWPCookieJar()
+        jar.set_cookie(cookie)
+
+        async with ChuniNet(jar) as client:
             try:
-                await client.validate_cookie()
+                await client.authenticate()
             except ChuniNetException as e:
                 return e
 
         async with self.bot.begin_db_session() as session, session.begin():
-            await session.merge(Cookie(discord_id=id, cookie=clal))
+            await session.merge(
+                Cookie(discord_id=id, cookie=f"#LWP-Cookie-2.0\n{jar.as_lwp_str()}")
+            )
             return None
 
     @commands.hybrid_command("login")
