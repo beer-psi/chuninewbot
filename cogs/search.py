@@ -20,6 +20,7 @@ from utils import (
     shlex_split,
     yt_search_link,
 )
+from utils.config import config
 from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
@@ -76,8 +77,14 @@ class SearchCog(commands.Cog, name="Search"):
             )
 
     @commands.hybrid_command("addalias")
-    @commands.guild_only()
-    async def addalias(self, ctx: Context, song_title_or_alias: str, added_alias: str):
+    async def addalias(
+        self,
+        ctx: Context,
+        song_title_or_alias: str,
+        added_alias: str,
+        *,
+        global_alias: bool = False,
+    ):
         """Manually add a song alias for this server.
 
         Aliases are case-insensitive.
@@ -88,6 +95,8 @@ class SearchCog(commands.Cog, name="Search"):
             The title (or an existing alias) of the song.
         added_alias: str
             The alias to add.
+        global_alias: bool
+            Whether to apply the alias globally. Only a few users can do this.
 
         Examples
         --------
@@ -96,7 +105,12 @@ class SearchCog(commands.Cog, name="Search"):
         """
 
         # this command is guild-only
-        assert ctx.guild is not None
+        if not global_alias and ctx.guild is None:
+            raise commands.NoPrivateMessage
+
+        if global_alias and ctx.author.id not in config.bot.alias_managers:
+            msg = "You are not allowed to add global aliases."
+            raise commands.CheckFailure(msg)
 
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
             stmt = (
@@ -105,20 +119,43 @@ class SearchCog(commands.Cog, name="Search"):
                 .limit(1)
             )
             song = (await session.execute(stmt)).scalar_one_or_none()
-            if song is not None:
-                return await ctx.reply(
-                    f"**{added_alias}** is already a song title.", mention_author=False
-                )
 
-            stmt = select(Alias).where(
-                (func.lower(Alias.alias) == func.lower(added_alias))
-                & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
-            )
-            alias = (await session.execute(stmt)).scalar_one_or_none()
-            if alias is not None:
-                return await ctx.reply(
-                    f"**{added_alias}** already exists.", mention_author=False
+            if song is not None:
+                msg = f"**{emd(added_alias)}** is already a song title."
+                raise commands.BadArgument(msg)
+
+            if global_alias:
+                stmt = select(Alias).where(
+                    func.lower(Alias.alias) == func.lower(added_alias)
                 )
+                alias = (await session.execute(stmt)).scalar_one_or_none()
+
+                if alias is not None and alias.guild_id != -1:
+                    alias.guild_id = -1
+                    alias.owner_id = None
+                    await session.merge(alias)
+
+                    return await ctx.reply(
+                        f"**{emd(added_alias)}** already exists as a guild-only alias. Promoting to global alias.",
+                        mention_author=False,
+                    )
+            else:
+                stmt = (
+                    select(Alias)
+                    .where(
+                        (func.lower(Alias.alias) == func.lower(added_alias))
+                        & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
+                    )
+                    .options(joinedload(Alias.song))
+                )
+                alias = (await session.execute(stmt)).scalar_one_or_none()
+
+                if alias is not None:
+                    msg = (
+                        f"**{emd(added_alias)}** already exists "
+                        f"({'global ' if alias.guild_id == -1 else ''}alias for **{emd(alias.song.title)}**)."
+                    )
+                    raise commands.BadArgument(msg)
 
             stmt = select(Song).where(
                 # Limit to non-WE entries. WE entries are redirected to
@@ -129,39 +166,39 @@ class SearchCog(commands.Cog, name="Search"):
             song = (await session.execute(stmt)).scalar_one_or_none()
 
             if song is None:
-                stmt = (
-                    select(Alias)
-                    .where(
-                        (func.lower(Alias.alias) == func.lower(song_title_or_alias))
-                        & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
+                condition = func.lower(Alias.alias) == func.lower(song_title_or_alias)
+
+                if not global_alias:
+                    condition = condition & (
+                        (Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id)
                     )
-                    .options(joinedload(Alias.song))
-                )
+
+                stmt = select(Alias).where(condition).options(joinedload(Alias.song))
                 alias = (await session.execute(stmt)).scalar_one_or_none()
+
                 if alias is None:
-                    return await ctx.reply(
-                        f"**{song_title_or_alias}** does not exist.",
-                        mention_author=False,
-                    )
+                    msg = f"**{emd(song_title_or_alias)}** does not exist."
+                    raise commands.BadArgument(msg)
+
                 song = alias.song
 
             session.add(
                 Alias(
                     alias=added_alias,
-                    guild_id=ctx.guild.id,
+                    guild_id=-1 if global_alias else ctx.guild.id,
                     song_id=song.id,
-                    owner_id=ctx.author.id,
+                    owner_id=None if global_alias else ctx.author.id,
                 )
             )
 
-            await ctx.reply(
-                f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
-                mention_author=False,
-            )
-            return None
+        await self.utils._reload_alias_cache()
+        await ctx.reply(
+            f"Added **{emd(added_alias)}** as an alias for **{emd(song_title_or_alias)}**.",
+            mention_author=False,
+        )
+        return None
 
     @commands.hybrid_command("removealias")
-    @commands.guild_only()
     async def removealias(self, ctx: Context, *, removed_alias: str):
         """Remove an alias for this server.
 
@@ -171,34 +208,48 @@ class SearchCog(commands.Cog, name="Search"):
             The alias to remove.
         """
 
-        # this command is guild-only
-        assert ctx.guild is not None
+        is_alias_manager = ctx.author.id in config.bot.alias_managers
+
+        if not is_alias_manager and ctx.guild is None:
+            raise commands.NoPrivateMessage
 
         async with ctx.typing(), self.bot.begin_db_session() as session, session.begin():
-            stmt = select(Alias).where(
-                (func.lower(Alias.alias) == removed_alias.lower())
-                & (Alias.guild_id == ctx.guild.id)
-            )
+            condition = func.lower(Alias.alias) == func.lower(removed_alias)
+
+            if not is_alias_manager:
+                condition = condition & (Alias.guild_id == ctx.guild.id)
+
+            stmt = select(Alias).where(condition)
             alias = (await session.execute(stmt)).scalar_one_or_none()
 
             if alias is None:
-                return await ctx.reply(
-                    f"**{removed_alias}** does not exist.", mention_author=False
-                )
+                msg = f"**{emd(removed_alias)}** does not exist"
 
-            if alias.owner_id != ctx.author.id and not (
-                isinstance(ctx.author, discord.Member)
-                and ctx.author.guild_permissions.administrator
-            ):
-                return await ctx.reply(
-                    "You cannot delete an alias that you didn't add yourself.",
-                    mention_author=False,
+                if not is_alias_manager:
+                    msg += " or you don't have permissions to remove it"
+
+                msg += "."
+
+                raise commands.BadArgument(msg)
+
+            if (
+                alias.guild_id != -1
+                and alias.owner_id != ctx.author.id
+                and not (
+                    isinstance(ctx.author, discord.Member)
+                    and ctx.author.guild_permissions.administrator
                 )
+            ):
+                msg = "You cannot delete an alias that you didn't add yourself."
+                raise commands.CheckFailure(msg)
 
             await session.delete(alias)
 
-            await ctx.reply(f"Removed **{emd(removed_alias)}**.", mention_author=False)
-            return None
+        await self.utils._reload_alias_cache()
+        await ctx.reply(
+            f"Removed {'global ' if alias.guild_id == -1 else ''}alias **{emd(removed_alias)}**.",
+            mention_author=False,
+        )
 
     async def song_title_autocomplete(
         self,

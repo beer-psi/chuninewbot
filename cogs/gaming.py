@@ -9,8 +9,8 @@ import discord
 from aiohttp import ClientSession
 from discord.ext import commands
 from discord.ext.commands import Context
-from jarowinkler import jaro_similarity
 from PIL import Image
+from rapidfuzz import fuzz, utils
 from sqlalchemy import delete, select, text
 
 from database.models import Alias, GuessScore, Song
@@ -101,7 +101,7 @@ class GamingCog(commands.Cog, name="Games"):
                 m.channel == ctx.channel
                 and max(
                     [
-                        jaro_similarity(m.content.lower(), alias.lower())
+                        fuzz.QRatio(m.content, alias, processor=utils.default_process)
                         for alias in aliases
                     ]
                 )

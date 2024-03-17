@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
-from sqlalchemy import select, text, update
+from rapidfuzz import fuzz, process, utils
+from sqlalchemy import select, update
+from sqlalchemy.orm import joinedload
 
 from chunithm_net import ChuniNet
 from chunithm_net.entities.enums import Rank
@@ -35,9 +37,56 @@ if TYPE_CHECKING:
     from bot import ChuniBot
 
 
+class CachedAlias:
+    id: Optional[int] = None
+    alias: str
+    title: str
+    song_id: int
+    guild_id: Optional[int] = None
+
+    def __init__(
+        self,
+        id: Optional[int],
+        alias: str,
+        title: str,
+        song_id: int,
+        guild_id: Optional[int],
+    ) -> None:
+        self.id = id
+        self.alias = alias
+        self.title = title
+        self.song_id = song_id
+        self.guild_id = guild_id
+
+
 class UtilsCog(commands.Cog, name="Utils"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
+        self.alias_cache: list[CachedAlias] = []
+
+    async def cog_load(self) -> None:
+        return await self._reload_alias_cache()
+
+    async def _reload_alias_cache(self) -> None:
+        async with self.bot.begin_db_session() as session:
+            stmt = select(Song).options(joinedload(Song.aliases))
+            songs = (await session.execute(stmt)).scalars().unique()
+
+        for song in songs:
+            self.alias_cache.append(
+                CachedAlias(None, song.title, song.title, song.id, -1)
+            )
+
+            for alias in song.aliases:
+                self.alias_cache.append(
+                    CachedAlias(
+                        alias.rowid,
+                        alias.alias,
+                        song.title,
+                        alias.song_id,
+                        alias.guild_id,
+                    )
+                )
 
     async def guild_prefix(self, ctx: Context) -> str:
         default_prefix: str = config.bot.default_prefix
@@ -215,51 +264,34 @@ class UtilsCog(commands.Cog, name="Utils"):
         tuple[Song, Alias | None, float]
             The third item is the similarity of the matched song.
         """
+        aliases = [
+            x for x in self.alias_cache if x.guild_id == -1 or x.guild_id == guild_id
+        ]
+        (_, similarity, index) = process.extractOne(
+            query,
+            [x.alias for x in aliases],
+            scorer=fuzz.QRatio,
+            processor=utils.default_process,
+        )
+        matching_alias = aliases[index]
+
         async with self.bot.begin_db_session() as session:
-            stmt = (
-                select(Song, Song.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
-                .order_by(text("similarity DESC"))
-                .limit(1)
-            )
+            condition = Song.id == matching_alias.song_id
 
             if worlds_end:
-                stmt = stmt.where(Song.genre == "WORLD'S END")
-
-            result = (await session.execute(stmt)).one_or_none()
-
-            if result is None:
-                return None, None, 0.0
-
-            song, similarity = result
-
-            # similarity, id, chunithm_id, title, genre, artist, release, bpm, jacket = song
-            alias: Alias | None = None
-            if similarity < 90:
-                guild_ids = [-1]
-                if guild_id is not None:
-                    guild_ids.append(guild_id)
-                stmt = (
-                    select(Alias, Alias.similarity(query).label("similarity"))  # type: ignore[reportGeneralTypeIssues]
-                    .where(Alias.guild_id.in_(guild_ids))
-                    .order_by(text("similarity DESC"))
-                    .limit(1)
+                condition = (Song.title == matching_alias.title) & (
+                    Song.genre == "WORLD'S END"
                 )
-                alias, similarity = (await session.execute(stmt)).one()
 
-                stmt = select(Song).where(Song.id == alias.song_id)  # type: ignore[reportGeneralTypeIssues]
-                song: Song | None = (await session.execute(stmt)).scalar_one()
+            stmt = select(Song).where(condition)
+            song = (await session.execute(stmt)).scalar_one_or_none()
 
-                if worlds_end:
-                    stmt = (
-                        select(Song)
-                        .where(
-                            (Song.title == song.title) & (Song.genre == "WORLD'S END")
-                        )
-                        .limit(1)
-                    )
-                    song: Song | None = (
-                        await session.execute(stmt)
-                    ).scalar_one_or_none()
+            if matching_alias.id is not None:
+                stmt = select(Alias).where(Alias.rowid == matching_alias.id)
+                alias = (await session.execute(stmt)).scalar_one_or_none()
+            else:
+                alias = None
+
         return song, alias, similarity
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then

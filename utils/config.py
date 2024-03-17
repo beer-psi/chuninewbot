@@ -29,6 +29,14 @@ class BotConfig:
     def error_reporting_webhook(self) -> Optional[str]:
         return self.__section.get("error_reporting_webhook")
 
+    @property
+    def alias_managers(self) -> list[int]:
+        raw = self.__section.get("alias_managers", "").strip()
+        if len(raw) == 0:
+            return []
+
+        return [int(x) for x in raw.split(",")]
+
 
 class WebConfig:
     def __init__(self, section: "SectionProxy") -> None:

@@ -90,11 +90,8 @@ class EventsCog(commands.Cog, name="Events"):
                 commands.BadArgument,
                 commands.BadUnionArgument,
                 commands.MissingRequiredArgument,
-                commands.MissingPermissions,
-                commands.BotMissingPermissions,
                 commands.MaxConcurrencyReached,
-                commands.NoPrivateMessage,
-                commands.PrivateMessageOnly,
+                commands.CheckFailure,
             ),
         ):
             embed.description = str(error)
