@@ -128,12 +128,15 @@ class SearchCog(commands.Cog, name="Search"):
                 stmt = select(Alias).where(
                     func.lower(Alias.alias) == func.lower(added_alias)
                 )
-                alias = (await session.execute(stmt)).scalar_one_or_none()
+                aliases = (await session.execute(stmt)).scalars().all()
 
-                if alias is not None and alias.guild_id != -1:
-                    alias.guild_id = -1
-                    alias.owner_id = None
-                    await session.merge(alias)
+                if len(aliases) > 0 and aliases[0].guild_id != -1:
+                    aliases[0].guild_id = -1
+                    aliases[0].owner_id = None
+                    await session.merge(aliases[0])
+
+                    for x in aliases[1:]:
+                        await session.delete(x)
 
                     return await ctx.reply(
                         f"**{emd(added_alias)}** already exists as a guild-only alias. Promoting to global alias.",
