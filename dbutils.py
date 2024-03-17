@@ -158,7 +158,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "title": "Parad'ox",
         "we_kanji": "狂",
         "we_star": "9",
-        "image": "",
+        "image": "",  # TODO
     },
     "67be895064262b87": {
         "id": "8282",
@@ -166,7 +166,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "title": "otorii INNOVATED -[i]3-",
         "we_kanji": "狂",
         "we_star": "9",
-        "image": "",
+        "image": "",  # TODO
     },
 }
 for idx, random in enumerate(
@@ -664,7 +664,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
         if (chart := song["data"].get("WE")) is not None:
             if len(chunithm_song["we_star"]) < 1:
                 logger.warning(
-                    f"matching chunithm_song is not a world's end song: {chunithm_song}"
+                    f"matching chunithm_song of {song['meta']['id']} is not a world's end song: {chunithm_song}"
                 )
                 continue
 

@@ -119,7 +119,7 @@ class AuthCog(commands.Cog, name="Auth"):
                 "(please **enable Privacy Settings -> Direct Messages** if you haven't received it.)"
             )
         elif clal is not None:
-            if (e := await self._verify_and_login(ctx.author.id, clal)) is None:
+            if await self._verify_and_login(ctx.author.id, clal) is None:
                 return await channel.send("Successfully logged in.")
 
             msg = "Invalid cookie."
@@ -147,7 +147,7 @@ class AuthCog(commands.Cog, name="Auth"):
 
         try:
             clal = await self.bot.wait_for(f"chunithm_login_{passcode}", timeout=300)
-            if (e := await self._verify_and_login(ctx.author.id, clal)) is None:  # type: ignore[reportGeneralTypeIssues]
+            if await self._verify_and_login(ctx.author.id, clal) is None:  # type: ignore[reportGeneralTypeIssues]
                 await msg.edit(
                     content=None,
                     embed=discord.Embed(

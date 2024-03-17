@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, overload
 
 from discord.ext import commands
 from discord.ext.commands import Context
-from rapidfuzz import fuzz, process, utils
+from rapidfuzz import fuzz, process
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
 
