@@ -312,7 +312,6 @@ class RecordsCog(commands.Cog, name="Records"):
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
-            await client.authenticate()
             best30 = await client.best30()
 
             tasks = [self.utils.annotate_song(score) for score in best30]
@@ -341,7 +340,6 @@ class RecordsCog(commands.Cog, name="Records"):
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
-            await client.authenticate()
             recent10 = await client.recent10()
 
             tasks = [self.utils.annotate_song(score) for score in recent10]
@@ -409,7 +407,6 @@ class RecordsCog(commands.Cog, name="Records"):
         async with self.utils.chuninet(
             interaction.user.id if user is None else user.id
         ) as client:
-            await client.authenticate()
             records = await client.music_record_by_folder(
                 level=level, genre=genre, difficulty=difficulty, rank=rank
             )
@@ -544,7 +541,6 @@ class RecordsCog(commands.Cog, name="Records"):
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
-            await client.authenticate()
             records = await client.music_record_by_folder(
                 level=level,
                 genre=args.genre,

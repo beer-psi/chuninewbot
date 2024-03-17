@@ -165,7 +165,6 @@ class ProfileCog(commands.Cog, name="Profile"):
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
-            await client.authenticate()
             player_data = await client.player_data()
 
             optional_data: list[str] = []
@@ -226,8 +225,6 @@ class ProfileCog(commands.Cog, name="Profile"):
         """  # noqa: RUF002
 
         async with ctx.typing(), self.utils.chuninet(ctx) as client:
-            await client.authenticate()
-
             try:
                 await client.change_player_name(new_name)
                 await ctx.reply("Your username has been changed.", mention_author=False)

@@ -208,8 +208,6 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             "Fetching scores from CHUNITHM-NET...", mention_author=False
         )
         async with self.utils.chuninet(ctx) as client:
-            await client.authenticate()
-
             if sync == "recent":
                 recents = await client.recent_record()
                 for recent in recents:
