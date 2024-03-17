@@ -144,7 +144,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         ...
 
     @overload
-    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:
+    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:  # type: ignore[reportOverlappingOverload]
         ...
 
     @overload
