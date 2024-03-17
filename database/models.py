@@ -44,7 +44,6 @@ class Song(Base):
     bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     jacket: Mapped[str] = mapped_column(nullable=False)
-    zetaraku_jacket: Mapped[str] = mapped_column(nullable=False)
 
     international_only: Mapped[bool] = mapped_column(nullable=False)
 
@@ -52,6 +51,9 @@ class Song(Base):
         back_populates="song", cascade="all, delete-orphan"
     )
     aliases: Mapped[list["Alias"]] = relationship(
+        back_populates="song", cascade="all, delete-orphan"
+    )
+    jackets: Mapped[list["SongJacket"]] = relationship(
         back_populates="song", cascade="all, delete-orphan"
     )
 
@@ -63,6 +65,18 @@ class Song(Base):
     @classmethod
     def _similarity_expr(cls, search: str) -> ColumnElement[float]:
         return type_coerce(func.jwsim(func.lower(cls.title), search.lower()), Float)
+
+
+class SongJacket(Base):
+    __tablename__ = "song_jackets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    song_id: Mapped[int] = mapped_column(
+        ForeignKey("chunirec_songs.id"), nullable=False
+    )
+    jacket_url: Mapped[str] = mapped_column(nullable=False)
+
+    song: Mapped["Song"] = relationship(back_populates="jackets")
 
 
 class Chart(Base):

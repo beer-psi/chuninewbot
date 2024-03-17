@@ -7,5 +7,6 @@ if TYPE_CHECKING:
 
 
 def rank_icon(rank: "str | Rank") -> str:
-    key = str(rank).lower().replace("+", "p")
-    return getattr(config.icons, key, str(rank))
+    str_rank = str(rank)
+    key = str_rank.lower().replace("+", "p")
+    return getattr(config.icons, key, str_rank) or str_rank

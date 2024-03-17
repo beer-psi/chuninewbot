@@ -10,10 +10,11 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
 from chunithm_net.entities.enums import Difficulty, Genres, Rank
-from database.models import Song
+from database.models import Song, SongJacket
 from utils import did_you_mean_text, shlex_split
 from utils.argparse import DiscordArguments
 from utils.components import ScoreCardEmbed
@@ -86,76 +87,66 @@ class RecordsCog(commands.Cog, name="Records"):
                     cast(int, ctx.message.reference.message_id)
                 )
             else:
-                bot_messages: list[discord.Message] = [
-                    message
-                    async for message in ctx.channel.history(limit=50)
-                    if message.author == self.bot.user
+                messages = [
+                    x
+                    async for x in ctx.channel.history(limit=50)
+                    if x.author == self.bot.user
                     and any(
-                        x.thumbnail.url is not None
+                        e.thumbnail.url is not None
                         and (
-                            JACKET_BASE in x.thumbnail.url
-                            or INTERNATIONAL_JACKET_BASE in x.thumbnail.url
+                            JACKET_BASE in e.thumbnail.url
+                            or INTERNATIONAL_JACKET_BASE in e.thumbnail.url
                         )
-                        for x in message.embeds
+                        for e in x.embeds
                     )
                 ]
-                if len(bot_messages) == 0:
-                    return await ctx.reply(
-                        "No recent scores found.", mention_author=False
-                    )
-                message = bot_messages[0]
+                message = messages[0]
 
-            embeds = [
-                x
-                for x in message.embeds
-                if x.thumbnail.url is not None
-                and (
-                    JACKET_BASE in x.thumbnail.url
-                    or INTERNATIONAL_JACKET_BASE in x.thumbnail.url
-                    or "https://dp4p6x0xfi5o9.cloudfront.net/chunithm/img/cover/"
-                    in x.thumbnail.url
-                )
+            thumbnail_urls = [
+                e.thumbnail.url for e in message.embeds if e.thumbnail.url is not None
             ]
-            if not embeds:
+
+            if len(thumbnail_urls) == 0:
                 msg = "The message replied to does not contain any charts/scores."
                 raise commands.BadArgument(msg)
-            if len(embeds) == 1:
-                embed = embeds[0]
-                compare_message = None
-            else:
-                jackets = [x.thumbnail.url.split("/")[-1] for x in embeds]  # type: ignore[reportGeneralTypeIssues]
-                stmt = select(Song).where(
-                    (Song.jacket.in_(jackets)) | (Song.zetaraku_jacket.in_(jackets))
-                )
-                songs = (await session.execute(stmt)).scalars().all()
 
-                jacket_map = {song.jacket: song.title for song in songs}
+            sql = (
+                select(SongJacket)
+                .where(SongJacket.jacket_url.in_(thumbnail_urls))
+                .options(joinedload(SongJacket.song))
+            )
+            jackets = (await session.execute(sql)).scalars().all()
+
+            if len(jackets) == 0:
+                await ctx.reply("No song found.", mention_author=False)
+                return
+
+            if len(jackets) > 1:
                 view = SelectToCompareView(
-                    [(jacket_map[x], i) for i, x in enumerate(jackets)]
+                    [(x.song.title, i) for i, x in enumerate(jackets)]
                 )
                 compare_message = await ctx.reply(
                     "Select a score to compare with:", view=view, mention_author=False
                 )
+
                 await view.wait()
 
                 if view.value is None:
                     await compare_message.edit(
                         content="Timed out before selecting a score.", view=None
                     )
-                    return None
-                embed = embeds[int(view.value)]
+                    return
 
-            thumbnail_filename = cast(str, embed.thumbnail.url).split("/")[-1]
+                jacket = jackets[int(view.value)]
+                song = jacket.song
+            else:
+                compare_message = None
+                jacket = jackets[0]
+                song = jacket.song
 
-            stmt = select(Song).where(
-                (Song.jacket == thumbnail_filename)
-                | (Song.zetaraku_jacket == thumbnail_filename)
+            embed = next(
+                x for x in message.embeds if x.thumbnail.url == jacket.jacket_url
             )
-            song = (await session.execute(stmt)).scalar_one_or_none()
-            if song is None:
-                await ctx.reply("No song found.", mention_author=False)
-                return None
-
             userinfo = await client.authenticate()
             records = await client.music_record(song.id)
 
@@ -163,7 +154,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 await ctx.reply(
                     f"No records found for {userinfo.name}.", mention_author=False
                 )
-                return None
+                return
 
             futures = [self.utils.annotate_song(record) for record in records]
             records = await asyncio.gather(*futures)
@@ -195,14 +186,14 @@ class RecordsCog(commands.Cog, name="Records"):
                     embed=ScoreCardEmbed(view.items[view.page]),
                     view=view,
                 )
-                return None
+                return
             view.message = await ctx.reply(
                 content=f"Top play for {userinfo.name}",
                 embed=ScoreCardEmbed(view.items[view.page]),
                 view=view,
                 mention_author=False,
             )
-            return None
+            return
 
     async def song_title_autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -380,9 +371,18 @@ class RecordsCog(commands.Cog, name="Records"):
             ),
             app_commands.Choice(name="15", value="15"),
         ],
-        difficulty=[app_commands.Choice(name=str(x), value=x.value) for x in Difficulty.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
-        genre=[app_commands.Choice(name=str(x), value=x.value) for x in Genres.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
-        rank=[app_commands.Choice(name=str(x), value=x.value) for x in Rank.__members__.values()],  # type: ignore[reportGeneralTypeIssues]
+        difficulty=[
+            app_commands.Choice(name=str(x), value=x.value)
+            for x in Difficulty.__members__.values()
+        ],  # type: ignore[reportGeneralTypeIssues]
+        genre=[
+            app_commands.Choice(name=str(x), value=x.value)
+            for x in Genres.__members__.values()
+        ],  # type: ignore[reportGeneralTypeIssues]
+        rank=[
+            app_commands.Choice(name=str(x), value=x.value)
+            for x in Rank.__members__.values()
+        ],  # type: ignore[reportGeneralTypeIssues]
     )
     async def top_slash(
         self,
