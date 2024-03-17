@@ -45,14 +45,7 @@ class EventsCog(commands.Cog, name="Events"):
 
         if isinstance(exc, MaintenanceException):
             embed.description = "CHUNITHM-NET is currently undergoing maintenance. Please try again later."
-        if isinstance(exc, InvalidTokenException):
-            embed.description = (
-                "CHUNITHM-NET cookie is invalid. Please use `c>login` in DMs to log in."
-            )
-            if self.bot.dev:
-                embed.description += f"\nDetailed error: {exc}"
-
-        if isinstance(exc, ChuniNetError):
+        elif isinstance(exc, ChuniNetError):
             embed.description = f"CHUNITHM-NET error {exc.code}: {exc.description}"
         elif isinstance(exc, InvalidTokenException):
             embed.description = f"The token has expired. Please log in again with `{ctx.prefix}login` in my DMs."
