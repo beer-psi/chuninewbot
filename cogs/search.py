@@ -129,10 +129,14 @@ class SearchCog(commands.Cog, name="Search"):
             song = (await session.execute(stmt)).scalar_one_or_none()
 
             if song is None:
-                stmt = select(Alias).where(
-                    (func.lower(Alias.alias) == func.lower(song_title_or_alias))
-                    & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
-                ).options(joinedload(Alias.song))
+                stmt = (
+                    select(Alias)
+                    .where(
+                        (func.lower(Alias.alias) == func.lower(song_title_or_alias))
+                        & ((Alias.guild_id == -1) | (Alias.guild_id == ctx.guild.id))
+                    )
+                    .options(joinedload(Alias.song))
+                )
                 alias = (await session.execute(stmt)).scalar_one_or_none()
                 if alias is None:
                     return await ctx.reply(
@@ -272,6 +276,14 @@ class SearchCog(commands.Cog, name="Search"):
                 ),
                 color=discord.Color.yellow(),
             ).set_thumbnail(url=get_jacket_url(song))
+
+            if not song.available:
+                if song.removed:
+                    embed.description = (
+                        f"**This song is removed.**\n\n{embed.description}"
+                    )
+                else:
+                    embed.description = f"**This song is not available in CHUNITHM International.**\n\n{embed.description}"
 
             stmt = (
                 select(Chart)

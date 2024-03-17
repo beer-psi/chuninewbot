@@ -1,5 +1,6 @@
 from typing import Optional
 
+from discord.ext import commands
 from jarowinkler import jarowinkler_similarity
 from sqlalchemy import (
     BigInteger,
@@ -45,6 +46,9 @@ class Song(Base):
 
     jacket: Mapped[str] = mapped_column(nullable=False)
 
+    available: Mapped[bool] = mapped_column(nullable=False)
+    removed: Mapped[bool] = mapped_column(nullable=False)
+
     charts: Mapped[list["Chart"]] = relationship(
         back_populates="song", cascade="all, delete-orphan"
     )
@@ -63,6 +67,16 @@ class Song(Base):
     @classmethod
     def _similarity_expr(cls, search: str) -> ColumnElement[float]:
         return type_coerce(func.jwsim(func.lower(cls.title), search.lower()), Float)
+
+    def raise_if_not_available(self):
+        if not self.available:
+            if self.removed:
+                msg = f"The song {self.title} is removed."
+            else:
+                msg = (
+                    f"The song {self.title} is not available in CHUNITHM International."
+                )
+            raise commands.BadArgument(msg)
 
 
 class SongJacket(Base):

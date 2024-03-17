@@ -147,6 +147,8 @@ class RecordsCog(commands.Cog, name="Records"):
                 jacket = jackets[0]
                 song = jacket.song
 
+            song.raise_if_not_available()
+
             embed = next(
                 x
                 for x in message.embeds
@@ -274,6 +276,8 @@ class RecordsCog(commands.Cog, name="Records"):
                 return await ctx.reply(
                     did_you_mean_text(song, alias), mention_author=False
                 )
+
+            song.raise_if_not_available()
 
             userinfo = await client.authenticate()
 
