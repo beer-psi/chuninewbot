@@ -5,4 +5,5 @@ SIMILARITY_THRESHOLD = 65
 VERSION_NAMES = {
     "v0.2.1": "Ray of Hope",
     "v0.2.2": "parvorbital",
+    "v0.2.3": "Spider's Thread",
 }

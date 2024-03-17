@@ -51,6 +51,10 @@ make:
   [Raku Zeta](https://github.com/zetaraku)
 - [CHUNITHM song alias list](https://github.com/lomotos10/GCM-bot/blob/main/data/aliases/en/chuni.tsv)
   from [lomotos10](https://github.com/lomotos10)
+- [Tukkun](https://github.com/tukkun1995) for breaking my bot in unthinkable
+  ways (aside from being
+  [a contributor](https://github.com/beerpiss/chuninewbot/pulls?q=is%3Apr+author%3Atukkun1995+)),
+  as well as taking the time to add all the song aliases.
 
 Thanks to all the
 [contributors](https://github.com/beerpiss/chuninewbot/graphs/contributors) who
