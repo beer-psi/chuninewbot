@@ -3,6 +3,8 @@
 
 Discord bot for CHUNITHM International version.
 
+I have a hosted instance that you can invite [here](https://discord.com/oauth2/authorize?client_id=1091948342101155950&scope=bot+applications.commands&permissions=274877983744), though uptime is sometimes flaky.
+
 ### Features
 - [x] Player data
 - [x] Recent scores (including detailed judgements)
