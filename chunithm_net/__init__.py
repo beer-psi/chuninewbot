@@ -19,8 +19,6 @@ from .parser import (
 )
 
 if TYPE_CHECKING:
-    from aiohttp import ClientResponse
-
     from chunithm_net.entities.player_data import PlayerData
 
 __all__ = ["ChuniNet"]

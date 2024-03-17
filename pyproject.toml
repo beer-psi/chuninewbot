@@ -45,10 +45,11 @@ pre-commit = "^3.3.3"
 ruff = "^0.0.291"
 pytest = "^7.4.0"
 pytest-asyncio = "^0.21.1"
-aioresponses = "^0.7.4"
 pytest-cov = "^4.1.0"
 typing-extensions = "^4.7.1"
 basedpyright = "^1.5.0"
+pytest-httpx = "^0.30.0"
+pytest-html = "^4.1.1"
 
 [tool.isort]
 profile = "black"

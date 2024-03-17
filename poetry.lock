@@ -110,20 +110,6 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "brotlicffi"]
 
 [[package]]
-name = "aioresponses"
-version = "0.7.6"
-description = "Mock out requests made by ClientSession from aiohttp package"
-optional = false
-python-versions = "*"
-files = [
-    {file = "aioresponses-0.7.6-py2.py3-none-any.whl", hash = "sha256:d2c26defbb9b440ea2685ec132e90700907fd10bcca3e85ec2f157219f0d26f7"},
-    {file = "aioresponses-0.7.6.tar.gz", hash = "sha256:f795d9dbda2d61774840e7e32f5366f45752d1adc1b74c9362afd017296c7ee1"},
-]
-
-[package.dependencies]
-aiohttp = ">=3.3.0,<4.0.0"
-
-[[package]]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -1066,6 +1052,23 @@ files = [
 colors = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "jinja2"
+version = "3.1.3"
+description = "A very fast and expressive template engine."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "Jinja2-3.1.3-py3-none-any.whl", hash = "sha256:7d6d50dd97d52cbc355597bd845fabfbac3f551e1f99619e39a35ce8c370b5fa"},
+    {file = "Jinja2-3.1.3.tar.gz", hash = "sha256:ac8bd6544d4bb2c9792bf3a159e80bba8fda7f07e81bc3aed565432d5925ba90"},
+]
+
+[package.dependencies]
+MarkupSafe = ">=2.0"
+
+[package.extras]
+i18n = ["Babel (>=2.7)"]
+
+[[package]]
 name = "jishaku"
 version = "2.5.2"
 description = "A discord.py extension including useful tools for bot development and debugging."
@@ -1777,6 +1780,61 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-html"
+version = "4.1.1"
+description = "pytest plugin for generating HTML reports"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest_html-4.1.1-py3-none-any.whl", hash = "sha256:c8152cea03bd4e9bee6d525573b67bbc6622967b72b9628dda0ea3e2a0b5dd71"},
+    {file = "pytest_html-4.1.1.tar.gz", hash = "sha256:70a01e8ae5800f4a074b56a4cb1025c8f4f9b038bba5fe31e3c98eb996686f07"},
+]
+
+[package.dependencies]
+jinja2 = ">=3.0.0"
+pytest = ">=7.0.0"
+pytest-metadata = ">=2.0.0"
+
+[package.extras]
+docs = ["pip-tools (>=6.13.0)"]
+test = ["assertpy (>=1.1)", "beautifulsoup4 (>=4.11.1)", "black (>=22.1.0)", "flake8 (>=4.0.1)", "pre-commit (>=2.17.0)", "pytest-mock (>=3.7.0)", "pytest-rerunfailures (>=11.1.2)", "pytest-xdist (>=2.4.0)", "selenium (>=4.3.0)", "tox (>=3.24.5)"]
+
+[[package]]
+name = "pytest-httpx"
+version = "0.30.0"
+description = "Send responses to httpx."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pytest-httpx-0.30.0.tar.gz", hash = "sha256:755b8edca87c974dd4f3605c374fda11db84631de3d163b99c0df5807023a19a"},
+    {file = "pytest_httpx-0.30.0-py3-none-any.whl", hash = "sha256:6d47849691faf11d2532565d0c8e0e02b9f4ee730da31687feae315581d7520c"},
+]
+
+[package.dependencies]
+httpx = "==0.27.*"
+pytest = ">=7,<9"
+
+[package.extras]
+testing = ["pytest-asyncio (==0.23.*)", "pytest-cov (==4.*)"]
+
+[[package]]
+name = "pytest-metadata"
+version = "3.1.1"
+description = "pytest plugin for test session metadata"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest_metadata-3.1.1-py3-none-any.whl", hash = "sha256:c8e0844db684ee1c798cfa38908d20d67d0463ecb6137c72e91f418558dd5f4b"},
+    {file = "pytest_metadata-3.1.1.tar.gz", hash = "sha256:d2a29b0355fbc03f168aa96d41ff88b1a3b44a3b02acbe491801c98a048017c8"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0"
+
+[package.extras]
+test = ["black (>=22.1.0)", "flake8 (>=4.0.1)", "pre-commit (>=2.17.0)", "tox (>=3.24.5)"]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
@@ -2350,4 +2408,4 @@ speedups = ["aiodns", "brotli", "faust-cchardet", "lxml", "orjson", "uvloop", "w
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "849f202dc4cc038c0f35c6637c861d1494f107f57f59e165762e3a7926f80db6"
+content-hash = "5b4d7c1bb9032bec7599622f629b9c7ac066036a75b51abead218bee486f6072"

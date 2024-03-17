@@ -1,11 +1,11 @@
+from http.cookiejar import Cookie, LWPCookieJar
 import string
 from datetime import timedelta
 from pathlib import Path
 from random import choices
 
 import pytest
-from aioresponses import aioresponses as original_aioresponses
-from multidict import CIMultiDict
+from pytest_httpx import HTTPXMock
 
 from chunithm_net import ChuniNet
 from chunithm_net.entities.enums import (
@@ -25,14 +25,33 @@ BASE_DIR = Path(__file__).parent
 
 
 @pytest.fixture
-def aioresponses():
-    with original_aioresponses() as aior:
-        yield aior
+def clal():
+    return "".join(choices(string.ascii_lowercase + string.digits, k=64))
 
 
 @pytest.fixture
-def clal():
-    return "".join(choices(string.ascii_lowercase + string.digits, k=64))
+def jar(clal: str) -> LWPCookieJar:
+    cookie = Cookie(
+        version=0,
+        name="clal",
+        value=clal,
+        port=None,
+        port_specified=False,
+        domain="lng-tgk-aime-gw.am-all.net",
+        domain_specified=True,
+        domain_initial_dot=False,
+        path="/common_auth",
+        path_specified=True,
+        secure=False,
+        expires=3856586927,  # 2092-03-17 10:08:47Z
+        discard=False,
+        comment=None,
+        comment_url=None,
+        rest={},
+    )
+    jar = LWPCookieJar()
+    jar.set_cookie(cookie)
+    return jar
 
 
 @pytest.fixture
@@ -47,207 +66,225 @@ def token():
 
 @pytest.mark.asyncio
 async def test_client_throws_chuninet_errors(
-    aioresponses: original_aioresponses, clal: str, user_id: str, token: str
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home/",
-        status=302,
-        headers={"Location": "https://chunithm-net-eng.com/mobile/error"},
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/error/"},
     )
 
     with (BASE_DIR / "assets" / "100001.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/error",
-            body=f.read(),
-            content_type="text/html; charset=UTF-8",
-            status=200,
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/error/",
+            content=f.read(),
+            status_code=200,
+            headers={"Content-Type": "text/html; charset=UTF-8"},
         )
 
     with pytest.raises(ChuniNetError, match="Error code 100001: An error coccured."):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
+        async with ChuniNet(jar) as client:
             await client.authenticate()
 
-    aioresponses.assert_called_once_with("https://chunithm-net-eng.com/mobile/home/")
-
 
 @pytest.mark.asyncio
-async def test_client_throws_token_errors(
-    aioresponses: original_aioresponses, clal: str
-):
-    aioresponses.get(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
-        status=200,
-    )
-
-    with pytest.raises(
-        InvalidTokenException, match="Invalid cookie. Received status code was 200"
-    ):
-        async with ChuniNet(clal) as client:
-            await client.validate_cookie()
-
-    aioresponses.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_client_throws_no_userid_cookie(
-    aioresponses: original_aioresponses, clal: str
-):
-    aioresponses.get(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
-        status=302,
-        headers={"Location": f"https://chunithm-net-eng.com/mobile/?ssid={clal}"},
-    )
-
-    aioresponses.get(
-        f"https://chunithm-net-eng.com/mobile/?ssid={clal}",
-        status=302,
-        headers={"Location": "https://chunithm-net-eng.com/mobile/home/"},
-    )
-
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-            content_type="text/html; charset=UTF-8",
-        )
-
-    # This was supposed to be a success but aioresponses doesn't mock
-    # the cookie jar so this is the best we can do
-    with pytest.raises(InvalidTokenException, match="No userId cookie found"):
-        async with ChuniNet(clal) as client:
-            await client.authenticate()
-
-    aioresponses.assert_any_call(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
-    )
-    aioresponses.assert_any_call(f"https://chunithm-net-eng.com/mobile/?ssid={clal}")
-
-
-@pytest.mark.asyncio
-async def test_client_reauthenticates_on_error(
-    aioresponses: original_aioresponses, clal: str, user_id: str, token: str
-):
-    new_user_id = "".join(choices(string.digits, k=15))
-    new_token = "".join(choices("abcdef" + string.digits, k=32))
-
-    aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home/",
-        status=302,
-        headers={"Location": "https://chunithm-net-eng.com/mobile/error"},
-    )
-
-    with (BASE_DIR / "assets" / "200004.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/error",
-            body=f.read(),
-            content_type="text/html; charset=UTF-8",
-            status=200,
-        )
-
-    aioresponses.get(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
-        status=302,
-        headers={"Location": f"https://chunithm-net-eng.com/mobile/?ssid={clal}"},
-    )
-
-    aioresponses.get(
-        f"https://chunithm-net-eng.com/mobile/?ssid={clal}",
-        status=302,
-        headers=CIMultiDict(
-            [
-                ("Location", "https://chunithm-net-eng.com/mobile/home/"),
-                (
-                    "Set-Cookie",
-                    f"_t={new_token}; expires=Thu, 11-Aug-2033 13:09:40 GMT; Max-Age=315360000; path=/; SameSite=Strict",
-                ),
-                (
-                    "Set-Cookie",
-                    f"userId={new_user_id}; path=/; secure; HttpOnly; SameSite=Lax",
-                ),
-            ]
-        ),
-    )
-
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-            content_type="text/html; charset=UTF-8",
-        )
-
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
-
-    aioresponses.assert_any_call("https://chunithm-net-eng.com/mobile/home/")
-    aioresponses.assert_any_call(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/"
-    )
-
-
-@pytest.mark.asyncio
-async def test_client_handles_failed_reauthentication(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
-):
-    aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home/",
-        status=302,
+async def test_client_throws_token_errors(httpx_mock: HTTPXMock, jar: LWPCookieJar):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/"},
     )
 
     with (BASE_DIR / "assets" / "stupid_way_to_redirect.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/", status=200, body=f.read()
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/",
+            status_code=200,
+            content=f.read(),
         )
 
-    aioresponses.get(
-        "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
-        status=200,
+    httpx_mock.add_response(
+        method="GET",
+        url="https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
+        status_code=200,
     )
 
-    with pytest.raises(
-        InvalidTokenException, match="Invalid cookie. Received status code was 200"
-    ):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
+    with pytest.raises(InvalidTokenException):
+        async with ChuniNet(jar) as client:
+            await client.authenticate()
+
+
+@pytest.mark.asyncio
+async def test_client_authenticates(
+    httpx_mock: HTTPXMock, jar: LWPCookieJar, clal: str
+):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/"},
+    )
+
+    with (BASE_DIR / "assets" / "stupid_way_to_redirect.html").open("rb") as f:
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/",
+            status_code=200,
+            content=f.read(),
+        )
+
+    httpx_mock.add_response(
+        method="GET",
+        url="https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
+        status_code=302,
+        headers={"Location": f"https://chunithm-net-eng.com/mobile/?ssid={clal}"},
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://chunithm-net-eng.com/mobile/?ssid={clal}",
+        status_code=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/home/"},
+    )
+
+    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/",
+            status_code=200,
+            content=f.read(),
+            headers={"Content-Type": "text/html; charset=UTF-8"},
+        )
+
+    async with ChuniNet(jar) as client:
+        await client.authenticate()
+
+
+@pytest.mark.asyncio
+async def test_client_reauthenticates_on_error(
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
+    clal: str,
+    user_id: str,
+    token: str,
+):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/error/"},
+    )
+
+    with (BASE_DIR / "assets" / "200004.html").open("rb") as f:
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/error/",
+            content=f.read(),
+            status_code=200,
+            headers={"Content-Type": "text/html; charset=UTF-8"},
+        )
+
+    httpx_mock.add_response(
+        method="GET",
+        url="https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
+        status_code=302,
+        headers={"Location": f"https://chunithm-net-eng.com/mobile/?ssid={clal}"},
+    )
+
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://chunithm-net-eng.com/mobile/?ssid={clal}",
+        status_code=302,
+        headers=[
+            ("Location", "https://chunithm-net-eng.com/mobile/home/"),
+            (
+                "Set-Cookie",
+                f"_t={token}; expires=Thu, 11-Aug-2033 13:09:40 GMT; Max-Age=315360000; path=/; SameSite=Strict",
+            ),
+            (
+                "Set-Cookie",
+                f"userId={user_id}; path=/; secure; HttpOnly; SameSite=Lax",
+            ),
+        ],
+    )
+
+    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/",
+            status_code=200,
+            content=f.read(),
+            headers={"Content-Type": "text/html; charset=UTF-8"},
+        )
+
+    async with ChuniNet(jar) as client:
+        await client.authenticate()
+
+
+@pytest.mark.asyncio
+async def test_client_handles_failed_reauthentication(
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
+):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=302,
+        headers={"Location": "https://chunithm-net-eng.com/mobile/"},
+    )
+
+    with (BASE_DIR / "assets" / "stupid_way_to_redirect.html").open("rb") as f:
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/",
+            status_code=200,
+            content=f.read(),
+        )
+
+    httpx_mock.add_response(
+        method="GET",
+        url="https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=chuniex&redirect_url=https://chunithm-net-eng.com/mobile/&back_url=https://chunithm.sega.com/",
+        status_code=200,
+    )
+
+    with pytest.raises(InvalidTokenException):
+        async with ChuniNet(jar) as client:
             await client.authenticate()
 
 
 @pytest.mark.asyncio
 async def test_client_throws_when_on_maintenance(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home/",
-        status=503,
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/",
+        status_code=503,
     )
 
     with pytest.raises(MaintenanceException):
-        async with ChuniNet(clal, user_id=user_id, token=token) as client:
+        async with ChuniNet(jar) as client:
             await client.authenticate()
 
 
 @pytest.mark.asyncio
 async def test_client_parses_homepage(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
     with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
+    async with ChuniNet(jar) as client:
         user_data = await client.authenticate()
 
     assert user_data.possession == Possession.NONE
@@ -336,27 +373,18 @@ async def test_client_parses_homepage(
 
 @pytest.mark.asyncio
 async def test_client_parses_playerdata(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
     with (BASE_DIR / "assets" / "player_data.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/playerData",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/playerData",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
+    async with ChuniNet(jar) as client:
         user_data = await client.player_data()
 
     assert user_data.possession == Possession.NONE
@@ -455,26 +483,18 @@ async def test_client_parses_playerdata(
 
 @pytest.mark.asyncio
 async def test_client_parses_playlog(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
     with (BASE_DIR / "assets" / "playlog.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/playlog",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/record/playlog",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
+    async with ChuniNet(jar) as client:
         records = await client.recent_record()
 
     assert len(records) == 50
@@ -514,35 +534,27 @@ async def test_client_parses_playlog(
 
 @pytest.mark.asyncio
 async def test_client_parses_detailed_playlog(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
-    aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/playlog/sendPlaylogDetail/",
-        status=302,
+    httpx_mock.add_response(
+        method="POST",
+        url="https://chunithm-net-eng.com/mobile/record/playlog/sendPlaylogDetail/",
+        status_code=302,
         headers={
             "Location": "https://chunithm-net-eng.com/mobile/record/playlogDetail/"
         },
     )
 
     with (BASE_DIR / "assets" / "playlog_detail.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/playlogDetail/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/record/playlogDetail/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
+    async with ChuniNet(jar) as client:
         record = await client.detailed_recent_record(40)
 
     assert record.detailed is not None
@@ -597,33 +609,25 @@ async def test_client_parses_detailed_playlog(
 
 @pytest.mark.asyncio
 async def test_client_parses_music_record(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
-    aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/musicGenre/sendMusicDetail/",
-        status=302,
+    httpx_mock.add_response(
+        method="POST",
+        url="https://chunithm-net-eng.com/mobile/record/musicGenre/sendMusicDetail/",
+        status_code=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/record/musicDetail/"},
     )
 
     with (BASE_DIR / "assets" / "music_record.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/musicDetail/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/record/musicDetail/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
+    async with ChuniNet(jar) as client:
         records = await client.music_record(428)
 
     assert len(records) == 2
@@ -660,35 +664,27 @@ async def test_client_parses_music_record(
 
 @pytest.mark.asyncio
 async def test_clients_parses_we_music_record(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
-    aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/record/worldsEndList/sendWorldsEndDetail/",
-        status=302,
+    httpx_mock.add_response(
+        method="POST",
+        url="https://chunithm-net-eng.com/mobile/record/worldsEndList/sendWorldsEndDetail/",
+        status_code=302,
         headers={
             "Location": "https://chunithm-net-eng.com/mobile/record/worldsEndDetail/"
         },
     )
 
     with (BASE_DIR / "assets" / "worlds_end_music_record.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/record/worldsEndDetail/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/record/worldsEndDetail/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
+    async with ChuniNet(jar) as client:
         records = await client.music_record(8218)
 
     assert len(records) == 1
@@ -718,34 +714,26 @@ async def test_clients_parses_we_music_record(
 
 @pytest.mark.asyncio
 async def test_client_parses_music_for_rating(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-        )
-
     with (BASE_DIR / "assets" / "best30.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailBest/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailBest/",
+            status_code=200,
+            content=f.read(),
         )
 
     with (BASE_DIR / "assets" / "recent10.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailRecent/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="GET",
+            url="https://chunithm-net-eng.com/mobile/home/playerData/ratingDetailRecent/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
+    async with ChuniNet(jar) as client:
         best30 = await client.best30()
         recent10 = await client.recent10()
 
@@ -770,29 +758,18 @@ async def test_client_parses_music_for_rating(
 
 @pytest.mark.asyncio
 async def test_client_parses_music_record_by_folder(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-            repeat=True,
-        )
-
     with (BASE_DIR / "assets" / "music_record_by_level_folder.html").open("rb") as f:
-        aioresponses.post(
-            "https://chunithm-net-eng.com/mobile/record/musicLevel/sendSearch/",
-            status=200,
-            body=f.read(),
+        httpx_mock.add_response(
+            method="POST",
+            url="https://chunithm-net-eng.com/mobile/record/musicLevel/sendSearch/",
+            status_code=200,
+            content=f.read(),
         )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
-
+    async with ChuniNet(jar) as client:
         records = await client.music_record_by_folder(level="14")
 
     assert records is not None
@@ -813,42 +790,21 @@ async def test_client_parses_music_record_by_folder(
 
 @pytest.mark.asyncio
 async def test_client_can_rename(
-    aioresponses: original_aioresponses,
-    clal: str,
-    user_id: str,
-    token: str,
+    httpx_mock: HTTPXMock,
+    jar: LWPCookieJar,
 ):
-    with (BASE_DIR / "assets" / "logged_in_homepage.html").open("rb") as f:
-        aioresponses.get(
-            "https://chunithm-net-eng.com/mobile/home/",
-            status=200,
-            body=f.read(),
-            repeat=True,
-        )
-
-    aioresponses.post(
-        "https://chunithm-net-eng.com/mobile/home/userOption/updateUserName/update/",
-        status=302,
+    httpx_mock.add_response(
+        method="POST",
+        url="https://chunithm-net-eng.com/mobile/home/userOption/updateUserName/update/",
+        status_code=302,
         headers={"Location": "https://chunithm-net-eng.com/mobile/home/userOption/"},
     )
 
-    aioresponses.get(
-        "https://chunithm-net-eng.com/mobile/home/userOption/",
-        status=200,
+    httpx_mock.add_response(
+        method="GET",
+        url="https://chunithm-net-eng.com/mobile/home/userOption/",
+        status_code=200,
     )
 
-    async with ChuniNet(clal, user_id=user_id, token=token) as client:
-        await client.authenticate()
-
-        with pytest.raises(
-            ValueError, match="Player name must be between 1 and 8 characters"
-        ):
-            await client.change_player_name("")
-        with pytest.raises(
-            ValueError, match="Player name must be between 1 and 8 characters"
-        ):
-            await client.change_player_name("123456789")
-        with pytest.raises(ValueError, match="Player name contains invalid characters"):
-            await client.change_player_name("あいうえお")
-
+    async with ChuniNet(jar) as client:
         assert await client.change_player_name("new name") is True
