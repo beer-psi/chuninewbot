@@ -242,11 +242,9 @@ def parse_music_record(soup: BeautifulSoup, song_id: int) -> list[MusicRecord]:
                 is not None
                 else "0"
             ),
-            ajc_count=chuni_int(
-                elem.get_text()
-                if (elem := block.select_one(".musicdata_score_theory_num")) is not None
-                else "0"
-            ),
+            ajc_count=chuni_int(elem.get_text())
+            if (elem := block.select_one(".musicdata_score_theory_num")) is not None
+            else None,
         )
         score.extras[KEY_SONG_ID] = song_id
 
