@@ -12,14 +12,14 @@ from ._pagination import PaginationView
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from chunithm_net.models.record import MusicRecord
+    from chunithm_net.models.record import Record
 
 
 class B30View(PaginationView):
     def __init__(
         self,
         ctx: Context,
-        items: Sequence["MusicRecord"],
+        items: Sequence["Record"],
         per_page: int = 3,
         *,
         show_average: bool = True,
@@ -42,7 +42,7 @@ class B30View(PaginationView):
         )
 
     def format_page(
-        self, items: Sequence["MusicRecord"], start_index: int = 0
+        self, items: Sequence["Record"], start_index: int = 0
     ) -> Sequence[discord.Embed]:
         embeds: list[discord.Embed] = [
             ScoreCardEmbed(item, index=start_index + idx + 1, show_lamps=False)

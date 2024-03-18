@@ -11,7 +11,12 @@ from chunithm_net.consts import (
     KEY_TOTAL_COMBO,
 )
 from chunithm_net.models.enums import ComboType, Difficulty
-from chunithm_net.models.record import DetailedRecentRecord, MusicRecord, RecentRecord
+from chunithm_net.models.record import (
+    DetailedRecentRecord,
+    MusicRecord,
+    Record,
+    RecentRecord,
+)
 from utils import floor_to_ndp
 from utils.calculation.overpower import calculate_play_overpower
 from utils.ranks import rank_icon
@@ -20,7 +25,7 @@ from utils.ranks import rank_icon
 class ScoreCardEmbed(discord.Embed):
     def __init__(
         self,
-        record: MusicRecord,
+        record: Record,
         *,
         show_lamps: bool = True,
         index: Optional[int] = None,
@@ -58,14 +63,14 @@ class ScoreCardEmbed(discord.Embed):
             if record.difficulty != Difficulty.WORLDS_END:
                 footer_sections.append(f"OP: {play_op_display}")
 
-        if record.play_count is not None:
+        if isinstance(record, MusicRecord) and record.play_count is not None:
             footer_sections.append(
                 f"{record.play_count} attempt{'s' if record.play_count > 1 else ''}"
             )
 
         self.set_footer(text="  •  ".join(footer_sections))
 
-        if record.ajc_count:
+        if isinstance(record, MusicRecord) and record.play_count is not None:
             score_data += f"\n▸ AJC count: {record.ajc_count}"
 
         if isinstance(record, DetailedRecentRecord):
@@ -114,7 +119,7 @@ class ScoreCardEmbed(discord.Embed):
             self.description = score_data
 
 
-def _displayed_difficulty(record: MusicRecord) -> str:
+def _displayed_difficulty(record: Record) -> str:
     difficulty = record.difficulty
     level = record.extras.get(KEY_LEVEL)
     internal_level = record.extras.get(KEY_INTERNAL_LEVEL)

@@ -45,13 +45,13 @@ class Record:
     clear_lamp: ClearType = ClearType.FAILED
     combo_lamp: ComboType = ComboType.NONE
 
+    jacket: Optional[str] = None
+
     extras: TypePairedDict = field(default_factory=TypePairedDict)
 
 
 @dataclass(kw_only=True)
 class MusicRecord(Record):
-    jacket: str
-
     play_count: Optional[int] = None
     ajc_count: Optional[int] = None
 

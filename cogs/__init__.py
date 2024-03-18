@@ -1,0 +1,15 @@
+COG_LIST: list[str] = [
+    "cogs.autocompleters",
+    "cogs.botutils",
+    "cogs.events",
+    "cogs.fluff",
+    "cogs.gaming",
+    "cogs.hotreload",
+    "cogs.misc",
+    "cogs.chunithm.auth",
+    "cogs.chunithm.kamaitachi",
+    "cogs.chunithm.profile",
+    "cogs.chunithm.records",
+    "cogs.chunithm.search",
+    "cogs.chunithm.tools",
+]

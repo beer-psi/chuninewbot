@@ -17,6 +17,7 @@ from rapidfuzz import fuzz
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from cogs import COG_LIST
 from database.models import Prefix
 from utils.config import config
 from utils.help import HelpCommand
@@ -98,26 +99,21 @@ class ChuniBot(commands.Bot):
                 )
             )
 
-        # Load extensions
-        await self.load_extension("cogs.autocompleters")
-        await self.load_extension("cogs.botutils")
         if self.dev:
             await self.load_extension("cogs.hotreload")
             await self.load_extension("jishaku")
 
-        for file in (BOT_DIR / "cogs").glob("*.py"):
-            if file.stem in ("hotreload", "botutils", "__init__", "autocompleters"):
-                continue
+        for cog in COG_LIST:
             try:
-                await self.load_extension(f"cogs.{file.stem}")
-                logger.info(f"Loaded extension cogs.{file.stem}")
-            except commands.errors.ExtensionAlreadyLoaded:
-                logger.warning(f"cogs.{file.stem} already loaded")
+                await self.load_extension(cog)
+                logger.info(f"Loaded extension {cog}")
+            except commands.errors.ExtensionAlreadyLoaded:  # noqa: PERF203
+                logger.warning(f"{cog} already loaded")
             except commands.errors.NoEntryPointError:
-                logger.error(f"cogs.{file.stem} has no `setup` function.")
+                logger.error(f"{COG_LIST} has no `setup` function.")
             except commands.errors.ExtensionFailed as e:
                 logger.error(
-                    f"cogs.{file.stem} raised an error: {e.original.__class__.__name__}: {e.original}"
+                    f"{cog} raised an error: {e.original.__class__.__name__}: {e.original}"
                 )
 
     async def close(self) -> None:

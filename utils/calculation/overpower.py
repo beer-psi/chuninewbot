@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from chunithm_net.consts import KEY_OVERPOWER_BASE, KEY_OVERPOWER_MAX
 from chunithm_net.models.enums import ComboType
-from chunithm_net.models.record import MusicRecord
+from chunithm_net.models.record import Record
 from utils import floor_to_ndp
 
 
@@ -38,7 +38,7 @@ def calculate_overpower_max(internal_level: float) -> Decimal:
     return Decimal(str(internal_level)) * 5 + 15
 
 
-def calculate_play_overpower(score: MusicRecord) -> Decimal:
+def calculate_play_overpower(score: Record) -> Decimal:
     play_overpower = score.extras[KEY_OVERPOWER_BASE]
     if score.score == 1010000:
         play_overpower = score.extras[KEY_OVERPOWER_MAX]

@@ -19,11 +19,13 @@ from chunithm_net.consts import (
     KEY_SONG_ID,
     KEY_TOTAL_COMBO,
 )
+from chunithm_net.models.enums import Rank
 from chunithm_net.models.record import (
     MusicRecord,
     Record,
 )
 from database.models import Alias, Chart, Cookie, Song
+from utils import get_jacket_url
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -150,6 +152,9 @@ class UtilsCog(commands.Cog, name="Utils"):
                 if not isinstance(record, MusicRecord):
                     raise MissingDetailedParams
 
+                if record.jacket is None:
+                    raise MissingDetailedParams
+
                 jacket_filename = record.jacket.split("/")[-1]
                 stmt = select(Song).where(
                     (Song.title == record.title) & (Song.jacket == jacket_filename)
@@ -162,6 +167,9 @@ class UtilsCog(commands.Cog, name="Utils"):
             if song is None:
                 logger.warn(f"Missing song data for song title {record.title}")
                 return record
+
+            if record.jacket is None:
+                record.jacket = get_jacket_url(song)
 
             stmt = select(Chart).where(
                 (Chart.song_id == song.id)
@@ -195,6 +203,9 @@ class UtilsCog(commands.Cog, name="Utils"):
 
         if chart.maxcombo is not None:
             record.extras[KEY_TOTAL_COMBO] = chart.maxcombo
+
+        if record.rank == Rank.D:
+            record.rank = Rank.from_score(record.score)
 
         return record
 

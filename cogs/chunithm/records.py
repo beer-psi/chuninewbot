@@ -12,7 +12,7 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
+from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE, KEY_PLAY_RATING
 from chunithm_net.models.enums import Difficulty, Genres, Rank
 from database.models import SongJacket
 from utils import did_you_mean_text, shlex_split
@@ -422,7 +422,9 @@ class RecordsCog(commands.Cog, name="Records"):
 
             tasks = [self.utils.annotate_song(score) for score in records]
             records = await asyncio.gather(*tasks)
-            records.sort(key=lambda x: (x.play_rating, x.score), reverse=True)
+            records.sort(
+                key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
+            )
 
             ctx = await Context.from_interaction(interaction)
             view = B30View(ctx, records, show_average=False)
@@ -559,7 +561,9 @@ class RecordsCog(commands.Cog, name="Records"):
 
             tasks = [self.utils.annotate_song(score) for score in records]
             records = await asyncio.gather(*tasks)
-            records.sort(key=lambda x: (x.play_rating, x.score), reverse=True)
+            records.sort(
+                key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
+            )
 
             view = B30View(ctx, records, show_average=False)
             view.message = await ctx.reply(
