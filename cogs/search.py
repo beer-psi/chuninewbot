@@ -275,7 +275,7 @@ class SearchCog(commands.Cog, name="Search"):
             mention_author=False,
         )
 
-    @commands.hybrid_command("listalias")
+    @commands.hybrid_command("listalias", aliases=["listaliases", "aliases"])
     async def listalias(self, ctx: Context, *, query: str):
         """List aliases for a given song
 
