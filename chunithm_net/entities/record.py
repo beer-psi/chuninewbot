@@ -52,6 +52,7 @@ class MusicRecord(Record):
     jacket: str
 
     play_count: Optional[int] = None
+    ajc_count: Optional[int] = None
 
     @staticmethod
     def from_record(record: Record) -> "MusicRecord":

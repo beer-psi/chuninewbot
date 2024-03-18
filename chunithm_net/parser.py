@@ -243,6 +243,16 @@ def parse_music_record(
                     is not None
                     else "0"
                 ),
+                ajc_count=chuni_int(
+                    elem.get_text()
+                    if (
+                        elem := block.select_one(
+                            ".musicdata_score_theory_num_font_small"
+                        )
+                    )
+                    is not None
+                    else "0"
+                ),
             )
         )
     return records
