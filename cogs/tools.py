@@ -10,7 +10,7 @@ from discord.utils import escape_markdown
 from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 
-from chunithm_net.entities.enums import Rank
+from chunithm_net.models.enums import Rank
 from database.models import Chart
 from utils import did_you_mean_text, floor_to_ndp, round_to_nearest
 from utils.calculation.overpower import (

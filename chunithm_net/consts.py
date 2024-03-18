@@ -1,84 +1,16 @@
+from decimal import Decimal
+from chunithm_net.models.record import DetailedParams
+from chunithm_net.models.type_paired_dict import TypePairedDictKey
+
+
 JACKET_BASE = "https://new.chunithm-net.com/chuni-mobile/html/mobile/img"
 INTERNATIONAL_JACKET_BASE = "https://chunithm-net-eng.com/mobile/img"
-PLAYER_NAME_ALLOWED_SPECIAL_CHARACTERS = [
-    "．",
-    "・",
-    "：",
-    "；",
-    "？",
-    "！",
-    "～",
-    "／",
-    "＋",
-    "－",
-    "×",
-    "÷",
-    "＝",
-    "♂",
-    "♀",
-    "∀",
-    "＃",
-    "＆",
-    "＊",
-    "＠",
-    "☆",
-    "○",
-    "◎",
-    "◇",
-    "□",
-    "△",
-    "▽",
-    "♪",
-    "†",
-    "‡",
-    "Σ",
-    "α",
-    "β",
-    "γ",
-    "θ",
-    "φ",
-    "ψ",
-    "ω",
-    "Д",
-    "ё",
-    ".",
-    "・",
-    ":",
-    ";",
-    "?",
-    "!",
-    "~",
-    "/",
-    "+",
-    "-",
-    "×",
-    "÷",
-    "=",
-    "♂",
-    "♀",
-    "∀",
-    "#",
-    "&",
-    "*",
-    "@",
-    "☆",
-    "○",
-    "◎",
-    "◇",
-    "□",
-    "△",
-    "▽",
-    "♪",
-    "†",
-    "‡",
-    "Σ",
-    "α",
-    "β",
-    "γ",
-    "θ",
-    "φ",
-    "ψ",
-    "ω",
-    "Д",
-    "ё",
-]
+
+_KEY_DETAILED_PARAMS = TypePairedDictKey[DetailedParams]()
+KEY_SONG_ID = TypePairedDictKey[int]()
+KEY_LEVEL = TypePairedDictKey[str]()
+KEY_INTERNAL_LEVEL = TypePairedDictKey[float]()
+KEY_PLAY_RATING = TypePairedDictKey[Decimal]()
+KEY_OVERPOWER_BASE = TypePairedDictKey[Decimal]()
+KEY_OVERPOWER_MAX = TypePairedDictKey[Decimal]()
+KEY_TOTAL_COMBO = TypePairedDictKey[int]()

@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from bs4.element import ResultSet, Tag
 
-from .entities.enums import ClearType, ComboType, Difficulty, Rank
+from .models.enums import ClearType, ComboType, Difficulty, Rank
 
 
 def chuni_int(s: str) -> int:

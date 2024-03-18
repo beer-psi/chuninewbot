@@ -1,10 +1,11 @@
 # pyright: reportOptionalMemberAccess=false, reportOptionalSubscript=false
-from typing import Optional, cast
+from typing import cast
 
 from bs4 import BeautifulSoup, Tag
 
-from .entities.enums import ClearType, ComboType, Possession, Rank, SkillClass
-from .entities.player_data import (
+from .consts import _KEY_DETAILED_PARAMS, KEY_SONG_ID
+from .models.enums import ClearType, ComboType, Possession, Rank, SkillClass
+from .models.player_data import (
     Currency,
     Nameplate,
     Overpower,
@@ -13,7 +14,7 @@ from .entities.player_data import (
     Team,
     UserAvatar,
 )
-from .entities.record import (
+from .models.record import (
     DetailedParams,
     DetailedRecentRecord,
     Judgements,
@@ -151,12 +152,12 @@ def parse_player_data(soup: BeautifulSoup) -> PlayerData:
 
 def parse_basic_recent_record(record: Tag) -> RecentRecord:
     idx_elem = record.select_one("form input[name=idx]")
-    if idx_elem is None:
-        detailed = None
-    else:
-        idx = int(cast(str, idx_elem["value"]))
-        token = cast(str, record.select_one("form input[name=token]")["value"])
-        detailed = DetailedParams(idx, token)
+
+    assert idx_elem is not None
+
+    idx = int(cast(str, idx_elem["value"]))
+    token = cast(str, record.select_one("form input[name=token]")["value"])
+    detailed = DetailedParams(idx, token)
 
     date = parse_time(
         (record.select_one(".play_datalist_date, .box_inner01")).get_text()
@@ -179,8 +180,7 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
         clear_lamp = ClearType.FAILED
         combo_lamp = ComboType.NONE
 
-    return RecentRecord(
-        detailed=detailed,
+    score = RecentRecord(
         track=track,
         date=date,
         title=title,
@@ -194,11 +194,12 @@ def parse_basic_recent_record(record: Tag) -> RecentRecord:
         combo_lamp=combo_lamp,
         new_record=new_record,
     )
+    score.extras[_KEY_DETAILED_PARAMS] = detailed
+
+    return score
 
 
-def parse_music_record(
-    soup: BeautifulSoup, detailed: Optional[DetailedParams] = None
-) -> list[MusicRecord]:
+def parse_music_record(soup: BeautifulSoup, song_id: int) -> list[MusicRecord]:
     jacket = (
         str(elem["src"]) if (elem := soup.select_one(".play_jacket_img img")) else ""
     )
@@ -218,39 +219,38 @@ def parse_music_record(
         else:
             rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
 
-        records.append(
-            MusicRecord(
-                detailed=detailed,
-                title=title,
-                jacket=jacket,
-                difficulty=difficulty_from_imgurl(" ".join(block["class"])),
-                score=chuni_int(
-                    elem.get_text()
-                    if (elem := block.select_one(".musicdata_score_num .text_b"))
-                    is not None
-                    else "0"
-                ),
-                rank=rank,
-                clear_lamp=clear_lamp,
-                combo_lamp=combo_lamp,
-                play_count=chuni_int(
-                    elem.get_text().replace("times", "")
-                    if (
-                        elem := block.select_one(
-                            ".musicdata_score_num .text_b:-soup-contains(times), .music_box .block_icon_text span:not([class])"
-                        )
+        score = MusicRecord(
+            title=title,
+            jacket=jacket,
+            difficulty=difficulty_from_imgurl(" ".join(block["class"])),
+            score=chuni_int(
+                elem.get_text()
+                if (elem := block.select_one(".musicdata_score_num .text_b"))
+                is not None
+                else "0"
+            ),
+            rank=rank,
+            clear_lamp=clear_lamp,
+            combo_lamp=combo_lamp,
+            play_count=chuni_int(
+                elem.get_text().replace("times", "")
+                if (
+                    elem := block.select_one(
+                        ".musicdata_score_num .text_b:-soup-contains(times), .music_box .block_icon_text span:not([class])"
                     )
-                    is not None
-                    else "0"
-                ),
-                ajc_count=chuni_int(
-                    elem.get_text()
-                    if (elem := block.select_one(".musicdata_score_theory_num"))
-                    is not None
-                    else "0"
-                ),
-            )
+                )
+                is not None
+                else "0"
+            ),
+            ajc_count=chuni_int(
+                elem.get_text()
+                if (elem := block.select_one(".musicdata_score_theory_num")) is not None
+                else "0"
+            ),
         )
+        score.extras[KEY_SONG_ID] = song_id
+
+        records.append(score)
     return records
 
 
@@ -266,22 +266,19 @@ def parse_music_for_rating(soup: BeautifulSoup) -> list[Record]:
             rank, clear_lamp, combo_lamp = Rank.D, ClearType.FAILED, ComboType.NONE
 
         div = x.select_one(".w388.musiclist_box")
-        records.append(
-            Record(
-                detailed=DetailedParams(
-                    idx=int(str(x.select_one("input[name=idx]")["value"])),
-                    token=str(x.select_one("input[name=token]")["value"]),
-                ),
-                title=x.select_one(
-                    ".music_title, .musiclist_worldsend_title"
-                ).get_text(),
-                difficulty=difficulty_from_imgurl(" ".join(div["class"])),
-                score=chuni_int(score_elem.get_text()),
-                rank=rank,
-                clear_lamp=clear_lamp,
-                combo_lamp=combo_lamp,
-            )
+        score = Record(
+            title=x.select_one(".music_title, .musiclist_worldsend_title").get_text(),
+            difficulty=difficulty_from_imgurl(" ".join(div["class"])),
+            score=chuni_int(score_elem.get_text()),
+            rank=rank,
+            clear_lamp=clear_lamp,
+            combo_lamp=combo_lamp,
         )
+        score.extras[KEY_SONG_ID] = int(
+            str(x.select_one("form input[name=idx]")["value"])
+        )
+
+        records.append(score)
     return records
 
 
@@ -321,5 +318,8 @@ def parse_detailed_recent_record(soup: BeautifulSoup) -> DetailedRecentRecord:
 
     record.skill_result = chuni_int(
         soup.select_one(".play_musicdata_skilleffect_text").get_text().replace("+", "")
+    )
+    record.extras[KEY_SONG_ID] = int(
+        str(soup.select_one("form input[name=idx]")["value"])
     )
     return record

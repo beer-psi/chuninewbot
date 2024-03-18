@@ -8,7 +8,8 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from chunithm_net import ChuniNet
-from chunithm_net.entities.enums import (
+from chunithm_net.consts import _KEY_DETAILED_PARAMS, KEY_SONG_ID
+from chunithm_net.models.enums import (
     ClearType,
     ComboType,
     Difficulty,
@@ -501,9 +502,7 @@ async def test_client_parses_playlog(
 
     record = records[0]
 
-    assert record.detailed is not None
-    assert record.detailed.idx == 40
-    assert record.detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
+    assert record.extras.get(_KEY_DETAILED_PARAMS) is not None
 
     assert record.title == "Air"
     assert record.difficulty == Difficulty.MASTER
@@ -557,9 +556,7 @@ async def test_client_parses_detailed_playlog(
     async with ChuniNet(jar) as client:
         record = await client.detailed_recent_record(40)
 
-    assert record.detailed is not None
-    assert record.detailed.idx == 317
-    assert record.detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
+    assert record.extras.get(KEY_SONG_ID) == 317
 
     assert record.title == "Air"
     assert record.difficulty == Difficulty.MASTER
@@ -632,10 +629,9 @@ async def test_client_parses_music_record(
 
     assert len(records) == 2
 
-    assert records[0].detailed is not None
-    assert records[1].detailed is not None
-
-    assert records[0].detailed.idx == records[1].detailed.idx == 428
+    assert (
+        records[0].extras.get(KEY_SONG_ID) == records[1].extras.get(KEY_SONG_ID) == 428
+    )
 
     assert records[0].title == records[1].title == "Aleph-0"
 
@@ -690,8 +686,7 @@ async def test_clients_parses_we_music_record(
     assert len(records) == 1
 
     record = records[0]
-    assert record.detailed is not None
-    assert record.detailed.idx == 8218
+    assert record.extras.get(KEY_SONG_ID) == 8218
 
     assert record.title == "BLUE ZONE"
 
@@ -738,19 +733,15 @@ async def test_client_parses_music_for_rating(
         recent10 = await client.recent10()
 
     assert len(best30) == 30
-    assert best30[0].detailed is not None
-    assert best30[0].detailed.idx == 428
-    assert best30[0].detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
 
+    assert best30[0].extras.get(KEY_SONG_ID) == 428
     assert best30[0].title == "Aleph-0"
     assert best30[0].score == 1005037
     assert best30[0].difficulty == Difficulty.EXPERT
 
     assert len(recent10) == 10
-    assert recent10[0].detailed is not None
-    assert recent10[0].detailed.idx == 2340
-    assert recent10[0].detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
 
+    assert recent10[0].extras.get(KEY_SONG_ID) == 2340
     assert recent10[0].title == "To：Be Continued"  # noqa: RUF001
     assert recent10[0].score == 1000449
     assert recent10[0].difficulty == Difficulty.EXPERT
@@ -775,10 +766,7 @@ async def test_client_parses_music_record_by_folder(
     assert records is not None
     assert len(records) == 34
 
-    assert records[0].detailed is not None
-    assert records[0].detailed.idx == 2184
-    assert records[0].detailed.token == "b9bcc1acf740be4b59d7b21673a3b7ca"
-
+    assert records[0].extras.get(KEY_SONG_ID) == 2184
     assert records[0].title == "ENDYMION"
     assert records[0].score == 992633
     assert records[0].difficulty == Difficulty.EXPERT

@@ -1,34 +1,36 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 import discord
 import discord.ui
 from discord.ext.commands import Context
 
+from chunithm_net.consts import KEY_INTERNAL_LEVEL, KEY_PLAY_RATING
 from utils import floor_to_ndp
 from utils.components import ScoreCardEmbed
 
 from ._pagination import PaginationView
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from utils.types.annotated_records import AnnotatedMusicRecord
+    from chunithm_net.models.record import MusicRecord
 
 
 class B30View(PaginationView):
     def __init__(
         self,
         ctx: Context,
-        items: Sequence["AnnotatedMusicRecord"],
+        items: Sequence["MusicRecord"],
         per_page: int = 3,
         *,
         show_average: bool = True,
     ):
         super().__init__(ctx, items, per_page)
+
         self.average = floor_to_ndp(
-            sum(item.play_rating for item in items) / len(items), 2
+            sum(item.extras[KEY_PLAY_RATING] for item in items) / len(items), 2
         )
         self.has_estimated_play_rating = any(
-            item.internal_level is None for item in items
+            item.extras.get(KEY_INTERNAL_LEVEL) is None for item in items
         )
         self.show_average = show_average
 
@@ -40,7 +42,7 @@ class B30View(PaginationView):
         )
 
     def format_page(
-        self, items: Sequence["AnnotatedMusicRecord"], start_index: int = 0
+        self, items: Sequence["MusicRecord"], start_index: int = 0
     ) -> Sequence[discord.Embed]:
         embeds: list[discord.Embed] = [
             ScoreCardEmbed(item, index=start_index + idx + 1, show_lamps=False)

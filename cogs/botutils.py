@@ -1,7 +1,7 @@
 import contextlib
 from http.cookiejar import LWPCookieJar
 import io
-from typing import TYPE_CHECKING, Optional, overload
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -10,15 +10,20 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
 
 from chunithm_net import ChuniNet
-from chunithm_net.entities.enums import Rank
-from chunithm_net.entities.record import (
-    DetailedRecentRecord,
+from chunithm_net.consts import (
+    KEY_INTERNAL_LEVEL,
+    KEY_LEVEL,
+    KEY_OVERPOWER_BASE,
+    KEY_OVERPOWER_MAX,
+    KEY_PLAY_RATING,
+    KEY_SONG_ID,
+    KEY_TOTAL_COMBO,
+)
+from chunithm_net.models.record import (
     MusicRecord,
-    RecentRecord,
     Record,
 )
 from database.models import Alias, Chart, Cookie, Song
-from utils import get_jacket_url
 from utils.calculation.overpower import (
     calculate_overpower_base,
     calculate_overpower_max,
@@ -26,15 +31,12 @@ from utils.calculation.overpower import (
 from utils.calculation.rating import calculate_rating
 from utils.config import config
 from utils.logging import logger
-from utils.types import (
-    AnnotatedDetailedRecentRecord,
-    AnnotatedMusicRecord,
-    AnnotatedRecentRecord,
-    MissingDetailedParams,
-)
+from utils.types import MissingDetailedParams
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+
+T = TypeVar("T", bound=Record)
 
 
 class CachedAlias:
@@ -137,109 +139,64 @@ class UtilsCog(commands.Cog, name="Utils"):
 
             await session.close()
 
-    @overload
-    async def annotate_song(
-        self, song: DetailedRecentRecord
-    ) -> AnnotatedDetailedRecentRecord:
-        ...
+    async def annotate_song(self, record: T) -> T:
+        song_id = record.extras.get(KEY_SONG_ID)
 
-    @overload
-    async def annotate_song(self, song: RecentRecord) -> AnnotatedRecentRecord:  # type: ignore[reportOverlappingOverload]
-        ...
+        if song_id is None and not isinstance(record, MusicRecord):
+            raise MissingDetailedParams
 
-    @overload
-    async def annotate_song(self, song: Record | MusicRecord) -> AnnotatedMusicRecord:
-        ...
-
-    async def annotate_song(
-        self, song: Record | MusicRecord | RecentRecord | DetailedRecentRecord
-    ) -> AnnotatedMusicRecord | AnnotatedRecentRecord | AnnotatedDetailedRecentRecord:
         async with self.bot.begin_db_session() as session:
-            if isinstance(song, Record) and not isinstance(
-                song, (MusicRecord, DetailedRecentRecord, RecentRecord)
-            ):
-                if song.detailed is None:
+            if song_id is None:
+                if not isinstance(record, MusicRecord):
                     raise MissingDetailedParams
 
-                stmt = select(Song).where(Song.id == song.detailed.idx)
-                song_data = (await session.execute(stmt)).scalar_one_or_none()
-
-                if song_data is None:
-                    logger.warn(f"Missing song data for song ID {song.detailed.idx}")
-                    return AnnotatedMusicRecord(**song.__dict__)
-
-                id = song_data.id
-
-                annotated_song: AnnotatedMusicRecord = AnnotatedMusicRecord(
-                    **song.__dict__, jacket=get_jacket_url(song_data)
+                jacket_filename = record.jacket.split("/")[-1]
+                stmt = select(Song).where(
+                    (Song.title == record.title) & (Song.jacket == jacket_filename)
                 )
-                annotated_song.rank = Rank.from_score(song.score)
+                song = (await session.execute(stmt)).scalar_one_or_none()
             else:
-                stmt = select(Song)
-                if song.detailed is None or isinstance(song, RecentRecord):
-                    jacket_filename = song.jacket.split("/")[-1]
-                    stmt = stmt.where(
-                        (Song.title == song.title) & (Song.jacket == jacket_filename)
-                    )
-                else:
-                    stmt = stmt.where(Song.id == song.detailed.idx)
+                stmt = select(Song).where(Song.id == song_id)
+                song = (await session.execute(stmt)).scalar_one_or_none()
 
-                song_data = (await session.execute(stmt)).scalar_one_or_none()
-
-                if isinstance(song, DetailedRecentRecord):
-                    annotated_song = AnnotatedDetailedRecentRecord(**song.__dict__)
-                elif isinstance(song, RecentRecord):
-                    annotated_song = AnnotatedRecentRecord(**song.__dict__)
-                else:
-                    annotated_song = AnnotatedMusicRecord(**song.__dict__)
-
-                if song_data is None:
-                    if song.detailed is None or isinstance(song, RecentRecord):
-                        logger.warn(
-                            f"Missing song data for song title {song.title} with jacket {song.jacket}"
-                        )
-                    else:
-                        logger.warn(
-                            f"Missing song data for song ID {song.detailed.idx}"
-                        )
-                    return annotated_song
-
-                id = song_data.id
+            if song is None:
+                logger.warn(f"Missing song data for song title {record.title}")
+                return record
 
             stmt = select(Chart).where(
-                (Chart.song_id == id)
-                & (Chart.difficulty == song.difficulty.short_form())
+                (Chart.song_id == song.id)
+                & (Chart.difficulty == record.difficulty.short_form())
             )
-            chart_data = (await session.execute(stmt)).scalar_one_or_none()
+            chart = (await session.execute(stmt)).scalar_one_or_none()
 
-        if chart_data is None:
-            return annotated_song
-        annotated_song.internal_level = chart_data.const
+        if chart is None:
+            logger.warn(
+                f"Missing chart data for song ID {song.id}, difficulty {record.difficulty}"
+            )
+            return record
 
-        annotated_song.level = chart_data.level
+        record.extras[KEY_LEVEL] = chart.level
 
-        try:
-            numeric_level = float(chart_data.level.replace("+", ".5"))
-        except ValueError:
-            numeric_level = 0
+        if chart.const is None:
+            try:
+                internal_level = record.extras[KEY_INTERNAL_LEVEL] = float(
+                    chart.level.replace("+", ".5")
+                )
+            except ValueError:
+                internal_level = record.extras[KEY_INTERNAL_LEVEL] = 0
+        else:
+            internal_level = record.extras[KEY_INTERNAL_LEVEL] = chart.const
 
-        internal_level = (
-            annotated_song.internal_level
-            if annotated_song.internal_level is not None
-            else numeric_level
+        record.extras[KEY_PLAY_RATING] = calculate_rating(record.score, internal_level)
+        record.extras[KEY_OVERPOWER_BASE] = calculate_overpower_base(
+            record.score, internal_level
         )
+        record.extras[KEY_OVERPOWER_MAX] = calculate_overpower_max(internal_level)
 
-        annotated_song.play_rating = calculate_rating(song.score, internal_level)
+        if chart.maxcombo is not None:
+            record.extras[KEY_TOTAL_COMBO] = chart.maxcombo
 
-        annotated_song.overpower_base = calculate_overpower_base(
-            song.score, internal_level
-        )
-        annotated_song.overpower_max = calculate_overpower_max(internal_level)
-
-        if isinstance(annotated_song, AnnotatedDetailedRecentRecord):
-            annotated_song.full_combo = chart_data.maxcombo
-
-        return annotated_song
+        return record
 
     async def find_song(
         self,

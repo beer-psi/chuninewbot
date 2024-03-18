@@ -1,6 +1,6 @@
 import pytest
 
-from chunithm_net.entities.enums import (
+from chunithm_net.models.enums import (
     ClearType,
     Difficulty,
     Possession,

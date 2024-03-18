@@ -1,8 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from chunithm_net.entities.enums import ClearType, ComboType, Difficulty, Rank
+from .enums import ClearType, ComboType, Difficulty, Rank
+from .type_paired_dict import TypePairedDict
 
 
 @dataclass
@@ -36,8 +37,6 @@ class DetailedParams:
 
 @dataclass(kw_only=True)
 class Record:
-    detailed: Optional[DetailedParams] = None
-
     title: str
     difficulty: Difficulty
     score: int
@@ -45,6 +44,8 @@ class Record:
     rank: Rank = Rank.D
     clear_lamp: ClearType = ClearType.FAILED
     combo_lamp: ComboType = ComboType.NONE
+
+    extras: TypePairedDict = field(default_factory=TypePairedDict)
 
 
 @dataclass(kw_only=True)

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import discord
 from discord.utils import escape_markdown
 
-from chunithm_net.entities.enums import Difficulty, Rank
+from chunithm_net.models.enums import Difficulty, Rank
 from utils import floor_to_ndp, get_jacket_url, sdvxin_link, yt_search_link
 from utils.calculation.rating import calculate_rating
 from utils.ranks import rank_icon

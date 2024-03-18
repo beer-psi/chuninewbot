@@ -9,8 +9,8 @@ from utils.components import ScoreCardEmbed
 from ._pagination import PaginationView
 
 if TYPE_CHECKING:
-    from chunithm_net.entities.player_data import PlayerData
-    from utils.types.annotated_records import AnnotatedMusicRecord
+    from chunithm_net.models.player_data import PlayerData
+    from chunithm_net.models.record import MusicRecord
 
 
 class CompareView(PaginationView):
@@ -18,7 +18,7 @@ class CompareView(PaginationView):
         self,
         ctx: Context,
         player_data: "PlayerData",
-        items: Sequence["AnnotatedMusicRecord"],
+        items: Sequence["MusicRecord"],
         per_page: int = 1,
     ):
         self.player_data = player_data

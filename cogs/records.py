@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
-from chunithm_net.entities.enums import Difficulty, Genres, Rank
+from chunithm_net.models.enums import Difficulty, Genres, Rank
 from database.models import SongJacket
 from utils import did_you_mean_text, shlex_split
 from utils.argparse import DiscordArguments

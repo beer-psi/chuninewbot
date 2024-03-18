@@ -3,7 +3,7 @@ import importlib.util
 import pytest
 from bs4 import BeautifulSoup
 
-from chunithm_net.entities.enums import ClearType, ComboType, Difficulty, Rank
+from chunithm_net.models.enums import ClearType, ComboType, Difficulty, Rank
 from chunithm_net.utils import difficulty_from_imgurl, get_rank_and_lamps
 
 

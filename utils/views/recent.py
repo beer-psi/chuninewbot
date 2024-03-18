@@ -11,14 +11,14 @@ from ._pagination import PaginationView
 if TYPE_CHECKING:
     from bot import ChuniBot
     from chunithm_net import ChuniNet
-    from chunithm_net.entities.player_data import PlayerData
+    from chunithm_net.models.player_data import PlayerData
+    from chunithm_net.models.record import RecentRecord
     from cogs.botutils import UtilsCog
-    from utils.types.annotated_records import AnnotatedRecentRecord
 
 
 def split_scores_into_credits(
-    scores: Sequence["AnnotatedRecentRecord"],
-) -> Sequence[Sequence["AnnotatedRecentRecord"]]:
+    scores: Sequence["RecentRecord"],
+) -> Sequence[Sequence["RecentRecord"]]:
     credits = []
     current_credit = []
     for score in scores:
@@ -34,13 +34,14 @@ class RecentRecordsView(PaginationView):
         self,
         ctx: Context,
         bot: "ChuniBot",
-        scores: Sequence["AnnotatedRecentRecord"],
+        scores: Sequence["RecentRecord"],
         chuni_client: "ChuniNet",
         chuni_client_manager: AsyncContextManager["ChuniNet"],
         userinfo: "PlayerData",
     ):
         super().__init__(ctx, items=split_scores_into_credits(scores), per_page=1)
 
+        self.scores = scores
         self.chuni_client = chuni_client
         self.chuni_client_manager = chuni_client_manager
 
@@ -52,10 +53,9 @@ class RecentRecordsView(PaginationView):
         self._dropdown_options = [
             discord.SelectOption(
                 label=f"{idx + 1}. {score.title} - {score.difficulty}",
-                value=f"{score.detailed.idx}",
+                value=f"{idx}",
             )
             for (idx, score) in enumerate(scores)
-            if score.detailed is not None
         ]
         self.dropdown.options = self._dropdown_options[:25]
 
@@ -64,7 +64,7 @@ class RecentRecordsView(PaginationView):
         return await super().on_timeout()
 
     def format_score_page(
-        self, scores: Sequence["AnnotatedRecentRecord"]
+        self, scores: Sequence["RecentRecord"]
     ) -> Sequence[discord.Embed]:
         embeds: list[discord.Embed] = [ScoreCardEmbed(score) for score in scores]
         embeds.append(
@@ -98,7 +98,7 @@ class RecentRecordsView(PaginationView):
         await interaction.response.defer()
 
         idx = int(select.values[0])
-        score = await self.chuni_client.detailed_recent_record(idx)
+        score = await self.chuni_client.detailed_recent_record(self.scores[idx])
         score = await self.utils.annotate_song(score)
 
         if interaction.message is not None:

@@ -8,7 +8,8 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
 
-from chunithm_net.entities.enums import ComboType, Difficulty, ClearType
+from chunithm_net.consts import KEY_SONG_ID
+from chunithm_net.models.enums import ComboType, Difficulty, ClearType
 from database.models import Cookie
 from utils import json_dumps, json_loads
 from utils.config import config
@@ -211,6 +212,9 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             if sync == "recent":
                 recents = await client.recent_record()
                 for recent in recents:
+                    if recent.difficulty == Difficulty.WORLDS_END:
+                        continue
+
                     score_data = {
                         "score": recent.score,
                         "lamp": self._tachi_lamp(recent.clear_lamp, recent.combo_lamp),
@@ -222,17 +226,12 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         "hitMeta": {},
                     }
 
-                    if recent.detailed is None:
+                    detailed_recent = await client.detailed_recent_record(recent)
+
+                    if (song_id := detailed_recent.extras.get(KEY_SONG_ID)) is None:
                         continue
 
-                    detailed_recent = await client.detailed_recent_record(
-                        recent.detailed.idx
-                    )
-
-                    if detailed_recent.detailed is None:
-                        continue
-
-                    score_data["identifier"] = str(detailed_recent.detailed.idx)
+                    score_data["identifier"] = str(song_id)
 
                     score_data["judgements"]["jcrit"] = detailed_recent.judgements.jcrit
                     score_data["judgements"][
@@ -261,19 +260,22 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     await message.edit(content=f"Fetching {difficulty} scores...")
                     records = await client.music_record_by_folder(difficulty=difficulty)
                     for score in records:
-                        if score.detailed is None:
+                        if (song_id := score.extras.get(KEY_SONG_ID)) is None:
                             continue
+
                         score_data = {
                             "score": score.score,
                             "lamp": self._tachi_lamp(
                                 score.clear_lamp, score.combo_lamp
                             ),
                             "matchType": "inGameID",
-                            "identifier": str(score.detailed.idx),
+                            "identifier": str(song_id),
                             "difficulty": str(score.difficulty),
                         }
+
                         if score.score == 1010000:
                             score_data["lamp"] = "ALL JUSTICE CRITICAL"
+
                         scores.append(score_data)
 
             await message.edit(content="Uploading scores to Kamaitachi...")

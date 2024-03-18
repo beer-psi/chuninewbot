@@ -1,3 +1,4 @@
+import dataclasses
 from http.cookiejar import CookieJar
 from typing import TYPE_CHECKING, Optional
 
@@ -6,9 +7,10 @@ from bs4 import BeautifulSoup
 
 from ._bs4 import BS4_FEATURE
 from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
-from .entities.enums import Difficulty, Genres, Rank
-from .entities.record import DetailedParams, MusicRecord, RecentRecord, Record
-from .exceptions import ChuniNetError, InvalidTokenException, MaintenanceException
+from .consts import _KEY_DETAILED_PARAMS
+from .models.enums import Difficulty, Genres, Rank
+from .models.record import MusicRecord, RecentRecord, Record
+from .exceptions import ChuniNetError, InvalidTokenException
 from .parser import (
     parse_basic_recent_record,
     parse_detailed_recent_record,
@@ -19,7 +21,7 @@ from .parser import (
 )
 
 if TYPE_CHECKING:
-    from chunithm_net.entities.player_data import PlayerData
+    from chunithm_net.models.player_data import PlayerData
 
 __all__ = ["ChuniNet"]
 
@@ -67,14 +69,19 @@ class ChuniNet:
 
         return [parse_basic_recent_record(record) for record in web_records]
 
-    async def detailed_recent_record(self, idx: int):
+    async def detailed_recent_record(self, recent_record: RecentRecord | int):
+        if isinstance(recent_record, int):
+            params = {
+                "idx": recent_record,
+                "token": self._token,
+            }
+        else:
+            params = dataclasses.asdict(recent_record.extras[_KEY_DETAILED_PARAMS])
+
         soup = await self._request_soup(
             "POST",
             "/mobile/record/playlog/sendPlaylogDetail/",
-            data={
-                "idx": idx,
-                "token": self._token,
-            },
+            data=params,
         )
 
         return parse_detailed_recent_record(soup)
@@ -92,7 +99,7 @@ class ChuniNet:
             },
         )
 
-        return parse_music_record(soup, DetailedParams(idx, self._token or ""))
+        return parse_music_record(soup, idx)
 
     async def _worlds_end_music_record(self, idx: int) -> list[MusicRecord]:
         soup = await self._request_soup(
@@ -104,7 +111,7 @@ class ChuniNet:
             },
         )
 
-        return parse_music_record(soup, DetailedParams(idx, self._token or ""))
+        return parse_music_record(soup, idx)
 
     async def best30(self) -> list[Record]:
         soup = await self._request_soup(

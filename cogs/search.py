@@ -10,7 +10,7 @@ from discord.utils import escape_markdown as emd
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from chunithm_net.entities.enums import Difficulty
+from chunithm_net.models.enums import Difficulty
 from database.models import Alias, Chart, Song
 from utils import (
     TOKYO_TZ,
