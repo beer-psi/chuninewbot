@@ -158,7 +158,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "title": "Parad'ox",
         "we_kanji": "狂",
         "we_star": "9",
-        "image": "",  # TODO
+        "image": "20b8716a15c1b551.jpg",
     },
     "67be895064262b87": {
         "id": "8282",
@@ -166,7 +166,7 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "title": "otorii INNOVATED -[i]3-",
         "we_kanji": "狂",
         "we_star": "9",
-        "image": "",  # TODO
+        "image": "41d003f64f1b3b86.jpg",
     },
 }
 for idx, random in enumerate(
