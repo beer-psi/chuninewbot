@@ -41,9 +41,6 @@ class ScoreCardEmbed(discord.Embed):
         else:
             score_data = f"▸ {rank_icon(record.rank)} ▸ {record.score}"
 
-        if record.ajc_count:
-            score_data += f"\nAJC count: {record.ajc_count}"
-
         footer_sections = []
         if record.play_rating:
             play_overpower = calculate_play_overpower(record)
@@ -67,6 +64,9 @@ class ScoreCardEmbed(discord.Embed):
             )
 
         self.set_footer(text="  •  ".join(footer_sections))
+
+        if record.ajc_count:
+            score_data += f"\nAJC count: {record.ajc_count}"
 
         if isinstance(record, AnnotatedDetailedRecentRecord):
             score_data += f" ▸ x{record.max_combo}{f'/{record.full_combo}' if record.full_combo else ''}"
