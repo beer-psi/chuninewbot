@@ -70,7 +70,7 @@ class ScoreCardEmbed(discord.Embed):
 
         self.set_footer(text="  •  ".join(footer_sections))
 
-        if isinstance(record, MusicRecord) and record.play_count is not None:
+        if isinstance(record, MusicRecord) and record.ajc_count is not None:
             score_data += f"\n▸ AJC count: {record.ajc_count}"
 
         if isinstance(record, DetailedRecentRecord):
