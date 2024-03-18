@@ -66,7 +66,7 @@ class ScoreCardEmbed(discord.Embed):
         self.set_footer(text="  •  ".join(footer_sections))
 
         if record.ajc_count:
-            score_data += f"\nAJC count: {record.ajc_count}"
+            score_data += f"\n▸ AJC count: {record.ajc_count}"
 
         if isinstance(record, AnnotatedDetailedRecentRecord):
             score_data += f" ▸ x{record.max_combo}{f'/{record.full_combo}' if record.full_combo else ''}"
