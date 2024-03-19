@@ -222,6 +222,16 @@ class ToolsCog(commands.Cog, name="Tools"):
                 await ctx.reply("No charts found.", mention_author=False)
                 return
 
+            # XL TECHNO -More Dance Remix-
+            if any(
+                chart.difficulty == "MAS" and chart.song.id == 2035 for chart in charts
+            ):
+                await ctx.reply(
+                    XL_TECHNO_JUMPSCARE,
+                    mention_author=False,
+                )
+                return
+
             embeds: list[discord.Embed] = [ChartCardEmbed(chart) for chart in charts]
             await ctx.reply(embeds=embeds, mention_author=False)
 
@@ -365,6 +375,27 @@ class ToolsCog(commands.Cog, name="Tools"):
                 embed=ChartCardEmbed(chart, border=True), mention_author=False
             )
             return None
+
+
+XL_TECHNO_JUMPSCARE = """恐怖！XL TECHNO -More Dance Remix-
+
+           —
+—
+           —
+  —
+           —
+     —
+           —
+        —
+           —
+           —
+           —
+              —
+           —
+                 —
+           —
+                    —
+"""
 
 
 async def setup(bot: "ChuniBot"):
