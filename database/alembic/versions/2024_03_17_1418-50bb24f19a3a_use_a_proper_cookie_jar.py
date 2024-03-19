@@ -6,6 +6,7 @@ Create Date: 2024-03-17 14:18:11.579871
 
 """
 from http.cookiejar import LWPCookieJar, Cookie
+import io
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -67,4 +68,43 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    conn = op.get_bind()
+    rows = [x._asdict() for x in conn.execute(sa.select(cookies))]
+
+    for row in rows:
+        if not row["cookie"].startswith("#LWP-Cookies-2.0"):
+            continue
+
+        jar = LWPCookieJar()
+
+        jar._really_load(  # type: ignore[reportAttributeAccessIssue]
+            io.StringIO(row["cookie"]),
+            "?",
+            ignore_discard=False,
+            ignore_expires=False,
+        )
+
+        clal = None
+
+        for cookie in jar:
+            if (
+                cookie.name == "clal"
+                and cookie.domain == "lng-tgk-aime-gw.am-all.net"
+                and cookie.path == "/common_auth"
+            ):
+                clal = cookie.value
+
+        if clal is None:
+            msg = f"Cookie jar for user ID {row['discord_id']} is missing the clal cookie."
+            raise RuntimeError(msg)
+
+        conn.execute(
+            sa.update(cookies)
+            .where(cookies.c.discord_id == row["discord_id"])
+            .values(cookie=clal)
+        )
+
+    conn.commit()
+
+    with op.batch_alter_table("cookies") as bop:
+        bop.alter_column("cookie", type_=sa.String(64))
