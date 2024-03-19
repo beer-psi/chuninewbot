@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import itertools
 from argparse import ArgumentError
@@ -49,13 +48,11 @@ class RecordsCog(commands.Cog, name="Records"):
             ctxmgr = self.utils.chuninet(ctx if user is None else user.id)
             client = await ctxmgr.__aenter__()
             userinfo = await client.authenticate()
-            recent_scores = await client.recent_record()
-
-            tasks = [self.utils.annotate_song(score) for score in recent_scores]
-            recent_scores = await asyncio.gather(*tasks)
+            recents = await client.recent_record()
+            hydrated_recents = await self.utils.hydrate_records(recents)
 
             view = RecentRecordsView(
-                ctx, self.bot, recent_scores, client, ctxmgr, userinfo
+                ctx, self.bot, hydrated_recents, client, ctxmgr, userinfo
             )
             view.message = await ctx.reply(
                 content=f"Most recent credits for {userinfo.name}:",
@@ -164,8 +161,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
                 return
 
-            futures = [self.utils.annotate_song(record) for record in records]
-            records = await asyncio.gather(*futures)
+            records = await self.utils.hydrate_records(records)
 
             page = 0
             try:
@@ -290,8 +286,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 )
                 return None
 
-            futures = [self.utils.annotate_song(record) for record in records]
-            records = await asyncio.gather(*futures)
+            records = await self.utils.hydrate_records(records)
 
             view = CompareView(ctx, userinfo, records)
             view.message = await ctx.reply(
@@ -318,9 +313,7 @@ class RecordsCog(commands.Cog, name="Records"):
             ctx if user is None else user.id
         ) as client:
             best30 = await client.best30()
-
-            tasks = [self.utils.annotate_song(score) for score in best30]
-            best30 = await asyncio.gather(*tasks)
+            best30 = await self.utils.hydrate_records(best30)
 
             view = B30View(ctx, best30)
             view.message = await ctx.reply(
@@ -346,9 +339,7 @@ class RecordsCog(commands.Cog, name="Records"):
             ctx if user is None else user.id
         ) as client:
             recent10 = await client.recent10()
-
-            tasks = [self.utils.annotate_song(score) for score in recent10]
-            recent10 = await asyncio.gather(*tasks)
+            recent10 = await self.utils.hydrate_records(recent10)
 
             view = B30View(ctx, recent10)
             view.message = await ctx.reply(
@@ -420,8 +411,7 @@ class RecordsCog(commands.Cog, name="Records"):
             if len(records) == 0:
                 return await interaction.followup.send("No scores found.")
 
-            tasks = [self.utils.annotate_song(score) for score in records]
-            records = await asyncio.gather(*tasks)
+            records = await self.utils.hydrate_records(records)
             records.sort(
                 key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
             )
@@ -559,8 +549,7 @@ class RecordsCog(commands.Cog, name="Records"):
             if len(records) == 0:
                 return await ctx.reply("No scores found.", mention_author=False)
 
-            tasks = [self.utils.annotate_song(score) for score in records]
-            records = await asyncio.gather(*tasks)
+            records = await self.utils.hydrate_records(records)
             records.sort(
                 key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
             )

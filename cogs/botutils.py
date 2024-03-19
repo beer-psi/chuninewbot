@@ -1,7 +1,7 @@
 import contextlib
 from http.cookiejar import LWPCookieJar
 import io
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, Optional, Sequence, TypeVar
 
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -20,11 +20,8 @@ from chunithm_net.consts import (
     KEY_TOTAL_COMBO,
 )
 from chunithm_net.models.enums import Rank
-from chunithm_net.models.record import (
-    MusicRecord,
-    Record,
-)
-from database.models import Alias, Chart, Cookie, Song
+from chunithm_net.models.record import Record
+from database.models import Alias, Cookie, Song
 from utils import get_jacket_url
 from utils.calculation.overpower import (
     calculate_overpower_base,
@@ -141,73 +138,102 @@ class UtilsCog(commands.Cog, name="Utils"):
 
             await session.close()
 
-    async def annotate_song(self, record: T) -> T:
-        song_id = record.extras.get(KEY_SONG_ID)
+    async def hydrate_records(self, records: Sequence[T]) -> list[T]:
+        song_ids = []
+        jackets = []
 
-        if song_id is None and not isinstance(record, MusicRecord):
-            raise MissingDetailedParams
+        for record in records:
+            song_id = record.extras.get(KEY_SONG_ID)
+
+            if song_id is not None:
+                song_ids.append(song_id)
+            elif record.jacket is not None:
+                jackets.append(record.jacket.split("/")[-1])
+            else:
+                raise MissingDetailedParams
 
         async with self.bot.begin_db_session() as session:
-            if song_id is None:
-                if not isinstance(record, MusicRecord):
-                    raise MissingDetailedParams
+            stmt = (
+                select(Song)
+                .where(Song.id.in_(song_ids) | Song.jacket.in_(jackets))
+                .options(joinedload(Song.charts))
+            )
+            songs = (await session.execute(stmt)).scalars().unique()
 
-                if record.jacket is None:
-                    raise MissingDetailedParams
+        song_lookup: dict[int | str, Song] = {}
 
-                jacket_filename = record.jacket.split("/")[-1]
-                stmt = select(Song).where(
-                    (Song.title == record.title) & (Song.jacket == jacket_filename)
-                )
-                song = (await session.execute(stmt)).scalar_one_or_none()
+        for song in songs:
+            song_lookup[song.id] = song
+            song_lookup[song.jacket] = song
+
+        hydrated_records = []
+
+        for record in records[:]:
+            song_id = record.extras.get(KEY_SONG_ID)
+
+            if song_id is not None:
+                song = song_lookup.get(song_id)
+            elif record.jacket is not None:
+                song = song_lookup.get(record.jacket.split("/")[-1])
             else:
-                stmt = select(Song).where(Song.id == song_id)
-                song = (await session.execute(stmt)).scalar_one_or_none()
+                raise MissingDetailedParams
 
             if song is None:
                 logger.warn(f"Missing song data for song title {record.title}")
-                return record
+                hydrated_records.append(record)
+                continue
 
             if record.jacket is None:
                 record.jacket = get_jacket_url(song)
 
-            stmt = select(Chart).where(
-                (Chart.song_id == song.id)
-                & (Chart.difficulty == record.difficulty.short_form())
+            chart = next(
+                (
+                    c
+                    for c in song.charts
+                    if c.difficulty == record.difficulty.short_form()
+                ),
+                None,
             )
-            chart = (await session.execute(stmt)).scalar_one_or_none()
 
-        if chart is None:
-            logger.warn(
-                f"Missing chart data for song ID {song.id}, difficulty {record.difficulty}"
-            )
-            return record
-
-        record.extras[KEY_LEVEL] = chart.level
-
-        if chart.const is None:
-            try:
-                internal_level = record.extras[KEY_INTERNAL_LEVEL] = float(
-                    chart.level.replace("+", ".5")
+            if chart is None:
+                logger.warn(
+                    f"Missing chart data for song ID {song.id}, difficulty {record.difficulty}"
                 )
-            except ValueError:
-                internal_level = record.extras[KEY_INTERNAL_LEVEL] = 0
-        else:
-            internal_level = record.extras[KEY_INTERNAL_LEVEL] = chart.const
+                hydrated_records.append(record)
+                continue
 
-        record.extras[KEY_PLAY_RATING] = calculate_rating(record.score, internal_level)
-        record.extras[KEY_OVERPOWER_BASE] = calculate_overpower_base(
-            record.score, internal_level
-        )
-        record.extras[KEY_OVERPOWER_MAX] = calculate_overpower_max(internal_level)
+            record.extras[KEY_LEVEL] = chart.level
 
-        if chart.maxcombo is not None:
-            record.extras[KEY_TOTAL_COMBO] = chart.maxcombo
+            if chart.const is None:
+                try:
+                    internal_level = record.extras[KEY_INTERNAL_LEVEL] = float(
+                        chart.level.replace("+", ".5")
+                    )
+                except ValueError:
+                    internal_level = record.extras[KEY_INTERNAL_LEVEL] = 0
+            else:
+                internal_level = record.extras[KEY_INTERNAL_LEVEL] = chart.const
 
-        if record.rank == Rank.D:
-            record.rank = Rank.from_score(record.score)
+            record.extras[KEY_PLAY_RATING] = calculate_rating(
+                record.score, internal_level
+            )
+            record.extras[KEY_OVERPOWER_BASE] = calculate_overpower_base(
+                record.score, internal_level
+            )
+            record.extras[KEY_OVERPOWER_MAX] = calculate_overpower_max(internal_level)
 
-        return record
+            if chart.maxcombo is not None:
+                record.extras[KEY_TOTAL_COMBO] = chart.maxcombo
+
+            if record.rank == Rank.D:
+                record.rank = Rank.from_score(record.score)
+
+            hydrated_records.append(record)
+
+        return hydrated_records
+
+    async def hydrate_record(self, record: T) -> T:
+        return (await self.hydrate_records([record]))[0]
 
     async def find_song(
         self,

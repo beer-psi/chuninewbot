@@ -99,7 +99,7 @@ class RecentRecordsView(PaginationView):
 
         idx = int(select.values[0])
         score = await self.chuni_client.detailed_recent_record(self.scores[idx])
-        score = await self.utils.annotate_song(score)
+        score = await self.utils.hydrate_record(score)
 
         if interaction.message is not None:
             await interaction.message.edit(
