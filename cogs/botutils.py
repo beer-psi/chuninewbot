@@ -139,16 +139,16 @@ class UtilsCog(commands.Cog, name="Utils"):
             await session.close()
 
     async def hydrate_records(self, records: Sequence[T]) -> list[T]:
-        song_ids = []
-        jackets = []
+        song_ids = set()
+        jackets = set()
 
         for record in records:
             song_id = record.extras.get(KEY_SONG_ID)
 
             if song_id is not None:
-                song_ids.append(song_id)
+                song_ids.add(song_id)
             elif record.jacket is not None:
-                jackets.append(record.jacket.split("/")[-1])
+                jackets.add(record.jacket.split("/")[-1])
             else:
                 raise MissingDetailedParams
 
