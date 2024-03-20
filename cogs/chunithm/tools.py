@@ -19,7 +19,7 @@ from utils.calculation.overpower import (
 )
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
 from utils.components import ChartCardEmbed
-from utils.constants import SIMILARITY_THRESHOLD
+from utils.constants import SIMILARITY_THRESHOLD, MAX_DIFFICULTY
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -32,6 +32,59 @@ class ToolsCog(commands.Cog, name="Tools"):
         self.bot = bot
         self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
         self.autocompleters: "AutocompletersCog" = self.bot.get_cog("Autocompleters")  # type: ignore[reportGeneralTypeIssues]
+
+    @commands.hybrid_command("anmitsu", aliases=["rub"])
+    async def anmitsu(
+        self,
+        ctx: Context,
+        bpm: Range[float, 1, 10000],
+        note_density: Range[int, 1, 1024] = 16,
+    ):
+        """Determine whether you can get JUSTICE / JUSTICE CRITICAL through "anmitsu" technique or rubbing the ground slider
+        at the specified BPM and note density.
+
+        ----------
+
+        "Anmitsu" is a technique where when two notes appear on different lanes with slightly different timing, you hit both
+        of them at the same time. When the two notes are close enough in timing, they will have a JUSTICE CRITICAL overlap
+        duration where you can tap both notes at the exact same time and get JUSTICE CRITICAL for both. The closer the notes,
+        the easier it is to perform the "anmitsu" technique. It is said that "anmitsu" technique is ideal when the distance
+        between two notes is below 50ms (i.e. the JUSTICE CRITICAL overlap duration is at least 16.67ms).
+
+        Rubbing the ground slider is a technique where when two tap notes appear in the same lane, you rub the ground slider
+        instead of tapping the notes individually. If the two notes are close enough in timing, you will not get JUSTICE or
+        ATTACK.
+
+        Parameters
+        ----------
+        bpm: float
+            BPM of the song. Use the `info` command to find this.
+        note_density: int
+            Note value, for example 16 means 1/16 notes (16 notes = 1 measure).
+        """
+
+        note_distance = 240000 / bpm / note_density
+        crit_overlap = max(66.667 - note_distance, 0)
+        jus_overlap = max(133.333 - note_distance, 0)
+        res = f"At **{bpm}** BPM, the distance between two **1/{note_density}** notes is `{floor_to_ndp(note_distance, 1)}ms`."
+        res += f"\n• The JUSTICE CRITICAL overlap duration is `{floor_to_ndp(crit_overlap, 1)}ms`"
+        res += f"\n• The JUSTICE overlap duration is `{floor_to_ndp(jus_overlap, 1)}ms`"
+
+        if crit_overlap > 0:
+            res += "\n\n:white_check_mark: If these notes appear vertically, you can rub the ground slider and will not get JUSTICE and below."
+        elif jus_overlap > 0:
+            res += "\n\n:warning: If these notes appear vertically and you rub the ground slider, you will not get ATTACK but you might get JUSTICE."
+        else:
+            res += "\n\n:x: If these notes appear vertically, you might get ATTACK if you rub the ground slider."
+
+        if crit_overlap > 16.667:
+            res += '\n:white_check_mark: If these notes appear in different lanes, you can tap both of them at the same time ("anmitsu" technique) and get JUSTICE CRITICAL for both notes during the JUSTICE CRITICAL overlap duration.'
+        elif jus_overlap > 16.667:
+            res += "\n:warning: If these notes appear in different lanes and you tap both of them at the same time, you are very likely to get JUSTICE or ATTACK therefore it is not recommended."
+        else:
+            res += "\n:x: If these notes appear in different lanes, you should tap them individually since the notes are too far from each other."
+
+        await ctx.reply(res, mention_author=False)
 
     @commands.hybrid_command("calculate", aliases=["calc"])
     async def calculate(
@@ -50,35 +103,40 @@ class ToolsCog(commands.Cog, name="Tools"):
             Chart constant of the chart. Use the `info` command to find this.
         """
 
-        if chart_constant is not None and chart_constant <= 0:
-            msg = "Chart constant must be greater than 0."
+        if chart_constant is not None and (
+            chart_constant < 1 or chart_constant > MAX_DIFFICULTY
+        ):
+            msg = f"Chart constant must be between 1 and {MAX_DIFFICULTY}."
             raise commands.BadArgument(msg)
 
         if chart_constant is None:
             rating = calculate_rating(score, 0)
+            const_text = ""
         else:
             rating = calculate_rating(score, chart_constant)
+            const_text = f" on a chart with chart constant **{chart_constant}**"
 
         sign = ""
         if chart_constant is None and rating > 0:
             sign = "+"
 
-        res = f"Rating: {sign}{floor_to_ndp(rating, 2)}"
+        res = f"A score of **{score}**{const_text} will give:"
+        res += f"\n• Rating: **{sign}{floor_to_ndp(rating, 2)}**"
         if chart_constant is not None:
             overpower_max = calculate_overpower_max(chart_constant)
             if score == 1010000:
-                res += f"\nOVER POWER: {floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.00%)"
+                res += f"\n• OVER POWER: **{floor_to_ndp(overpower_max, 2)} / {floor_to_ndp(overpower_max, 2)} (100.00%)**"
             elif score < 500000:
-                res += f"\nOVER POWER: 0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)"
+                res += f"\n• OVER POWER: **0.00 / {floor_to_ndp(overpower_max, 2)} (0.00%)**"
             else:
                 overpower_base = calculate_overpower_base(score, chart_constant)
-                res += "\nOVER POWER:"
+                res += "\n• OVER POWER:"
                 if score >= 1000000:
                     overpower = overpower_base + Decimal(1)
-                    res += f"\n• AJ: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
+                    res += f"\n▸ AJ: **{floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)**"
                 overpower = overpower_base + Decimal(0.5)
-                res += f"\n• FC: {floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)"
-                res += f"\n• Non-FC: {floor_to_ndp(overpower_base, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower_base / overpower_max * 100, 2)}%)"
+                res += f"\n▸ FC: **{floor_to_ndp(overpower, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower / overpower_max * 100, 2)}%)**"
+                res += f"\n▸ Non-FC: **{floor_to_ndp(overpower_base, 2)} / {floor_to_ndp(overpower_max, 2)} ({floor_to_ndp(overpower_base / overpower_max * 100, 2)}%)**"
 
         await ctx.reply(res, mention_author=False)
 
@@ -86,7 +144,7 @@ class ToolsCog(commands.Cog, name="Tools"):
     async def const(
         self,
         ctx: Context,
-        chart_constant: Range[float, 1.0, 16.0],
+        chart_constant: Range[float, 1.0, MAX_DIFFICULTY],
         mode: Literal["default", "aj"] = "default",
     ):
         """Calculate rating and over power achieved with various scores based on chart constant.
@@ -99,9 +157,10 @@ class ToolsCog(commands.Cog, name="Tools"):
             Sets the display mode: `default` (Display rating information only) / `aj` (Display OP information for ALL JUSTICE only)
         """
 
+        res = f"Calculation for chart constant **{chart_constant}**:"
         if mode == "aj":
             separator = "-------------------------"
-            res = f"```  Score |         OP (AJ)\n{separator}"
+            res += f"```  Score |         OP (AJ)\n{separator}"
             scores = [1009950]
             scores.extend(
                 itertools.chain(
@@ -111,11 +170,11 @@ class ToolsCog(commands.Cog, name="Tools"):
             )
         else:
             separator = "---------------"
-            res = f"```  Score |  Rate\n{separator}"
+            res += f"```  Score |  Rate\n{separator}"
             scores = [1009000]
             scores.extend(
                 itertools.chain(
-                    range(1008500, 1004500, -500),  # 1005000..=1009900
+                    range(1008500, 1004500, -500),  # 1005000..=1008500
                     range(1004000, 999000, -1000),  # 1000000..=1004000
                     range(997500, 972500, -2500),  # 975000..=997500
                     range(970000, 940000, -10000),  # 950000..=970000
@@ -166,11 +225,12 @@ class ToolsCog(commands.Cog, name="Tools"):
             Play rating you want to achieve
         """
 
-        res = "```Const |   Score\n---------------"
+        res = f"Score required to achieve **{rating}** play rating:"
+        res += "\n```Const |   Score\n---------------"
         chart_constant = floor_to_ndp(rating - 3, 0)
         if chart_constant < 1:
             chart_constant = 1
-        while chart_constant <= rating and chart_constant <= 15.4:
+        while chart_constant <= rating and chart_constant <= MAX_DIFFICULTY:
             required_score = calculate_score_for_rating(rating, chart_constant)
             if required_score is not None and required_score >= Rank.S.min_score:
                 res += (
