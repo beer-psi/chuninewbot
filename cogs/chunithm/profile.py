@@ -203,9 +203,6 @@ class ProfileCog(commands.Cog, name="Profile"):
                 )
                 .set_author(name=player_data.nameplate.content)
                 .set_thumbnail(url=player_data.character)
-                .set_footer(
-                    text=f"Last played on {player_data.last_play_date.strftime('%Y-%m-%d')}"
-                )
             )
 
             view = ProfileView(ctx, player_data)
