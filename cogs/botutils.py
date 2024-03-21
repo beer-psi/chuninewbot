@@ -73,6 +73,8 @@ class UtilsCog(commands.Cog, name="Utils"):
             stmt = select(Song).options(joinedload(Song.aliases))
             songs = (await session.execute(stmt)).scalars().unique()
 
+        self.alias_cache.clear()
+
         for song in songs:
             self.alias_cache.append(
                 CachedAlias(None, song.title, song.title, song.id, -1)
