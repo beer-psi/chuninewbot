@@ -168,6 +168,30 @@ MANUAL_MAPPINGS: dict[str, dict[str, str]] = {
         "we_star": "9",
         "image": "41d003f64f1b3b86.jpg",
     },
+    "6502b8cb896a3108": {
+        "id": "8025",
+        "catname": "イロドリミドリ",
+        "title": "Help me, あーりん！",
+        "we_kanji": "嘘",
+        "we_star": "5",
+        "image": "c1ff8df1757fedf4.jpg",
+    },
+    "98baa8dadec9674a": {
+        "id": "8078",
+        "catname": "イロドリミドリ",
+        "title": "あねぺったん",
+        "we_kanji": "嘘",
+        "we_star": "7",
+        "image": "a6889b8a729210be.jpg",
+    },
+    "108fb090064d84eb": {
+        "id": "8116",
+        "catname": "イロドリミドリ",
+        "title": "イロドリミドリ杯花映塚全一決定戦公式テーマソング『ウソテイ』",
+        "we_kanji": "嘘",
+        "we_star": "7",
+        "image": "43bd6cbc31e4c02c.jpg",
+    },
 }
 for idx, random in enumerate(
     # Random WE, A through F
