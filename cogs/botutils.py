@@ -70,7 +70,11 @@ class UtilsCog(commands.Cog, name="Utils"):
 
     async def _reload_alias_cache(self) -> None:
         async with self.bot.begin_db_session() as session:
-            stmt = select(Song).options(joinedload(Song.aliases))
+            stmt = (
+                select(Song)
+                .where(Song.genre != "WORLD'S END")
+                .options(joinedload(Song.aliases))
+            )
             songs = (await session.execute(stmt)).scalars().unique()
 
         self.alias_cache.clear()
