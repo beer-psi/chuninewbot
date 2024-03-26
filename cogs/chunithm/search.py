@@ -13,10 +13,8 @@ from sqlalchemy.orm import joinedload
 from chunithm_net.models.enums import Difficulty
 from database.models import Alias, Chart, Song
 from utils import (
-    TOKYO_TZ,
     did_you_mean_text,
     get_jacket_url,
-    release_to_chunithm_version,
     shlex_split,
     yt_search_link,
 )
@@ -387,15 +385,17 @@ class SearchCog(commands.Cog, name="Search"):
                     did_you_mean_text(song, alias), mention_author=False
                 )
 
-            release = datetime.strptime(song.release, "%Y-%m-%d").astimezone(TOKYO_TZ)
-            version = release_to_chunithm_version(release)
+            displayed_version = song.version
+
+            if song.release is not None:
+                displayed_version += f" ({song.release})"
 
             embed = discord.Embed(
                 title=song.title,
                 description=(
                     f"**Artist**: {emd(song.artist)}\n"
                     f"**Category**: {song.genre}\n"
-                    f"**Version**: {version} ({song.release})\n"
+                    f"**Version**: {displayed_version}\n"
                     f"**BPM**: {song.bpm if song.bpm is not None else 'Unknown'}\n"
                 ),
                 color=discord.Color.yellow(),
