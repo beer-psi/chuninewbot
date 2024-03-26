@@ -38,8 +38,6 @@ speedups = [
 ]
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-isort = "^5.12.0"
 types-beautifulsoup4 = "^4.12.0.6"
 jishaku = "^2.5.1"
 pre-commit = "^3.3.3"
@@ -51,9 +49,6 @@ typing-extensions = "^4.7.1"
 basedpyright = "^1.5.0"
 pytest-httpx = "^0.30.0"
 pytest-html = "^4.1.1"
-
-[tool.isort]
-profile = "black"
 
 [tool.ruff]
 select = [
@@ -67,6 +62,7 @@ select = [
     "F",
     "FBT",
     "FLY",
+    "I",
     "ISC",
     "Q",
     "PERF",
