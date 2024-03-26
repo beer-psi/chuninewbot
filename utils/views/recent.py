@@ -20,11 +20,11 @@ def split_scores_into_credits(
     scores: Sequence["RecentRecord"],
 ) -> Sequence[Sequence["RecentRecord"]]:
     credits = []
-    current_credit = []
+    current_credit = [scores[0]]
     last_track = scores[0].track
 
-    for score in scores:
-        if score.track > last_track:
+    for score in scores[1:]:
+        if score.track >= last_track:
             credits.append(current_credit)
             current_credit = []
         current_credit.append(score)
