@@ -5,6 +5,7 @@ import csv
 import importlib.util
 import logging
 import re
+from datetime import datetime
 from html import unescape
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, TypedDict
@@ -25,7 +26,7 @@ from sqlalchemy.orm import joinedload
 
 from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE
 from database.models import Alias, Base, Chart, SdvxinChartView, Song, SongJacket
-from utils import json_loads
+from utils import TOKYO_TZ, json_loads, release_to_chunithm_version
 from utils.config import config
 from utils.logging import setup_logging
 from utils.types.errors import MissingConfiguration
@@ -91,6 +92,7 @@ class ZetarakuSheet(TypedDict):
 class ZetarakuSong(TypedDict):
     title: str
     imageName: str
+    version: Optional[str]
     bpm: Optional[int]
     sheets: list[ZetarakuSheet]
 
@@ -550,6 +552,16 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             ),
             None,
         )
+
+        version = None
+
+        if zetaraku_song is not None:
+            version = zetaraku_song["version"]
+        if version is None:
+            release_date = datetime.strptime(
+                song["meta"]["release"], "%Y-%m-%d"
+            ).astimezone(TOKYO_TZ)
+            version = release_to_chunithm_version(release_date)
         inserted_song = {
             "id": chunithm_id,
             # Don't use song["meta"]["title"]
@@ -558,6 +570,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
             "genre": song["meta"]["genre"],
             "artist": song["meta"]["artist"],
             "release": song["meta"]["release"],
+            "version": version,
             "bpm": None if song["meta"]["bpm"] == 0 else song["meta"]["bpm"],
             "jacket": jacket,
             "available": (
@@ -697,6 +710,7 @@ async def update_db(async_session: async_sessionmaker[AsyncSession]):
                 "genre": insert_statement.excluded.genre,
                 "artist": insert_statement.excluded.artist,
                 "release": insert_statement.excluded.release,
+                "version": insert_statement.excluded.version,
                 "bpm": func.coalesce(insert_statement.excluded.bpm, Song.bpm),
                 "jacket": func.coalesce(insert_statement.excluded.jacket, Song.jacket),
                 "available": insert_statement.excluded.available,
@@ -794,7 +808,7 @@ async def update_cc_from_data(
 
                 chart_file: Path = item / chart.find("./file/path").text  # type: ignore[reportOptionalMemberAccess]
 
-                with chart_file.open() as f:
+                with chart_file.open(encoding="utf-8") as f:
                     rd = csv.reader(f, delimiter="\t")
                     for row in rd:
                         if len(row) == 0:

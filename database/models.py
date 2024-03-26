@@ -41,7 +41,10 @@ class Song(Base):
     chunithm_catcode: Mapped[int] = mapped_column(nullable=False)
     genre: Mapped[str] = mapped_column(nullable=False)
     artist: Mapped[str] = mapped_column(nullable=False)
-    release: Mapped[str] = mapped_column(nullable=False)
+
+    version: Mapped[str] = mapped_column(nullable=False)
+    release: Mapped[Optional[str]] = mapped_column(nullable=True)
+
     bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     jacket: Mapped[str] = mapped_column(nullable=False)
