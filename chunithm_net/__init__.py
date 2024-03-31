@@ -8,9 +8,9 @@ from bs4 import BeautifulSoup
 from ._bs4 import BS4_FEATURE
 from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
 from .consts import _KEY_DETAILED_PARAMS
+from .exceptions import ChuniNetError, InvalidTokenException
 from .models.enums import Difficulty, Genres, Rank
 from .models.record import MusicRecord, RecentRecord, Record
-from .exceptions import ChuniNetError, InvalidTokenException
 from .parser import (
     parse_basic_recent_record,
     parse_detailed_recent_record,
@@ -41,6 +41,7 @@ class ChuniNet:
                     raise_on_chunithm_net_error,
                 ],
             },
+            timeout=httpx.Timeout(timeout=60.0),
             follow_redirects=True,
         )
 
