@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, cast
 
 import aiohttp
 import discord
+import httpx
 from discord import Webhook
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -88,6 +89,9 @@ class EventsCog(commands.Cog, name="Events"):
             ),
         ):
             embed.description = str(error)
+
+        if isinstance(exc, httpx.TimeoutException):
+            embed.description = "Timed out trying to connect to CHUNITHM-NET."
 
         if embed.description is not None:
             return await ctx.reply(
