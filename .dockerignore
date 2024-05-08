@@ -1,0 +1,15 @@
+database
+!database/alembic
+!database/models.py
+
+bot.ini
+
+**/.github
+**/.vscode
+
+**/.git
+**/.gitattributes
+**/.gitignore
+**/.pre-commit-config.yaml
+**/bot.example.ini
+**/README.md

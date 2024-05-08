@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  bot:
+    container_name: chuninewbot
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - ./database:/code/database:rw
+      - ./bot.ini:/code/bot.ini
+    expose:
+      - 5730
+    restart: unless-stopped
+  
+    
