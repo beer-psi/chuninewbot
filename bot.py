@@ -95,7 +95,7 @@ class ChuniBot(commands.Bot):
                 web._run_app(
                     self.app,
                     port=config.web.port,
-                    host="127.0.0.1",
+                    host=config.web.listen_address,
                 )
             )
 

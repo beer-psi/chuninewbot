@@ -45,6 +45,10 @@ class WebConfig:
     @property
     def enable(self) -> bool:
         return self.__section.getboolean("enable", fallback=False)
+    
+    @property
+    def listen_address(self) -> str:
+        return self.__section.get("listen_address", fallback="127.0.0.1")
 
     @property
     def port(self) -> Optional[int]:
