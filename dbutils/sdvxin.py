@@ -46,6 +46,7 @@ TITLE_MAPPING = {
     "DON`T STOP ROCKIN` ~[O_O] MIX~": "D✪N`T ST✪P R✪CKIN` ~[✪_✪] MIX~",
     "DON’T STOP ROCKIN’ ～[O_O] MIX～": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
     "Daydream cafe": "Daydream café",
+    "Defandour": "Dèfandour",
     "ECHO-": "ECHO",
     "Excalibur": "Excalibur ～Revived resolution～",
     "Excalibur ~Revived resolution~": "Excalibur ～Revived resolution～",
