@@ -105,7 +105,7 @@ class GamingCog(commands.Cog, name="Games"):
                         for alias in aliases
                     ]
                 )
-                >= 0.9
+                >= 80
             )
 
         content = ""
