@@ -67,4 +67,7 @@ monetarily support its development by donating through [Ko-fi](https://ko-fi.com
 or directly if you live in Vietnam:
 - Bank: Vietcombank
 - Account: beerpsi
+
+Thank you to everyone who donated:
+- [Tukkun](https://github.com/tukkun1995)
 </details>
