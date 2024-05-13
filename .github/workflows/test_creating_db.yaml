@@ -9,7 +9,7 @@ on:
       - ".github/workflows/test_creating_db.yaml"
       - "utils/config.py"  # Contains default value for DB path
       - "database/**"
-      - "dbutils.py"
+      - "dbutils/**"
       - "poetry.lock"
       - "pyproject.toml"
 
@@ -39,16 +39,16 @@ jobs:
            sed -i 's/# chunirec_token = <token>/chunirec_token = ${{ secrets.CHUNIREC_TOKEN }}/' bot.ini
 
       - name: Create database from schema
-        run: poetry run python dbutils.py create
+        run: poetry run python -m dbutils create
 
       - name: Update database with information from Chunirec + Zetaraku + Official website
-        run: poetry run python dbutils.py update chunirec
+        run: poetry run python -m dbutils update chunirec
 
       - name: Update sdvx.in chart views
-        run: poetry run python dbutils.py update sdvxin
+        run: poetry run python -m dbutils update sdvxin
 
       - name: Update database aliases
-        run: poetry run python dbutils.py update alias
+        run: poetry run python -m dbutils update alias
 
       - name: Upload created database
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32

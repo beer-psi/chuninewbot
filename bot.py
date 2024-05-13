@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import functools
-import importlib.util
 import logging
 import logging.handlers
 import sys
@@ -20,6 +19,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from cogs import COG_LIST
 from database.models import Prefix
 from utils.config import config
+from utils.evtloop import get_event_loop
 from utils.help import HelpCommand
 from utils.logging import QueueListenerHandler, console_handler, logger, setup_handler
 from web import init_app
@@ -184,19 +184,7 @@ async def startup():
 
 
 def sync_startup():
-    event_loop_impl = None
-    loop_factory = None
-
-    if sys.platform == "win32" and importlib.util.find_spec("winloop"):
-        import winloop  # type: ignore[reportMissingImports]
-
-        loop_factory = winloop.new_event_loop
-        event_loop_impl = winloop
-    elif sys.platform != "win32" and importlib.util.find_spec("uvloop"):
-        import uvloop  # type: ignore[reportMissingImports]
-
-        loop_factory = uvloop.new_event_loop
-        event_loop_impl = uvloop
+    event_loop_impl, loop_factory = get_event_loop()
 
     if sys.version_info >= (3, 11):
         with asyncio.Runner(loop_factory=loop_factory) as runner:
