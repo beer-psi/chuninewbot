@@ -214,9 +214,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
                 await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
-    @commands.command("privacy")
-    async def privacy(self, ctx: Context):
-        """Everything you need to know about this bot's privacy-related information."""
+    @commands.command("legal")
+    async def legal(self, ctx: Context):
+        """Links to the bot's privacy policy and terms of service
+
+        Satisfies Discord lawyers.
+        """
 
         if (
             ctx.message.reference is not None
@@ -228,8 +231,20 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         else:
             reference = ctx.message
 
+        embed = discord.Embed(color=discord.Color.yellow())
+        embed.add_field(
+            name="Privacy policy",
+            value=f"[Link]({config.legal.privacy_policy})",
+            inline=False,
+        )
+        embed.add_field(
+            name="Terms of service",
+            value=f"[Link]({config.legal.terms_of_service})",
+            inline=False,
+        )
+
         await reference.reply(
-            "https://cdn.discordapp.com/emojis/1091440450122022972.webp?quality=lossless",
+            embed=embed,
             mention_author=False,
         )
 

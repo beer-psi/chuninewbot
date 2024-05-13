@@ -45,7 +45,7 @@ class WebConfig:
     @property
     def enable(self) -> bool:
         return self.__section.getboolean("enable", fallback=False)
-    
+
     @property
     def listen_address(self) -> str:
         return self.__section.get("listen_address", fallback="127.0.0.1")
@@ -108,6 +108,25 @@ class IconsConfig:
             setattr(self, k, self.__section.get(k))
 
 
+class LegalConfig:
+    def __init__(self, section: "SectionProxy") -> None:
+        self.__section = section
+
+    @property
+    def privacy_policy(self) -> str:
+        return self.__section.get(
+            "privacy_policy",
+            fallback="https://www.freeprivacypolicy.com/live/3614793b-5552-4114-a244-b194a3eb881d",
+        )
+
+    @property
+    def terms_of_service(self) -> str:
+        return self.__section.get(
+            "terms_of_service",
+            fallback="https://www.freeprivacypolicy.com/live/506521e6-0d1a-452e-9071-dd140fbdd618",
+        )
+
+
 class DangerousConfig:
     def __init__(self, section: "SectionProxy") -> None:
         self.__section = section
@@ -124,6 +143,7 @@ class Config:
         self.web = WebConfig(self.__config["web"])
         self.credentials = CredentialsConfig(self.__config["credentials"])
         self.icons = IconsConfig(self.__config["icons"])
+        self.legal = LegalConfig(self.__config["legal"])
         self.dangerous = DangerousConfig(self.__config["dangerous"])
 
     @classmethod
