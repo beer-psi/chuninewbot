@@ -19,7 +19,7 @@ from utils.calculation.overpower import (
 )
 from utils.calculation.rating import calculate_rating, calculate_score_for_rating
 from utils.components import ChartCardEmbed
-from utils.constants import SIMILARITY_THRESHOLD, MAX_DIFFICULTY
+from utils.constants import MAX_DIFFICULTY, SIMILARITY_THRESHOLD
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -40,10 +40,7 @@ class ToolsCog(commands.Cog, name="Tools"):
         bpm: Range[float, 1, 10000],
         note_density: Range[int, 1, 1024] = 16,
     ):
-        """Determine whether you can get JUSTICE / JUSTICE CRITICAL through "anmitsu" technique or rubbing the ground slider
-        at the specified BPM and note density.
-
-        ----------
+        """Determine whether you can get JUSTICE / JUSTICE CRITICAL through "anmitsu" technique.
 
         "Anmitsu" is a technique where when two notes appear on different lanes with slightly different timing, you hit both
         of them at the same time. When the two notes are close enough in timing, they will have a JUSTICE CRITICAL overlap
