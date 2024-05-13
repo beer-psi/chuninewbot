@@ -214,7 +214,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
                 await ctx.reply(f"Prefix set to `{new_prefix}`", mention_author=False)
 
-    @commands.command("legal")
+    @commands.hybrid_command("legal")
     async def legal(self, ctx: Context):
         """Links to the bot's privacy policy and terms of service
 
