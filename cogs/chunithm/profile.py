@@ -108,7 +108,7 @@ def render_avatar(items: dict[str, bytes]) -> BytesIO:
                 coords.sx + coords.width,
                 coords.sy + coords.height,
             )
-        ).rotate(coords.rotate, expand=True, resample=Image.BICUBIC)
+        ).rotate(coords.rotate, expand=True, resample=Image.Resampling.BICUBIC)
         avatar.paste(crop, (base_x + coords.dx_offset, coords.dy), crop)
 
     buffer = BytesIO()
