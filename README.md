@@ -58,3 +58,13 @@ make:
 Thanks to all the
 [contributors](https://github.com/beerpiss/chuninewbot/graphs/contributors) who
 took part.
+
+<details>
+    <summary>Donation</summary>
+
+    chuninewbot is entirely free (as in both free beer and free speech), but you can
+    monetarily support its development by donating through [Ko-fi](https://ko-fi.com/beerpsi_)
+    or directly if you live in Vietnam:
+    - Bank: Vietcombank
+    - Account: beerpsi
+</details>
