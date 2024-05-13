@@ -221,16 +221,6 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         Satisfies Discord lawyers.
         """
 
-        if (
-            ctx.message.reference is not None
-            and ctx.message.reference.message_id is not None
-        ):
-            reference = await ctx.channel.fetch_message(
-                ctx.message.reference.message_id
-            )
-        else:
-            reference = ctx.message
-
         embed = discord.Embed(color=discord.Color.yellow())
         embed.add_field(
             name="Privacy policy",
@@ -243,7 +233,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             inline=False,
         )
 
-        await reference.reply(
+        await ctx.reply(
             embed=embed,
             mention_author=False,
         )
