@@ -45,7 +45,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
     async def kamaitachi(self, ctx: Context):
         await ctx.reply(
             (
-                "[Kamaitachi](https://kamaitachi.xyz) is a modern, invite-only, arcade rhythm game score tracker.\n"
+                "[Kamaitachi](https://kamai.tachi.ac) is a modern, invite-only, arcade rhythm game score tracker.\n"
                 "You can link your Kamaitachi account to the bot to sync your scores with a simple command.\n"
                 "To get started, DM me with `c>kamaitachi link` for instructions."
             ),
@@ -54,7 +54,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
 
     async def _verify_and_login(self, token: str) -> Optional[str]:
         async with aiohttp.ClientSession() as session, session.get(
-            "https://kamaitachi.xyz/api/v1/status",
+            "https://kamai.tachi.ac/api/v1/status",
             headers={
                 "Authorization": f"Bearer {token}",
             },
@@ -129,14 +129,14 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             title="Link with Kamaitachi",
             color=0xCA1961,
             description=(
-                f"Retrive an API key from https://kamaitachi.xyz/client-file-flow/{self.kt_client_id} then "
+                f"Retrive an API key from https://kamai.tachi.ac/client-file-flow/{self.kt_client_id} then "
                 "run `c>kamaitachi link <token>` in DMs."
             ),
         )
         if self.bot.app is not None:
             embed.description = (
                 "Click this link to authenticate with Kamaitachi: "
-                f"https://kamaitachi.xyz/oauth/request-auth?clientID={self.kt_client_id}&context={ctx.author.id}"
+                f"https://kamai.tachi.ac/oauth/request-auth?clientID={self.kt_client_id}&context={ctx.author.id}"
             )
 
         return await channel.send(
@@ -291,7 +291,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             async with aiohttp.ClientSession(
                 json_serialize=json_dumps
             ) as session, session.post(
-                "https://kamaitachi.xyz/ir/direct-manual/import",
+                "https://kamai.tachi.ac/ir/direct-manual/import",
                 json=request_body,
                 headers={
                     "Authorization": f"Bearer {cookie.kamaitachi_token}",
