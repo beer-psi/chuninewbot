@@ -41,12 +41,13 @@ def upgrade() -> None:
     rows = [x._asdict() for x in conn.execute(sa.select(songs))]
 
     for row in rows:
-        release = datetime.strptime(row["release"], "%Y-%m-%d").astimezone(TOKYO_TZ)
-        version = release_to_chunithm_version(release)
+        if row["release"] is not None:
+            release = datetime.strptime(row["release"], "%Y-%m-%d").astimezone(TOKYO_TZ)
+            version = release_to_chunithm_version(release)
 
-        conn.execute(
-            sa.update(songs).where(songs.c.id == row["id"]).values(version=version)
-        )
+            conn.execute(
+                sa.update(songs).where(songs.c.id == row["id"]).values(version=version)
+            )
 
     conn.commit()
 

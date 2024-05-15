@@ -105,6 +105,8 @@ async def merge_options(
             "release": None,
             "version": VERSIONS[int(release_tag_id)],
             "bpm": None,
+            "min_bpm": None,
+            "max_bpm": None,
             "jacket": None,
             "available": gettext(root, "./disableFlag") != "true",
             "removed": False,
@@ -166,6 +168,17 @@ async def merge_options(
 
                     if command == "BPM_DEF" and inserted_song.get("bpm") is None:
                         inserted_song["bpm"] = float(row[1])
+                    if command == "BPM":
+                        bpm = float(row[3])
+
+                        if (
+                            min_bpm := inserted_song.get("min_bpm")
+                        ) is None or bpm < min_bpm:
+                            inserted_song["min_bpm"] = bpm
+                        if (
+                            max_bpm := inserted_song.get("max_bpm")
+                        ) is None or bpm > max_bpm:
+                            inserted_song["max_bpm"] = bpm
                     elif command == "T_JUDGE_ALL":
                         inserted_chart["maxcombo"] = int(row[1])
                     elif command == "T_JUDGE_TAP":
@@ -204,6 +217,8 @@ async def merge_options(
                 # unless I can find a way to grab the release date, maybe from event files
                 "version": insert_stmt.excluded.version,
                 "bpm": func.coalesce(insert_stmt.excluded.bpm, Song.bpm),
+                "min_bpm": func.coalesce(insert_stmt.excluded.min_bpm, Song.min_bpm),
+                "max_bpm": func.coalesce(insert_stmt.excluded.max_bpm, Song.max_bpm),
                 # also ignore jackets
                 "available": insert_stmt.excluded.available,
                 # also ignore removed state

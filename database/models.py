@@ -46,6 +46,8 @@ class Song(Base):
     release: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
+    min_bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
+    max_bpm: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     jacket: Mapped[str] = mapped_column(nullable=False)
 

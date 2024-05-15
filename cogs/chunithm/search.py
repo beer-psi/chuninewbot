@@ -389,13 +389,25 @@ class SearchCog(commands.Cog, name="Search"):
             if song.release is not None:
                 displayed_version += f" ({song.release})"
 
+            displayed_bpm = "Unknown"
+
+            if song.bpm is not None:
+                displayed_bpm = str(song.bpm)
+
+                if (
+                    song.min_bpm is not None
+                    and song.max_bpm is not None
+                    and song.min_bpm != song.max_bpm
+                ):
+                    displayed_bpm = f"{displayed_bpm} ({song.min_bpm}~{song.max_bpm})"
+
             embed = discord.Embed(
                 title=song.title,
                 description=(
                     f"**Artist**: {emd(song.artist)}\n"
                     f"**Category**: {song.genre}\n"
                     f"**Version**: {displayed_version}\n"
-                    f"**BPM**: {song.bpm if song.bpm is not None else 'Unknown'}\n"
+                    f"**BPM**: {displayed_bpm}\n"
                 ),
                 color=discord.Color.yellow(),
             ).set_thumbnail(url=get_jacket_url(song))
