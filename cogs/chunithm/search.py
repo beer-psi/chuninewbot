@@ -332,7 +332,6 @@ class SearchCog(commands.Cog, name="Search"):
     @app_commands.command(name="info", description="Search for a song.")
     @app_commands.describe(
         query="Song title to search for. You don't have to be exact; try things out!",
-        worlds_end="Whether to search for WORLD'S END songs instead of standard songs.",
         detailed="Display detailed chart information (note counts and designer name)",
     )
     @app_commands.autocomplete(query=song_title_autocomplete)
@@ -341,11 +340,8 @@ class SearchCog(commands.Cog, name="Search"):
         interaction: "discord.Interaction[ChuniBot]",
         query: str,
         *,
-        worlds_end: bool = False,
         detailed: bool = False,
     ):
-        if worlds_end:
-            query += " -we"
         if detailed:
             query += " -d"
 
@@ -358,16 +354,13 @@ class SearchCog(commands.Cog, name="Search"):
 
         **Parameters:**
         `query`: Song title to search for. You don't have to be exact; try things out!
-        `-we`: Search for WORLD'S END songs instead of normal songs.
         `-d`: Show detailed info, such as note counts and charter.
         """
-        args = SimpleNamespace(worlds_end=False, detailed=False, query=[])
+        args = SimpleNamespace(detailed=False, query=[])
 
         argv = shlex_split(query)
         for arg in argv:
-            if arg in ["-we", "--worlds-end"]:
-                args.worlds_end = True
-            elif arg in ["-d", "--detailed"]:
+            if arg in ["-d", "--detailed"]:
                 args.detailed = True
             else:
                 args.query.append(arg)
