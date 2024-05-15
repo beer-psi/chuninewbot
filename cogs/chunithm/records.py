@@ -102,6 +102,11 @@ class RecordsCog(commands.Cog, name="Records"):
                         for e in x.embeds
                     )
                 ]
+
+                if len(messages) == 0:
+                    msg = "No recent scores found."
+                    raise commands.BadArgument(msg)
+
                 message = messages[0]
 
             thumbnail_urls = []
