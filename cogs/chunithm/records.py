@@ -10,7 +10,12 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from chunithm_net.consts import INTERNATIONAL_JACKET_BASE, JACKET_BASE, KEY_PLAY_RATING
+from chunithm_net.consts import (
+    INTERNATIONAL_JACKET_BASE,
+    JACKET_BASE,
+    KEY_INTERNAL_LEVEL,
+    KEY_PLAY_RATING,
+)
 from chunithm_net.models.enums import Difficulty, Genres, Rank
 from database.models import SongJacket
 from utils import did_you_mean_text, shlex_split
@@ -514,23 +519,29 @@ class RecordsCog(commands.Cog, name="Records"):
             str_level = rest[0] if len(rest) > 0 else None
 
         level = None
+        internal_level: float | None = None
         if str_level:
+            # Three accepted use cases, "14", "14+" and "14.9"
             msg = "Invalid level."
 
-            try:
-                if str_level[-1] == "+":
-                    numeric_level = int(str_level.zfill(3)[:-1])
-                else:
-                    numeric_level = int(str_level[0:2])
-            except ValueError:
-                raise commands.BadArgument(msg) from None
+            if "." in str_level and str_level.replace(".", "", 1).isdigit():
+                internal_level = float(str_level)
+                level = str(int(internal_level))
 
-            if str_level[-1] == "+" and numeric_level not in range(7, 15):
-                raise commands.BadArgument(msg)
-            if numeric_level not in range(1, 16):
-                raise commands.BadArgument(msg)
+                if internal_level * 10 % 10 >= 5:
+                    level += "+"
+            elif str_level[-1] == "+" and str_level[:-1].isdigit():
+                if int(str_level[:-1]) not in range(7, 15):
+                    raise commands.BadArgument(msg)
 
-            level = str_level
+                level = str_level
+            elif str_level.isdigit():
+                if int(str_level) not in range(1, 16):
+                    raise commands.BadArgument(msg)
+
+                level = str_level
+            else:
+                raise commands.BadArgument(msg)
 
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
@@ -550,6 +561,13 @@ class RecordsCog(commands.Cog, name="Records"):
             records.sort(
                 key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
             )
+
+            if internal_level is not None:
+                records = [
+                    r
+                    for r in records
+                    if r.extras.get(KEY_INTERNAL_LEVEL) == internal_level
+                ]
 
             view = B30View(ctx, records, show_average=False)
             view.message = await ctx.reply(
