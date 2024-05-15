@@ -28,6 +28,7 @@ RUN apt-get update && apt-get upgrade -y \
         pkg-config \
         libuv1 \
         curl \
+        git \
     # poetry
     && curl -sSL 'https://install.python-poetry.org' | python - \
     && poetry --version \
