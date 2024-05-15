@@ -7,9 +7,6 @@ bot.ini
 **/.github
 **/.vscode
 
-**/.git
-**/.gitattributes
-**/.gitignore
 **/.pre-commit-config.yaml
 **/bot.example.ini
 **/README.md
