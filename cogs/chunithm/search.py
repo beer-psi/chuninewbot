@@ -17,6 +17,7 @@ from utils import (
     shlex_split,
     yt_search_link,
 )
+from utils.components.score_card_embed import _displayed_difficulty
 from utils.config import config
 from utils.constants import SIMILARITY_THRESHOLD
 from utils.views.embeds import EmbedPaginationView
@@ -434,7 +435,6 @@ class SearchCog(commands.Cog, name="Search"):
                         if chart.sdvxin_chart_view is not None
                         else yt_search_link(song.title, chart.difficulty)
                     )
-                    worlds_end = "WORLD'S END"
 
                     if args.detailed:
                         difficulty = Difficulty.from_short_form(chart.difficulty)
@@ -445,7 +445,13 @@ class SearchCog(commands.Cog, name="Search"):
 
                         desc = f"{difficulty.emoji()} [{link_text}]({url})"
                     else:
-                        desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
+                        if chart.difficulty == "WE":
+                            displayed_difficulty = "WORLD'S END"
+                        else:
+                            displayed_difficulty = chart.difficulty[0]
+
+                        desc = f"[{displayed_difficulty}]({url}) {chart.level}"
+
                         if chart.const is not None:
                             desc += f" ({chart.const:.1f})"
 
