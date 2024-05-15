@@ -1,9 +1,10 @@
 from http.client import SERVICE_UNAVAILABLE
+
 import httpx
 from bs4 import BeautifulSoup
 
 from ._bs4 import BS4_FEATURE
-from .exceptions import MaintenanceException, ChuniNetError
+from .exceptions import ChuniNetError, MaintenanceException
 
 
 async def raise_on_chunithm_net_error(response: httpx.Response):

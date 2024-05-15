@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import discord
 import discord.ui
@@ -9,7 +10,6 @@ from utils import floor_to_ndp
 from utils.components import ScoreCardEmbed
 
 from ._pagination import PaginationView
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from chunithm_net.models.record import Record

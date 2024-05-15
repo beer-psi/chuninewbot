@@ -14,8 +14,8 @@ from chunithm_net.models.enums import ComboType, Difficulty
 from chunithm_net.models.record import (
     DetailedRecentRecord,
     MusicRecord,
-    Record,
     RecentRecord,
+    Record,
 )
 from utils import floor_to_ndp
 from utils.calculation.overpower import calculate_play_overpower

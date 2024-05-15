@@ -16,5 +16,5 @@ def get_event_loop():
 
         loop_factory = uvloop.new_event_loop
         event_loop_impl = uvloop
-    
+
     return event_loop_impl, loop_factory

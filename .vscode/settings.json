@@ -2,5 +2,7 @@
     "editor.formatOnSave": true,
     "ruff.fixAll": true,
     "python.analysis.typeCheckingMode": "off",
-    "basedpyright.disableLanguageServices": true
+    "python.languageServer": "None",
+    "basedpyright.disableLanguageServices": false,
+    "mypy.enabled": false
 }

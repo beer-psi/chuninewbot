@@ -1,7 +1,7 @@
 from decimal import Decimal
+
 from chunithm_net.models.record import DetailedParams
 from chunithm_net.models.type_paired_dict import TypePairedDictKey
-
 
 JACKET_BASE = "https://new.chunithm-net.com/chuni-mobile/html/mobile/img"
 INTERNATIONAL_JACKET_BASE = "https://chunithm-net-eng.com/mobile/img"

@@ -1,6 +1,6 @@
 import contextlib
-from http.cookiejar import LWPCookieJar
 import io
+from http.cookiejar import LWPCookieJar
 from typing import TYPE_CHECKING, Optional, Sequence, TypeVar
 
 from discord.ext import commands

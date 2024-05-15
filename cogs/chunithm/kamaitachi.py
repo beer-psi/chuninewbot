@@ -9,7 +9,7 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 
 from chunithm_net.consts import KEY_SONG_ID
-from chunithm_net.models.enums import ComboType, Difficulty, ClearType
+from chunithm_net.models.enums import ClearType, ComboType, Difficulty
 from database.models import Cookie
 from utils import json_dumps, json_loads
 from utils.config import config

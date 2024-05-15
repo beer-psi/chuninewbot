@@ -1,6 +1,6 @@
-from http.cookiejar import Cookie, LWPCookieJar
 import string
 from datetime import timedelta
+from http.cookiejar import Cookie, LWPCookieJar
 from pathlib import Path
 from random import choices
 
@@ -9,17 +9,17 @@ from pytest_httpx import HTTPXMock
 
 from chunithm_net import ChuniNet
 from chunithm_net.consts import _KEY_DETAILED_PARAMS, KEY_SONG_ID
+from chunithm_net.exceptions import (
+    ChuniNetError,
+    InvalidTokenException,
+    MaintenanceException,
+)
 from chunithm_net.models.enums import (
     ClearType,
     ComboType,
     Difficulty,
     Possession,
     Rank,
-)
-from chunithm_net.exceptions import (
-    ChuniNetError,
-    InvalidTokenException,
-    MaintenanceException,
 )
 
 BASE_DIR = Path(__file__).parent

@@ -1,5 +1,6 @@
 from asyncio import TimeoutError
-from http.cookiejar import LWPCookieJar, Cookie as HTTPCookie
+from http.cookiejar import Cookie as HTTPCookie
+from http.cookiejar import LWPCookieJar
 from secrets import SystemRandom
 from typing import TYPE_CHECKING, Optional
 
