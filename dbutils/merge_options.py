@@ -241,3 +241,5 @@ async def merge_options(
                 "charter": insert_stmt.excluded.charter,
             },
         )
+
+        await session.execute(upsert_stmt, inserted_charts)
