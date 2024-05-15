@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Sequence
 
 import discord
-from discord import app_commands
+from discord import Embed, app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.utils import escape_markdown as emd
@@ -19,6 +19,7 @@ from utils import (
 )
 from utils.config import config
 from utils.constants import SIMILARITY_THRESHOLD
+from utils.views.embeds import EmbedPaginationView
 from utils.views.songlist import SonglistView
 
 if TYPE_CHECKING:
@@ -375,108 +376,116 @@ class SearchCog(commands.Cog, name="Search"):
 
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
-            song, alias, similarity = await self.utils.find_song(
-                query, guild_id=guild_id, worlds_end=args.worlds_end
-            )
+            result = await self.utils.find_songs(query, guild_id=guild_id)
 
-            if song is None or similarity < SIMILARITY_THRESHOLD:
+            if result.similarity < SIMILARITY_THRESHOLD:
                 return await ctx.reply(
-                    did_you_mean_text(song, alias), mention_author=False
+                    did_you_mean_text(result.songs[0], result.matched_alias),
+                    mention_author=False,
                 )
 
-            displayed_version = song.version
+            song_embeds: list[Embed] = []
 
-            if song.release is not None:
-                displayed_version += f" ({song.release})"
+            for song in result.songs:
+                displayed_version = song.version
 
-            displayed_bpm = "Unknown"
+                if song.release is not None:
+                    displayed_version += f" ({song.release})"
 
-            if song.bpm is not None:
-                displayed_bpm = str(song.bpm)
+                displayed_bpm = "Unknown"
 
-                if (
-                    song.min_bpm is not None
-                    and song.max_bpm is not None
-                    and song.min_bpm != song.max_bpm
-                ):
-                    displayed_bpm = f"{displayed_bpm} ({song.min_bpm}~{song.max_bpm})"
+                if song.bpm is not None:
+                    displayed_bpm = str(song.bpm)
 
-            embed = discord.Embed(
-                title=song.title,
-                description=(
-                    f"**Artist**: {emd(song.artist)}\n"
-                    f"**Category**: {song.genre}\n"
-                    f"**Version**: {displayed_version}\n"
-                    f"**BPM**: {displayed_bpm}\n"
-                ),
-                color=discord.Color.yellow(),
-            ).set_thumbnail(url=get_jacket_url(song))
+                    if (
+                        song.min_bpm is not None
+                        and song.max_bpm is not None
+                        and song.min_bpm != song.max_bpm
+                    ):
+                        displayed_bpm = (
+                            f"{displayed_bpm} ({song.min_bpm}~{song.max_bpm})"
+                        )
 
-            if not song.available:
-                if song.removed:
-                    embed.description = (
-                        f"**This song is removed.**\n\n{embed.description}"
+                embed = discord.Embed(
+                    title=song.title,
+                    description=(
+                        f"**Artist**: {emd(song.artist)}\n"
+                        f"**Category**: {song.genre}\n"
+                        f"**Version**: {displayed_version}\n"
+                        f"**BPM**: {displayed_bpm}\n"
+                    ),
+                    color=discord.Color.yellow(),
+                ).set_thumbnail(url=get_jacket_url(song))
+
+                if not song.available:
+                    if song.removed:
+                        embed.description = (
+                            f"**This song is removed.**\n\n{embed.description}"
+                        )
+                    else:
+                        embed.description = f"**This song is not available in CHUNITHM International.**\n\n{embed.description}"
+
+                stmt = (
+                    select(Chart)
+                    .where(Chart.song_id == song.id)
+                    .order_by(Chart.id)
+                    .options(joinedload(Chart.sdvxin_chart_view))
+                )
+                charts = (await session.execute(stmt)).scalars().all()
+
+                chart_level_desc = []
+
+                for chart in charts:
+                    url = (
+                        chart.sdvxin_chart_view.url
+                        if chart.sdvxin_chart_view is not None
+                        else yt_search_link(song.title, chart.difficulty)
                     )
-                else:
-                    embed.description = f"**This song is not available in CHUNITHM International.**\n\n{embed.description}"
+                    worlds_end = "WORLD'S END"
 
-            stmt = (
-                select(Chart)
-                .where(Chart.song_id == song.id)
-                .order_by(Chart.id)
-                .options(joinedload(Chart.sdvxin_chart_view))
+                    if args.detailed:
+                        difficulty = Difficulty.from_short_form(chart.difficulty)
+
+                        link_text = f"Lv.{chart.level}"
+                        if chart.const is not None:
+                            link_text += f" ({chart.const:.1f})"
+
+                        desc = f"{difficulty.emoji()} [{link_text}]({url})"
+                    else:
+                        desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
+                        if chart.const is not None:
+                            desc += f" ({chart.const:.1f})"
+
+                    if args.detailed and chart.charter is not None:
+                        desc += f" Designer: {emd(chart.charter)}"
+
+                    if args.detailed:
+                        maxcombo = chart.maxcombo or "-"
+                        tap = chart.tap or "-"
+                        hold = chart.hold or "-"
+                        slide = chart.slide or "-"
+                        air = chart.air or "-"
+                        flick = chart.flick or "-"
+                        desc += f"\n**{maxcombo}** / {tap} / {hold} / {slide} / {air} / {flick}"
+                    chart_level_desc.append(desc)
+
+                if len(chart_level_desc) > 0:
+                    # embed.description is already set above
+                    embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
+                    if args.detailed:
+                        embed.description += (
+                            "**CHAIN** / TAP / HOLD / SLIDE / AIR / FLICK\n\n"
+                        )
+                        embed.description += "\n".join(chart_level_desc)
+                    else:
+                        embed.description += " / ".join(chart_level_desc)
+
+                song_embeds.append(embed)
+
+            view = EmbedPaginationView(ctx, song_embeds)
+            view.message = await ctx.reply(
+                embed=view.items[0], view=view, mention_author=False
             )
-            charts = (await session.execute(stmt)).scalars().all()
-
-            chart_level_desc = []
-
-            for chart in charts:
-                url = (
-                    chart.sdvxin_chart_view.url
-                    if chart.sdvxin_chart_view is not None
-                    else yt_search_link(song.title, chart.difficulty)
-                )
-                worlds_end = "WORLD'S END"
-
-                if args.detailed:
-                    difficulty = Difficulty.from_short_form(chart.difficulty)
-
-                    link_text = f"Lv.{chart.level}"
-                    if chart.const is not None:
-                        link_text += f" ({chart.const:.1f})"
-
-                    desc = f"{difficulty.emoji()} [{link_text}]({url})"
-                else:
-                    desc = f"[{worlds_end if args.worlds_end else chart.difficulty[0]}]({url}) {chart.level}"
-                    if chart.const is not None:
-                        desc += f" ({chart.const:.1f})"
-
-                if args.detailed and chart.charter is not None:
-                    desc += f" Designer: {emd(chart.charter)}"
-
-                if args.detailed:
-                    maxcombo = chart.maxcombo or "-"
-                    tap = chart.tap or "-"
-                    hold = chart.hold or "-"
-                    slide = chart.slide or "-"
-                    air = chart.air or "-"
-                    flick = chart.flick or "-"
-                    desc += (
-                        f"\n**{maxcombo}** / {tap} / {hold} / {slide} / {air} / {flick}"
-                    )
-                chart_level_desc.append(desc)
-
-            if len(chart_level_desc) > 0:
-                # embed.description is already set above
-                embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
-                if args.detailed:
-                    embed.description += (
-                        "**CHAIN** / TAP / HOLD / SLIDE / AIR / FLICK\n\n"
-                    )
-                    embed.description += "\n".join(chart_level_desc)
-                else:
-                    embed.description += " / ".join(chart_level_desc)
-            await ctx.reply(embed=embed, mention_author=False)
             return None
 
 

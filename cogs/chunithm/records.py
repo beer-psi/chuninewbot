@@ -1,7 +1,6 @@
 import contextlib
 import itertools
 from argparse import ArgumentError
-from types import SimpleNamespace
 from typing import TYPE_CHECKING, Optional, cast
 
 import discord
@@ -204,80 +203,70 @@ class RecordsCog(commands.Cog, name="Records"):
     ) -> list[app_commands.Choice[str]]:
         return await self.autocompleters.song_title_autocomplete(interaction, current)
 
-    @app_commands.command(name="scores", description="Get scores for a specific song.")
+    @commands.hybrid_command("scores")
     @app_commands.describe(
         query="Song title to search for. You don't have to be exact; try things out!",
         user="Check scores of this Discord user. Yourself, if not provided.",
-        worlds_end="Search for WORLD'S END songs instead of standard songs.",
     )
     @app_commands.autocomplete(query=song_title_autocomplete)
-    async def scores_slash(
-        self,
-        interaction: "discord.Interaction[ChuniBot]",
-        query: str,
-        *,
-        user: Optional[discord.User | discord.Member] = None,
-        worlds_end: bool = False,
-    ):
-        if user is not None:
-            query = f"{user.mention} {query}"
-        if worlds_end:
-            query += " -we"
-
-        ctx = await Context.from_interaction(interaction)
-        return await self.scores(ctx, query=query)
-
-    @commands.command("scores")
     async def scores(
         self,
         ctx: Context,
+        user: Optional[discord.User | discord.Member] = None,
         *,
         query: str,
     ):
-        """**Get a user's scores for a song.
-        If no user is specified, your scores will be shown.**
-
-        **Parameters:**
-        `username`: Discord username of the player. Yourself, if not provided.
-        `query`: Song title to search for.
-        `-we`: Search for WORLD'S END songs instead of standard songs (no param).
-        """
-        args = SimpleNamespace(worlds_end=False, query=[])
-
-        argv = shlex_split(query)
-        for arg in argv:
-            if arg in ["-we", "--worlds-end"]:
-                args.worlds_end = True
-            else:
-                args.query.append(arg)
-
-        user = None
-        query = " ".join(args.query)
-        for converter in [commands.MemberConverter, commands.UserConverter]:
-            try:
-                user = await converter().convert(ctx, args.query[0])
-                query = " ".join(args.query[1:])
-            # We need to iterate over all converters, so PERF203 does not
-            # apply here.
-            except commands.BadArgument:  # noqa: PERF203
-                pass
-
+        """Get a player's scores for a specific song."""
         async with ctx.typing(), self.utils.chuninet(
             ctx if user is None else user.id
         ) as client:
             guild_id = ctx.guild.id if ctx.guild else None
-            song, alias, similarity = await self.utils.find_song(
-                query, guild_id=guild_id, worlds_end=args.worlds_end
+            result = await self.utils.find_songs(
+                query, guild_id=guild_id, load_charts=True
             )
-            if song is None or similarity < SIMILARITY_THRESHOLD:
+
+            if result.similarity < SIMILARITY_THRESHOLD:
                 return await ctx.reply(
-                    did_you_mean_text(song, alias), mention_author=False
+                    did_you_mean_text(result.songs[0], result.matched_alias),
+                    mention_author=False,
                 )
+
+            if len(result.songs) > 1:
+                options = []
+
+                for i, x in enumerate(result.songs):
+                    if x.genre == "WORLD'S END":
+                        title = f"{x.title} [{x.charts[0].level}]"
+                    else:
+                        title = x.title
+
+                    options.append((title, i))
+                view = SelectToCompareView(
+                    options=options,
+                    placeholder="Select a song...",
+                )
+                select_message = await ctx.reply(
+                    "Multiple songs were found. Select one:",
+                    view=view,
+                    mention_author=False,
+                )
+
+                await view.wait()
+
+                if view.value is None:
+                    await select_message.edit(
+                        content="Timed out before selecting a song.", view=None
+                    )
+                    return None
+
+                song = result.songs[int(view.value)]
+            else:
+                song = result.songs[0]
+                select_message = None
 
             song.raise_if_not_available()
 
             userinfo = await client.authenticate()
-
             records = await client.music_record(song.id)
 
             if len(records) == 0:
@@ -289,12 +278,20 @@ class RecordsCog(commands.Cog, name="Records"):
             records = await self.utils.hydrate_records(records)
 
             view = CompareView(ctx, userinfo, records)
-            view.message = await ctx.reply(
-                content=f"Top play for {userinfo.name}",
-                embed=ScoreCardEmbed(view.items[view.page]),
-                view=view,
-                mention_author=False,
-            )
+
+            if select_message is None:
+                view.message = await ctx.reply(
+                    content=f"Top play for {userinfo.name}",
+                    embed=ScoreCardEmbed(view.items[view.page]),
+                    view=view,
+                    mention_author=False,
+                )
+            else:
+                view.message = await select_message.edit(
+                    content=f"Top play for {userinfo.name}",
+                    embed=ScoreCardEmbed(view.items[view.page]),
+                    view=view,
+                )
             return None
 
     @commands.hybrid_command("best30", aliases=["b30"])

@@ -51,9 +51,6 @@ class PaginationView(discord.ui.View):
             self.page == self.max_index
         )
 
-    async def update(self, interaction: discord.Interaction):
-        await self.callback(interaction)
-
     @abstractmethod
     async def callback(self, interaction: discord.Interaction):
         ...
@@ -63,25 +60,25 @@ class PaginationView(discord.ui.View):
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         self.page = 0
-        await self.update(interaction)
+        await self.callback(interaction)
 
     @discord.ui.button(label="<", style=discord.ButtonStyle.grey, disabled=True)
     async def to_previous_page(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         self.page -= 1
-        await self.update(interaction)
+        await self.callback(interaction)
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.grey)
     async def to_next_page(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         self.page += 1
-        await self.update(interaction)
+        await self.callback(interaction)
 
     @discord.ui.button(label=">>", style=discord.ButtonStyle.grey)
     async def to_last_page(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         self.page = self.max_index
-        await self.update(interaction)
+        await self.callback(interaction)

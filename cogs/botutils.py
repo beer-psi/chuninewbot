@@ -1,5 +1,6 @@
 import contextlib
 import io
+from dataclasses import dataclass
 from http.cookiejar import LWPCookieJar
 from typing import TYPE_CHECKING, Optional, Sequence, TypeVar
 
@@ -58,6 +59,13 @@ class CachedAlias:
         self.title = title
         self.song_id = song_id
         self.guild_id = guild_id
+
+
+@dataclass
+class SongSearchResult:
+    songs: list[Song]
+    matched_alias: Optional[Alias]
+    similarity: float
 
 
 class UtilsCog(commands.Cog, name="Utils"):
@@ -293,6 +301,40 @@ class UtilsCog(commands.Cog, name="Utils"):
                 alias = None
 
         return song, alias, similarity
+
+    async def find_songs(
+        self,
+        query: str,
+        *,
+        guild_id: Optional[int] = None,
+        load_charts: bool = False,
+    ) -> SongSearchResult:
+        aliases = [x for x in self.alias_cache if x.guild_id in {-1, guild_id}]
+        (_, similarity, index) = process.extractOne(
+            query,
+            [x.alias for x in aliases],
+            scorer=fuzz.QRatio,
+            processor=str.lower,
+        )
+        matching_alias = aliases[index]
+
+        async with self.bot.begin_db_session() as session:
+            stmt = select(Song).where(Song.title == matching_alias.title)
+
+            if load_charts:
+                stmt = stmt.options(joinedload(Song.charts))
+
+            songs = (await session.execute(stmt)).scalars().unique()
+
+            if matching_alias.id is not None:
+                stmt = select(Alias).where(Alias.rowid == matching_alias.id)
+                alias = (await session.execute(stmt)).scalar_one_or_none()
+            else:
+                alias = None
+
+        return SongSearchResult(
+            songs=list(songs), matched_alias=alias, similarity=similarity
+        )
 
     # maimai and CHUNITHM NET goes under maintenance every day at 2:00 AM JST, so we update the DB then
     #
