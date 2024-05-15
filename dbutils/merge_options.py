@@ -135,7 +135,6 @@ async def merge_options(
 
             logger.debug("Reading music ID %s, difficulty %s", song_id, difficulty)
 
-            level = int(level_str)
             level_decimal = int(level_decimal_str)
 
             if genre == "WORLD'S END":
@@ -148,7 +147,7 @@ async def merge_options(
                 const = None
             else:
                 displayed_level = level_str + ("+" if level_decimal >= 50 else "")
-                const = float(f"{level}.{level_decimal}")
+                const = float(f"{level_str}.{level_decimal_str}")
 
             inserted_chart = {
                 "song_id": int(song_id),
