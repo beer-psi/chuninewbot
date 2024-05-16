@@ -166,7 +166,7 @@ async def merge_options(
                     command = row[0]
 
                     if command == "BPM_DEF" and inserted_song.get("bpm") is None:
-                        inserted_song["bpm"] = float(row[1])
+                        inserted_song["bpm"] = float(row[2])
                     if command == "BPM":
                         bpm = float(row[3])
 
