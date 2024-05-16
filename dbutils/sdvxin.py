@@ -139,6 +139,7 @@ async def update_sdvxin(
 
             for table in tables:
                 scripts = table.select("script[src]")
+
                 for script in scripts:
                     title = next(
                         (
@@ -148,8 +149,10 @@ async def update_sdvxin(
                         ),
                         None,
                     )
+
                     if title is None:
                         continue
+
                     title = TITLE_MAPPING.get(title, unescape(title))
                     sdvx_in_id = str(script["src"]).split("/")[-1][
                         :5
@@ -158,6 +161,8 @@ async def update_sdvxin(
                     stmt = select(Song)
                     condition = Song.title == title
                     script_data = None
+                    level = None
+
                     if category == "end":
                         script_resp = await client.get(
                             f"https://sdvx.in{script['src']}"
@@ -181,8 +186,13 @@ async def update_sdvxin(
 
                     stmt = stmt.where(condition)
                     song = (await session.execute(stmt)).scalar_one_or_none()
+
                     if song is None:
-                        logger.warning(f"Could not find song with title {title}")
+                        if category == "end":
+                            logger.warning("Could not find %s [%s]", title, level)
+                        else:
+                            logger.warning("Could not find %s", title)
+
                         continue
 
                     if script_data is None:
@@ -201,12 +211,13 @@ async def update_sdvxin(
                         # var LV00000W2
                         level = SDVXIN_DIFFICULTY_MAPPING[key[11]]
                         end_index = key[12] if len(key) > 12 else ""
-
                         value_soup = BeautifulSoup(
                             value.removeprefix('"').removesuffix('";'), bs4_features
                         )
+
                         if value_soup.select_one("a") is None:
                             continue
+
                         inserted_data.append(
                             {
                                 "id": sdvx_in_id,
