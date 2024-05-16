@@ -103,11 +103,11 @@ def did_you_mean_text(result: "Song | None", alias: "Alias | None") -> str:
     return reply
 
 
-def yt_search_link(title: str, difficulty: str) -> str:
+def yt_search_link(title: str, difficulty: str, level: str) -> str:
     if difficulty == "WE":
         difficulty = "WORLD'S END"
     return "https://www.youtube.com/results?search_query=" + quote(
-        f"CHUNITHM {title} {difficulty}"
+        f'"CHUNITHM" "{title}" "{difficulty}" "{level}"'
     )
 
 

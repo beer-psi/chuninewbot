@@ -17,7 +17,6 @@ from utils import (
     shlex_split,
     yt_search_link,
 )
-from utils.components.score_card_embed import _displayed_difficulty
 from utils.config import config
 from utils.constants import SIMILARITY_THRESHOLD
 from utils.views.embeds import EmbedPaginationView
@@ -433,7 +432,7 @@ class SearchCog(commands.Cog, name="Search"):
                     url = (
                         chart.sdvxin_chart_view.url
                         if chart.sdvxin_chart_view is not None
-                        else yt_search_link(song.title, chart.difficulty)
+                        else yt_search_link(song.title, chart.difficulty, chart.level)
                     )
 
                     if args.detailed:

@@ -24,7 +24,7 @@ class SonglistView(PaginationView):
             url = (
                 chart.sdvxin_chart_view.url
                 if chart.sdvxin_chart_view is not None
-                else yt_search_link(chart.song.title, chart.difficulty)
+                else yt_search_link(chart.song.title, chart.difficulty, chart.level)
             )
             songlist += f"{idx + start_index + 1}. {escape_markdown(chart.song.title)} [[{chart.difficulty}]]({url})\n"
         return discord.Embed(
