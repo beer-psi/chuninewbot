@@ -44,6 +44,7 @@ TITLE_MAPPING = {
     "Chaotic Order": "Chaotic Ørder",
     "DAZZLING SEASON": "DAZZLING♡SEASON",
     "DON`T STOP ROCKIN` ~[O_O] MIX~": "D✪N`T ST✪P R✪CKIN` ~[✪_✪] MIX~",
+    "DON’T STOP ROCKIN’ ～[O_O] MIX": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
     "DON’T STOP ROCKIN’ ～[O_O] MIX～": "D✪N’T ST✪P R✪CKIN’ ～[✪_✪] MIX～",
     "Daydream cafe": "Daydream café",
     "Defandour": "Dèfandour",
