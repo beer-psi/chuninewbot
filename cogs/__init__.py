@@ -1,6 +1,6 @@
 COG_LIST: list[str] = [
-    "cogs.autocompleters",
     "cogs.botutils",
+    "cogs.autocompleters",
     "cogs.events",
     "cogs.fluff",
     "cogs.gaming",
