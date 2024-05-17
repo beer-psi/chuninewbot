@@ -3,17 +3,17 @@ from typing import TYPE_CHECKING
 import discord
 from discord import app_commands
 from discord.ext import commands
-from sqlalchemy import func, select
-
-from database.models import Alias, Song
+from rapidfuzz import fuzz, process
 
 if TYPE_CHECKING:
     from bot import ChuniBot
+    from cogs.botutils import UtilsCog
 
 
 class AutocompletersCog(commands.Cog, name="Autocompleters"):
     def __init__(self, bot: "ChuniBot") -> None:
         self.bot = bot
+        self.utils: "UtilsCog" = self.bot.get_cog("Utils")  # type: ignore[reportGeneralTypeIssues]
 
     async def song_title_autocomplete(
         self,
@@ -23,40 +23,23 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
         if len(current) < 3:
             return []
 
-        condition = Alias.guild_id == -1
-        if interaction.guild is not None:
-            condition |= Alias.guild_id == interaction.guild.id
-
-        song_query = select(Song.title, Song.title.label("alias")).where(Song.id < 8000)
-        aliases_query = (
-            select(
-                Song.title,
-                Alias.alias,
-            )
-            .join(Song)
-            .where(condition)
+        aliases = [
+            x
+            for x in self.utils.alias_cache
+            if x.guild_id == -1
+            or (interaction.guild is None or x.guild_id == interaction.guild.id)
+        ]
+        results = process.extract(
+            current,
+            [x.alias for x in aliases],
+            scorer=fuzz.QRatio,
+            processor=str.lower,
+            limit=100,
+            score_cutoff=70,
         )
+        titles = {aliases[r[2]].title for r in results}
 
-        subquery = song_query.union_all(aliases_query).subquery()
-
-        sim_col = func.fuzz_qratio(func.lower(subquery.c.alias), current.lower()).label(
-            "sim"
-        )
-        stmt = (
-            select(
-                subquery.c.title,
-                func.max(sim_col),
-            )
-            .where(sim_col > 70)
-            .group_by(subquery.c.title)
-            .order_by(sim_col.desc())
-            .limit(25)
-        )
-
-        async with self.bot.begin_db_session() as session:
-            rows = (await session.execute(stmt)).scalars().all()
-
-        return [app_commands.Choice(name=row, value=row) for row in rows]
+        return [app_commands.Choice(name=t, value=t) for t in titles][:25]
 
 
 async def setup(bot: "ChuniBot"):
