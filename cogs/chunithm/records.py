@@ -88,6 +88,12 @@ class RecordsCog(commands.Cog, name="Records"):
                 message = await ctx.channel.fetch_message(
                     cast(int, ctx.message.reference.message_id)
                 )
+            elif not ctx.bot_permissions.read_message_history:
+                msg = (
+                    "Bot requires the Read Message History permission to fetch recent scores. "
+                    f"Alternatively, run `{ctx.prefix}compare` while replying to the score you want to compare."
+                )
+                raise commands.CheckFailure(msg)
             else:
                 messages = [
                     x
