@@ -363,7 +363,7 @@ class SearchCog(commands.Cog, name="Search"):
                 args.query.append(arg)
 
         query = " ".join(args.query)
-        return await self.info_inner(ctx, query=args.query, detailed=args.detailed)
+        return await self.info_inner(ctx, query=query, detailed=args.detailed)
 
     async def info_inner(self, ctx: Context, *, query: str, detailed: bool = False):
         async with ctx.typing(), self.bot.begin_db_session() as session:

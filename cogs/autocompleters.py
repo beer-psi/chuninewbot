@@ -34,7 +34,7 @@ class AutocompletersCog(commands.Cog, name="Autocompleters"):
             [x.alias for x in aliases],
             scorer=fuzz.QRatio,
             processor=str.lower,
-            limit=100,
+            limit=50,
             score_cutoff=70,
         )
         titles = {aliases[r[2]].title for r in results}
