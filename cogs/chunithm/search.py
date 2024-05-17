@@ -342,11 +342,8 @@ class SearchCog(commands.Cog, name="Search"):
         *,
         detailed: bool = False,
     ):
-        if detailed:
-            query += " -d"
-
         ctx = await Context.from_interaction(interaction)
-        return await self.info(ctx, query=query)
+        return await self.info_inner(ctx, query=query, detailed=detailed)
 
     @commands.command("info")
     async def info(self, ctx: Context, *, query: str):
@@ -366,7 +363,9 @@ class SearchCog(commands.Cog, name="Search"):
                 args.query.append(arg)
 
         query = " ".join(args.query)
+        return await self.info_inner(ctx, query=args.query, detailed=args.detailed)
 
+    async def info_inner(self, ctx: Context, *, query: str, detailed: bool = False):
         async with ctx.typing(), self.bot.begin_db_session() as session:
             guild_id = ctx.guild.id if ctx.guild is not None else None
             result = await self.utils.find_songs(query, guild_id=guild_id)
@@ -435,7 +434,7 @@ class SearchCog(commands.Cog, name="Search"):
                         else yt_search_link(song.title, chart.difficulty, chart.level)
                     )
 
-                    if args.detailed:
+                    if detailed:
                         difficulty = Difficulty.from_short_form(chart.difficulty)
 
                         link_text = f"Lv.{chart.level}"
@@ -454,10 +453,10 @@ class SearchCog(commands.Cog, name="Search"):
                         if chart.const is not None:
                             desc += f" ({chart.const:.1f})"
 
-                    if args.detailed and chart.charter is not None:
+                    if detailed and chart.charter is not None:
                         desc += f" Designer: {emd(chart.charter)}"
 
-                    if args.detailed:
+                    if detailed:
                         maxcombo = chart.maxcombo or "-"
                         tap = chart.tap or "-"
                         hold = chart.hold or "-"
@@ -470,7 +469,7 @@ class SearchCog(commands.Cog, name="Search"):
                 if len(chart_level_desc) > 0:
                     # embed.description is already set above
                     embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
-                    if args.detailed:
+                    if detailed:
                         embed.description += (
                             "**CHAIN** / TAP / HOLD / SLIDE / AIR / FLICK\n\n"
                         )
