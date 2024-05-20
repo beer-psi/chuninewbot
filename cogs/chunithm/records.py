@@ -88,26 +88,27 @@ class RecordsCog(commands.Cog, name="Records"):
                 message = await ctx.channel.fetch_message(
                     cast(int, ctx.message.reference.message_id)
                 )
-            elif not ctx.bot_permissions.read_message_history:
-                msg = (
-                    "Bot requires the Read Message History permission to fetch recent scores. "
-                    f"Alternatively, run `{ctx.prefix}compare` while replying to the score you want to compare."
-                )
-                raise commands.CheckFailure(msg)
             else:
-                messages = [
-                    x
-                    async for x in ctx.channel.history(limit=50)
-                    if x.author == self.bot.user
-                    and any(
-                        e.thumbnail.url is not None
-                        and (
-                            JACKET_BASE in e.thumbnail.url
-                            or INTERNATIONAL_JACKET_BASE in e.thumbnail.url
+                try:
+                    messages = [
+                        x
+                        async for x in ctx.channel.history(limit=50)
+                        if x.author == self.bot.user
+                        and any(
+                            e.thumbnail.url is not None
+                            and (
+                                JACKET_BASE in e.thumbnail.url
+                                or INTERNATIONAL_JACKET_BASE in e.thumbnail.url
+                            )
+                            for e in x.embeds
                         )
-                        for e in x.embeds
+                    ]
+                except discord.errors.Forbidden as e:
+                    msg = (
+                        "Bot requires the Read Message History permission to fetch recent scores. "
+                        f"Alternatively, run `{ctx.prefix}compare` while replying to the score you want to compare."
                     )
-                ]
+                    raise commands.CheckFailure(msg) from e
 
                 if len(messages) == 0:
                     msg = "No recent scores found."
