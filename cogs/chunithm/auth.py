@@ -13,11 +13,14 @@ from chunithm_net import ChuniNet
 from chunithm_net.exceptions import ChuniNetException, InvalidTokenException
 from database.models import Cookie
 from utils import asuppress
+from utils.logging import logger as root_logger
 from utils.views.login import LoginFlowView
 
 if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
+
+logger = root_logger.getChild(__name__)
 
 
 class AuthCog(commands.Cog, name="Auth"):
@@ -36,12 +39,17 @@ class AuthCog(commands.Cog, name="Auth"):
             Signs out from CHUNITHM-NET, making the token unusable.
         """
         msg = "Successfully logged out."
+
         if invalidate:
             async with asuppress(InvalidTokenException), self.utils.chuninet(
                 ctx
             ) as client:
                 result = await client.logout()
+
                 if not result:
+                    logger.warning(
+                        "Could not sign user %d out of CHUNITHM-NET.", ctx.author.id
+                    )
                     msg = (
                         "There was an error signing out from CHUNITHM-NET. "
                         "However, your account has been deleted from our records."
@@ -50,6 +58,7 @@ class AuthCog(commands.Cog, name="Auth"):
         async with ctx.typing(), self.bot.begin_db_session() as session:
             stmt = delete(Cookie).where(Cookie.discord_id == ctx.author.id)
             await session.execute(stmt)
+            await session.commit()
         await ctx.reply(msg, mention_author=False)
 
     async def _verify_and_login(self, id: int, clal: str) -> Optional[Exception]:
@@ -101,13 +110,32 @@ class AuthCog(commands.Cog, name="Auth"):
 
         channel = ctx.channel
 
+        logger.debug(
+            "Received login request from username %s (%d)",
+            ctx.author.name,
+            ctx.author.id,
+        )
+
         if not isinstance(ctx.channel, discord.channel.DMChannel):
             please_delete_message = ""
+
             if clal is not None:
                 try:
+                    logger.debug(
+                        "Deleting message %d (guild %d) because it contains a token",
+                        ctx.message.id,
+                        -1 if ctx.guild is None else ctx.guild.id,
+                    )
                     await ctx.message.delete()
                 except discord.errors.Forbidden:
+                    logger.warning(
+                        "Could not delete message %d (guild %d) with token sent in public channel",
+                        ctx.message.id,
+                        -1 if ctx.guild is None else ctx.guild.id,
+                    )
                     please_delete_message = "Please delete the original command, as people can use the cookie to access your CHUNITHM-NET profile."
+
+            logger.debug("Sending login instructions to user %d", ctx.author.id)
 
             channel = (
                 ctx.author.dm_channel
@@ -121,7 +149,11 @@ class AuthCog(commands.Cog, name="Auth"):
             )
         elif clal is not None:
             if await self._verify_and_login(ctx.author.id, clal) is None:
+                logger.debug("User %d logged in.", ctx.author.id)
+
                 return await channel.send("Successfully logged in.")
+
+            logger.debug("Invalid token provided.")
 
             msg = "Invalid cookie."
             raise commands.BadArgument(msg)
@@ -133,6 +165,9 @@ class AuthCog(commands.Cog, name="Auth"):
         )
         view = LoginFlowView(ctx, passcode)
         embed = view.format_embed(view.items[0])
+
+        logger.debug("Initiating login flow for user %d", ctx.author.id)
+
         if ctx.channel == channel:
             msg = view.message = await ctx.reply(
                 embed=embed, view=view, mention_author=False
@@ -148,7 +183,10 @@ class AuthCog(commands.Cog, name="Auth"):
 
         try:
             clal = await self.bot.wait_for(f"chunithm_login_{passcode}", timeout=300)
+
             if await self._verify_and_login(ctx.author.id, clal) is None:  # type: ignore[reportGeneralTypeIssues]
+                logger.debug("User %d logged in.", ctx.author.id)
+
                 await msg.edit(
                     content=None,
                     embed=discord.Embed(
@@ -157,6 +195,8 @@ class AuthCog(commands.Cog, name="Auth"):
                     ),
                 )
             else:
+                logger.debug("Invalid token provided.")
+
                 await msg.edit(
                     content=None,
                     embed=discord.Embed(
@@ -165,6 +205,8 @@ class AuthCog(commands.Cog, name="Auth"):
                     ),
                 )
         except TimeoutError:
+            logger.warning("Login flow timed out.")
+
             await msg.edit(
                 content=None,
                 embed=discord.Embed(
