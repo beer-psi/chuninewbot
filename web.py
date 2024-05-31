@@ -57,7 +57,7 @@ async def kamaitachi_oauth(request: web.Request) -> web.Response:
             )
 
     async with session.post(
-        "https://kamaitachi.xyz/api/v1/oauth/token",
+        "https://kamai.tachi.ac/api/v1/oauth/token",
         json={
             "code": params["code"],
             "client_id": kamaitachi_client_id,
@@ -69,12 +69,14 @@ async def kamaitachi_oauth(request: web.Request) -> web.Response:
         data = await resp.json(loads=json_loads)
 
     if not data["success"]:
-        raise web.HTTPUnauthorized(reason="Failed to authenticate.")
+        raise web.HTTPUnauthorized(
+            reason=f"Failed to authenticate: {data['description']}"
+        )
 
     token = data["body"]["token"]
 
     async with session.get(
-        "https://kamaitachi.xyz/api/v1/users/me",
+        "https://kamai.tachi.ac/api/v1/users/me",
         headers={"Authorization": f"Bearer {token}"},
     ) as resp:
         whoami_data = await resp.json(loads=json_loads)
