@@ -1,15 +1,20 @@
 from discord import Embed, Interaction
 from discord.ext.commands import Context
+from discord.utils import escape_markdown
 
 from ._pagination import PaginationView
 
 
 class LoginFlowView(PaginationView):
-    def __init__(self, ctx: Context, code: str | None = None):
-        if code is not None:
-            self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/70f4e2f4defb26eb053b68dcee8c6250ba178503/login.js' ;d.body.append(s)}(document))\n"
+    def __init__(
+        self, ctx: Context, code: str | None = None, server: str | None = None
+    ):
+        if code is not None and server is not None:
+            self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/ede9859c40741d4dad49a035857b30a3e21c5dce/login.js' ;d.body.append(s)}(document))\n"
+            fragment = f"#otp={code}&server={server}"
         else:
             self.script = "javascript:void(function(d){var s=d.createElement('script');s.src='https://gistcdn.githack.com/beerpiss/0eb8d3e50ae753388a6d4a4af5678a2e/raw/c096f619a3a207b99a0cbb63e1d214a7b1af4f28/login2.js' ;d.body.append(s)}(document))\n"
+            fragment = ""
 
         items = [
             (
@@ -19,7 +24,7 @@ class LoginFlowView(PaginationView):
             ),
             (
                 "**Step 2**:\n"
-                f"Copy [this link](https://lng-tgk-aime-gw.am-all.net/common_auth/{f'#{code}' if code is not None else ''}) and paste it in the current incognito window.\n"
+                f"Copy [this link](https://lng-tgk-aime-gw.am-all.net/common_auth/{fragment}) and paste it in the current incognito window.\n"
                 'The website should display "Not Found".'
             ),
             (
@@ -35,14 +40,15 @@ class LoginFlowView(PaginationView):
             ),
         ]
 
-        if code is None:
+        if code is None or server is None:
             items[
                 2
             ] += "The website will display the login command. Copy it and paste it in the bot's DMs."
         else:
-            items[
-                2
-            ] += f"If the website asks for a passcode, enter **{code}** and select OK."
+            items[2] += (
+                f"If the website asks for a passcode, enter **{code}**.\n"
+                f"If the website asks for a server, enter **{escape_markdown(server)}**.\n"
+            )
 
         super().__init__(ctx, items, 1)
 

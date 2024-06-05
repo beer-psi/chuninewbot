@@ -13,6 +13,7 @@ from chunithm_net import ChuniNet
 from chunithm_net.exceptions import ChuniNetException, InvalidTokenException
 from database.models import Cookie
 from utils import asuppress
+from utils.config import config
 from utils.logging import logger as root_logger
 from utils.views.login import LoginFlowView
 
@@ -163,7 +164,7 @@ class AuthCog(commands.Cog, name="Auth"):
             if self.bot.app is not None
             else None
         )
-        view = LoginFlowView(ctx, passcode)
+        view = LoginFlowView(ctx, passcode, config.web.base_url)
         embed = view.format_embed(view.items[0])
 
         logger.debug("Initiating login flow for user %d", ctx.author.id)
