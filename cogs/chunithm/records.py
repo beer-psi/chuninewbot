@@ -54,6 +54,13 @@ class RecordsCog(commands.Cog, name="Records"):
             client = await ctxmgr.__aenter__()
             userinfo = await client.authenticate()
             recents = await client.recent_record()
+
+            if len(recents) == 0:
+                await ctx.reply(
+                    f"No recent scores found for {userinfo.name}.", mention_author=False
+                )
+                return
+
             hydrated_recents = await self.utils.hydrate_records(recents)
 
             view = RecentRecordsView(
