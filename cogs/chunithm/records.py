@@ -239,7 +239,7 @@ class RecordsCog(commands.Cog, name="Records"):
         ) as client:
             guild_id = ctx.guild.id if ctx.guild else None
             result = await self.utils.find_songs(
-                query, guild_id=guild_id, load_charts=True
+                query, guild_id=guild_id, load_charts=True, available=True
             )
 
             if result.similarity < SIMILARITY_THRESHOLD:

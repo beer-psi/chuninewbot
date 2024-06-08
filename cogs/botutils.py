@@ -311,6 +311,7 @@ class UtilsCog(commands.Cog, name="Utils"):
         *,
         guild_id: Optional[int] = None,
         load_charts: bool = False,
+        available: Optional[bool] = None,
     ) -> SongSearchResult:
         aliases = [x for x in self.alias_cache if x.guild_id in {-1, guild_id}]
         (_, similarity, index) = process.extractOne(
@@ -322,7 +323,12 @@ class UtilsCog(commands.Cog, name="Utils"):
         matching_alias = aliases[index]
 
         async with self.bot.begin_db_session() as session:
-            stmt = select(Song).where(Song.title == matching_alias.title)
+            cond = Song.title == matching_alias.title
+
+            if available is not None:
+                cond &= Song.available == available
+
+            stmt = select(Song).where(cond)
 
             if load_charts:
                 stmt = stmt.options(joinedload(Song.charts))
