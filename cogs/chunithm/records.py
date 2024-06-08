@@ -7,6 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.utils import escape_markdown
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -288,7 +289,8 @@ class RecordsCog(commands.Cog, name="Records"):
 
             if len(records) == 0:
                 await ctx.reply(
-                    f"No records found for {userinfo.name}.", mention_author=False
+                    f"No records found for {userinfo.name} on {escape_markdown(song.title)}.",
+                    mention_author=False,
                 )
                 return None
 
