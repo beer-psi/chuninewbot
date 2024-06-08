@@ -289,7 +289,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             if len(records) == 0:
                 await ctx.reply(
-                    f"No records found for {userinfo.name} on {escape_markdown(song.title)}.",
+                    f"No records found for {userinfo.name} on **{escape_markdown(song.title)}**.",
                     mention_author=False,
                 )
                 return None
