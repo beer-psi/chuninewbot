@@ -15,3 +15,7 @@ class ChuniNetError(ChuniNetException):
         super().__init__(f"Error code {code}: {description}")
         self.code = code
         self.description = description
+
+
+class InvalidFriendCode(ChuniNetException):
+    pass

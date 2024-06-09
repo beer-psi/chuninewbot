@@ -11,6 +11,7 @@ from discord.ext.commands import Context
 from chunithm_net.exceptions import (
     ChuniNetError,
     ChuniNetException,
+    InvalidFriendCode,
     InvalidTokenException,
     MaintenanceException,
 )
@@ -50,6 +51,8 @@ class EventsCog(commands.Cog, name="Events"):
             embed.description = f"CHUNITHM-NET error {exc.code}: {exc.description}"
         elif isinstance(exc, InvalidTokenException):
             embed.description = f"The token has expired. Please log in again with `{ctx.prefix}login` in my DMs."
+        elif isinstance(exc, InvalidFriendCode):
+            embed.description = "Could not find anyone with this friend code. Please double-check and try again."
         elif isinstance(exc, ChuniNetException):
             embed.description = "An error occurred while communicating with CHUNITHM-NET. Please try again later (or re-login)."
             if self.bot.dev:

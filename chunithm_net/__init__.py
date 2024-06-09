@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from ._bs4 import BS4_FEATURE
 from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
 from .consts import _KEY_DETAILED_PARAMS
-from .exceptions import ChuniNetError, InvalidTokenException
+from .exceptions import ChuniNetError, InvalidFriendCode, InvalidTokenException
 from .models.enums import Difficulty, Genres, Rank
 from .models.record import MusicRecord, RecentRecord, Record
 from .parser import (
@@ -261,6 +261,32 @@ class ChuniNet:
     async def logout(self) -> bool:
         resp = await self._request("GET", "mobile/home/userOption/logout/")
         return resp.url.host == _AUTHENTICATION_URL.host
+
+    async def send_friend_request(self, friend_code: str):
+        soup = await self._request_soup(
+            "POST",
+            "mobile/friend/search/sendSearchUser/",
+            data={
+                "friendCode": friend_code,
+                "token": self._token,
+            },
+            headers={"Referer": str(_BASE_URL.join("/mobile/friend/search/"))},
+        )
+
+        if not soup.select_one(".btn_friend_apply"):
+            raise InvalidFriendCode
+
+        await self._request(
+            "POST",
+            "mobile/friend/search/sendInvite/",
+            data={
+                "friendCode": friend_code,
+                "token": self._token,
+            },
+            headers={
+                "Referer": str(_BASE_URL.join("/mobile/friend/search/searchUser/"))
+            },
+        )
 
     @property
     def _token(self):
