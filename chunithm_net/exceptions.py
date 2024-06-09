@@ -19,3 +19,7 @@ class ChuniNetError(ChuniNetException):
 
 class InvalidFriendCode(ChuniNetException):
     pass
+
+
+class AlreadyAddedAsFriend(ChuniNetException):
+    pass

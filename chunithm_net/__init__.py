@@ -8,7 +8,12 @@ from bs4 import BeautifulSoup
 from ._bs4 import BS4_FEATURE
 from ._httpx_hooks import raise_on_chunithm_net_error, raise_on_scheduled_maintenance
 from .consts import _KEY_DETAILED_PARAMS
-from .exceptions import ChuniNetError, InvalidFriendCode, InvalidTokenException
+from .exceptions import (
+    AlreadyAddedAsFriend,
+    ChuniNetError,
+    InvalidFriendCode,
+    InvalidTokenException,
+)
 from .models.enums import Difficulty, Genres, Rank
 from .models.record import MusicRecord, RecentRecord, Record
 from .parser import (
@@ -274,6 +279,8 @@ class ChuniNet:
         )
 
         if not soup.select_one(".btn_friend_apply"):
+            if soup.select_one(".player_friend_data_left"):
+                raise AlreadyAddedAsFriend
             raise InvalidFriendCode
 
         await self._request(

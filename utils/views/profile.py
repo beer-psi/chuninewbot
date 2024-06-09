@@ -6,7 +6,7 @@ import discord.ui
 from discord import ButtonStyle, Interaction
 from discord.ext.commands import Context
 
-from chunithm_net.exceptions import InvalidFriendCode
+from chunithm_net.exceptions import AlreadyAddedAsFriend, InvalidFriendCode
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -84,6 +84,10 @@ class ProfileView(discord.ui.View):
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         utils: "UtilsCog" = cast("ChuniBot", interaction.client).get_cog("Utils")
+        embed = discord.Embed(
+            title="Error",
+            color=discord.Color.red(),
+        )
 
         try:
             ctx = utils.chuninet(interaction.user.id)
@@ -91,23 +95,14 @@ class ProfileView(discord.ui.View):
 
             await client.send_friend_request(self.profile.friend_code)
 
-            embed = discord.Embed(
-                title="Success",
-                description=f"Sent a friend request to {self.profile.name}.",
-                color=discord.Color.green(),
-            )
-            await interaction.followup.send(embed=embed)
+            embed.title = "Success"
+            embed.description = f"Sent a friend request to {self.profile.name}."
+            embed.color = discord.Color.green()
+        except AlreadyAddedAsFriend:
+            embed.description = "You've already added this player as a friend!"
         except InvalidFriendCode:
-            embed = discord.Embed(
-                title="Error",
-                description="Could not send a friend request because the friend code was invalid, or you're trying to send a friend request to yourself.",
-                color=discord.Color.red(),
-            )
-            await interaction.followup.send(embed=embed)
+            embed.description = "Could not send a friend request because the friend code was invalid, or you're trying to send a friend request to yourself."
         except commands.BadArgument as e:
-            embed = discord.Embed(
-                title="Error",
-                description=str(e),
-                color=discord.Color.red(),
-            )
-            await interaction.followup.send(embed=embed)
+            embed.description = str(e)
+
+        await interaction.followup.send(embed=embed)
