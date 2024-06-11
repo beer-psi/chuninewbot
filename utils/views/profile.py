@@ -6,7 +6,11 @@ from discord import ButtonStyle, Interaction
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from chunithm_net.exceptions import AlreadyAddedAsFriend, InvalidFriendCode
+from chunithm_net.exceptions import (
+    AlreadyAddedAsFriend,
+    ChuniNetError,
+    InvalidFriendCode,
+)
 
 if TYPE_CHECKING:
     from bot import ChuniBot
@@ -98,6 +102,8 @@ class ProfileView(discord.ui.View):
             embed.description = "You've already added this player as a friend!"
         except InvalidFriendCode:
             embed.description = "Could not send a friend request because the friend code was invalid, or you're trying to send a friend request to yourself."
+        except ChuniNetError as e:
+            embed.description = f"CHUNITHM-NET error {e.code}: {e.description}"
         except commands.BadArgument as e:
             embed.description = str(e)
 

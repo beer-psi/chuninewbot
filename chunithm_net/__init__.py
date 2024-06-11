@@ -287,7 +287,7 @@ class ChuniNet:
             "POST",
             "mobile/friend/search/sendInvite/",
             data={
-                "friendCode": friend_code,
+                "idx": friend_code,
                 "token": self._token,
             },
             headers={
