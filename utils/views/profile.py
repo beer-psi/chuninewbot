@@ -1,9 +1,9 @@
 import functools
 from typing import TYPE_CHECKING, Optional, cast
 
-from discord.ext import commands
 import discord.ui
 from discord import ButtonStyle, Interaction
+from discord.ext import commands
 from discord.ext.commands import Context
 
 from chunithm_net.exceptions import AlreadyAddedAsFriend, InvalidFriendCode
@@ -35,9 +35,6 @@ class ProfileView(discord.ui.View):
             await self.message.edit(content="_ _", view=self)
         else:
             await self.message.edit(view=self)
-
-    async def interaction_check(self, interaction: Interaction, /) -> bool:
-        return interaction.user == self.ctx.author
 
     @discord.ui.button(label="Show friend code")
     async def show_hide_friend_code(
@@ -72,28 +69,27 @@ class ProfileView(discord.ui.View):
     async def send_friend_request(
         self, interaction: Interaction, button: discord.ui.Button
     ):
-        if interaction.user == self.ctx.author:
-            embed = discord.Embed(
-                title="Error",
-                description="You can't add yourself as a friend, silly!",
-                color=discord.Color.red(),
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        await interaction.response.defer(ephemeral=True, thinking=True)
-
-        utils: "UtilsCog" = cast("ChuniBot", interaction.client).get_cog("Utils")
         embed = discord.Embed(
             title="Error",
             color=discord.Color.red(),
         )
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        if interaction.user == self.ctx.author:
+            embed.description = "You can't add yourself as a friend, silly!"
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        utils: "UtilsCog" = cast("ChuniBot", interaction.client).get_cog("Utils")
 
         try:
             ctx = utils.chuninet(interaction.user.id)
             client = await ctx.__aenter__()
 
             await client.send_friend_request(self.profile.friend_code)
+            await ctx.__aexit__(None, None, None)
 
             embed.title = "Success"
             embed.description = f"Sent a friend request to {self.profile.name}."
@@ -105,4 +101,4 @@ class ProfileView(discord.ui.View):
         except commands.BadArgument as e:
             embed.description = str(e)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=True)
