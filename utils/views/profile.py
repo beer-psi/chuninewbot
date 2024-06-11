@@ -27,6 +27,7 @@ class ProfileView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.ctx = ctx
         self.profile = profile
+        self.friend_code_visible = False
         self.send_friend_request_button = None
 
     async def on_timeout(self) -> None:
@@ -35,7 +36,7 @@ class ProfileView(discord.ui.View):
                 item.disabled = True  # type: ignore[reportGeneralTypeIssues]
         self.clear_items()
 
-        if len(self.message.content) > 0:
+        if self.friend_code_visible:
             await self.message.edit(content="_ _", view=self)
         else:
             await self.message.edit(view=self)
@@ -48,7 +49,8 @@ class ProfileView(discord.ui.View):
             await interaction.response.defer()
             return
 
-        if button.label == "Show friend code":
+        if not self.friend_code_visible:
+            self.friend_code_visible = True
             button.label = "Hide friend code"
 
             self.send_friend_request_button = discord.ui.Button(
@@ -63,6 +65,7 @@ class ProfileView(discord.ui.View):
                 content=f"Friend code: {self.profile.friend_code}", view=self
             )
         else:
+            self.friend_code_visible = False
             button.label = "Show friend code"
 
             if self.send_friend_request_button is not None:
