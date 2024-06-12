@@ -247,7 +247,7 @@ class RecordsCog(commands.Cog, name="Records"):
         ) as client:
             guild_id = ctx.guild.id if ctx.guild else None
             result = await self.utils.find_songs(
-                query, guild_id=guild_id, load_charts=True, available=True
+                query, guild_id=guild_id, load_charts=True
             )
 
             if result.similarity < SIMILARITY_THRESHOLD:
@@ -256,10 +256,12 @@ class RecordsCog(commands.Cog, name="Records"):
                     mention_author=False,
                 )
 
-            if len(result.songs) > 1:
+            songs = [x for x in result.songs if x.available]
+
+            if len(songs) > 1:
                 options = []
 
-                for i, x in enumerate(result.songs):
+                for i, x in enumerate(songs):
                     if x.genre == "WORLD'S END":
                         title = f"{x.title} [{x.charts[0].level}]"
                     else:
@@ -284,12 +286,13 @@ class RecordsCog(commands.Cog, name="Records"):
                     )
                     return None
 
-                song = result.songs[int(view.value)]
-            else:
-                song = result.songs[0]
+                song = songs[int(view.value)]
+            elif len(songs) > 0:
+                song = songs[0]
                 select_message = None
-
-            song.raise_if_not_available()
+            else:
+                msg = f"No songs currently available in CHUNITHM International matches the search criteria. Closest match was **{escape_markdown(result.songs[0].title)}**."
+                raise commands.BadArgument(msg)
 
             userinfo = await client.authenticate()
             records = await client.music_record(song.id)
