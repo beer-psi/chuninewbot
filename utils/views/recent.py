@@ -108,9 +108,11 @@ class RecentRecordsView(PaginationView):
             await interaction.message.edit(
                 content=f"Score of {self.userinfo.name}",
                 embed=ScoreCardEmbed(score),
+                view=self,
             )
         else:
             await interaction.channel.send(
                 content=f"Score of {self.userinfo.name}",
                 embed=ScoreCardEmbed(score),
+                view=self,
             )
