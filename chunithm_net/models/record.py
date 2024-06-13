@@ -9,7 +9,7 @@ from .type_paired_dict import TypePairedDict
 @dataclass
 class Skill:
     name: str
-    grade: int
+    grade: Optional[int]
 
 
 @dataclass

@@ -311,8 +311,10 @@ def parse_detailed_recent_record(soup: BeautifulSoup) -> DetailedRecentRecord:
     record.character = soup.select_one(".play_data_chara_name").get_text()
 
     skill_name = soup.select_one(".play_data_skill_name").get_text()
-    skill_grade = chuni_int(soup.select_one(".play_data_skill_grade").get_text())
-    record.skill = Skill(skill_name, skill_grade)
+    record.skill = Skill(skill_name, None)
+
+    if isinstance((skill_grade := soup.select_one(".play_data_skill_grade")), str):
+        record.skill.grade = chuni_int(skill_grade)
 
     record.skill_result = chuni_int(
         soup.select_one(".play_musicdata_skilleffect_text").get_text().replace("+", "")
