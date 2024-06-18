@@ -1,7 +1,7 @@
 import contextlib
 import itertools
 from argparse import ArgumentError
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Literal, Literal, Optional, cast
 
 import discord
 from discord import app_commands
@@ -15,6 +15,8 @@ from chunithm_net.consts import (
     INTERNATIONAL_JACKET_BASE,
     JACKET_BASE,
     KEY_INTERNAL_LEVEL,
+    KEY_OVERPOWER_BASE,
+    KEY_OVERPOWER_MAX,
     KEY_PLAY_RATING,
 )
 from chunithm_net.models.enums import Difficulty, Genres, Rank
@@ -381,6 +383,7 @@ class RecordsCog(commands.Cog, name="Records"):
         difficulty="Difficulty to search for.",
         genre="Genre to search for.",
         rank="Rank to search for.",
+        sort="Sort records by a criteria (default rating).",
     )
     @app_commands.choices(
         level=[
@@ -418,6 +421,7 @@ class RecordsCog(commands.Cog, name="Records"):
         difficulty: Optional[Difficulty] = None,
         genre: Optional[Genres] = None,
         rank: Optional[Rank] = None,
+        sort: Literal["rating", "score", "overpower", "overpower %"] = "rating",
     ):
         await interaction.response.defer()
 
@@ -438,9 +442,48 @@ class RecordsCog(commands.Cog, name="Records"):
                 return await interaction.followup.send("No scores found.")
 
             records = await self.utils.hydrate_records(records)
-            records.sort(
-                key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
-            )
+
+            if sort == "rating":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                    ),
+                )
+            elif sort == "score":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.score,
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                    ),
+                )
+            elif sort == "overpower":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                    ),
+                )
+            elif sort == "overpower %":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_OVERPOWER_BASE)
+                        / x.extras.get(KEY_OVERPOWER_MAX),
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                    ),
+                )
+            else:
+                msg = f"Invalid sort type {sort}. Expected one of score, rating, overpower, overpower %."
+                raise commands.BadArgument(msg)
 
             ctx = await Context.from_interaction(interaction)
             view = B30View(ctx, records, show_average=False)
@@ -467,6 +510,7 @@ class RecordsCog(commands.Cog, name="Records"):
         `-d`: Difficulty to search for. Must be one of `EASY`, `ADVANCED`, `EXPERT`, `MASTER`, `ULTIMA`, or `WE` if specified.
         `-g`: Genre to search for. Must be one of `POPS&ANIME`, `niconico`, `Touhou Project`, `ORIGINAL`, `VARIETY`, `Irodorimidori`, or `Gekimai`, if specified.
         `-r`: Rank to search for. Anywhere between "S" and "SSS+" (inclusive), if specified.
+        `-s`: Choose a metric to sort scores by. Supported options are `score`, `rating`, `op`, `op_percent`.
 
         Genre and rank cannot be set at the same time. If genre or rank is set, difficulty must also be set.
 
@@ -514,12 +558,27 @@ class RecordsCog(commands.Cog, name="Records"):
         def rank(arg: str) -> Rank:
             return Rank[arg.upper().replace("+", "p")]
 
+        def sort_type(arg: str) -> str:
+            if arg not in {
+                "score",
+                "rating",
+                "op",
+                "op_percent",
+                "overpower",
+                "overpower_percent",
+            }:
+                msg = "Invalid sort type. Expected one of score, rating, op, op_percent, overpower, overpower_percent."
+                raise ValueError(msg)
+
+            return arg
+
         parser = DiscordArguments()
-        parser.add_argument("-d", "--difficulty", nargs="?", type=difficulty)
+        parser.add_argument("-d", "--difficulty", type=difficulty, required=False)
+        parser.add_argument("-s", "--sort", type=sort_type, default="rating")
 
         group = parser.add_mutually_exclusive_group()
-        group.add_argument("-g", "--genre", nargs="?", type=genre)
-        group.add_argument("-r", "--rank", nargs="?", type=rank)
+        group.add_argument("-g", "--genre", type=genre, required=False)
+        group.add_argument("-r", "--rank", type=rank, required=False)
 
         try:
             args, rest = await parser.parse_known_intermixed_args(shlex_split(query))
@@ -527,11 +586,12 @@ class RecordsCog(commands.Cog, name="Records"):
             raise commands.BadArgument(str(e)) from e
 
         if (args.genre or args.rank) and not args.difficulty:
-            msg = "Difficulty must be set if genre or rank is set."
+            msg = "Must specify a difficulty when searching by genre or rank."
             raise commands.BadArgument(msg)
 
         user = None
         str_level = None
+
         if len(rest) > 0:
             for converter in [commands.MemberConverter, commands.UserConverter]:
                 with contextlib.suppress(commands.BadArgument):
@@ -544,6 +604,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
         level = None
         internal_level: float | None = None
+
         if str_level:
             # Three accepted use cases, "14", "14+" and "14.9"
             msg = "Invalid level."
@@ -582,9 +643,48 @@ class RecordsCog(commands.Cog, name="Records"):
                 return await ctx.reply("No scores found.", mention_author=False)
 
             records = await self.utils.hydrate_records(records)
-            records.sort(
-                key=lambda x: (x.extras.get(KEY_PLAY_RATING), x.score), reverse=True
-            )
+
+            if args.sort == "rating":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                    ),
+                )
+            elif args.sort == "score":
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.score,
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                    ),
+                )
+            elif args.sort in {"overpower", "op"}:
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                    ),
+                )
+            elif args.sort in {"overpower_percent", "op_percent"}:
+                records.sort(
+                    reverse=True,
+                    key=lambda x: (
+                        x.extras.get(KEY_OVERPOWER_BASE)
+                        / x.extras.get(KEY_OVERPOWER_MAX),
+                        x.extras.get(KEY_OVERPOWER_BASE),
+                        x.extras.get(KEY_PLAY_RATING),
+                        x.score,
+                    ),
+                )
+            else:
+                msg = f"Invalid sort type {args.sort}. Expected one of score, rating, op, op_percent, overpower, overpower_percent."
+                raise commands.BadArgument(msg)
 
             if internal_level is not None:
                 records = [
