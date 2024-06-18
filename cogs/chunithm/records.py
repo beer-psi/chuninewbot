@@ -574,9 +574,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
         parser = DiscordArguments()
         parser.add_argument("-d", "--difficulty", type=difficulty, required=False)
-        parser.add_argument(
-            "-s", "--sort", type=sort_type, default="rating", required=False
-        )
+        parser.add_argument("-s", "--sort", type=sort_type, required=False)
 
         group = parser.add_mutually_exclusive_group()
         group.add_argument("-g", "--genre", type=genre, required=False)
@@ -646,7 +644,7 @@ class RecordsCog(commands.Cog, name="Records"):
 
             records = await self.utils.hydrate_records(records)
 
-            if args.sort == "rating":
+            if args.sort is None or args.sort == "rating":
                 records.sort(
                     reverse=True,
                     key=lambda x: (
