@@ -9,7 +9,7 @@ from discord.ext.commands import Context
 from sqlalchemy import select
 
 from chunithm_net.consts import KEY_SONG_ID
-from chunithm_net.models.enums import ClearType, ComboType, Difficulty
+from chunithm_net.models.enums import ClearType, ComboType, Difficulty, SkillClass
 from database.models import Cookie
 from utils import json_dumps, json_loads
 from utils.config import config
@@ -17,6 +17,17 @@ from utils.config import config
 if TYPE_CHECKING:
     from bot import ChuniBot
     from cogs.botutils import UtilsCog
+
+
+def to_tachi_class(cls: SkillClass) -> str:
+    return {
+        SkillClass.I: "DAN_I",
+        SkillClass.II: "DAN_II",
+        SkillClass.III: "DAN_III",
+        SkillClass.IV: "DAN_IV",
+        SkillClass.V: "DAN_V",
+        SkillClass.INFINITE: "DAN_INFINITE",
+    }[cls]
 
 
 class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": True}):
@@ -209,8 +220,11 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             "Fetching scores from CHUNITHM-NET...", mention_author=False
         )
         async with self.utils.chuninet(ctx) as client:
+            profile = await client.player_data()
+
             if sync == "recent":
                 recents = await client.recent_record()
+
                 for recent in recents:
                     if recent.difficulty == Difficulty.WORLDS_END:
                         continue
@@ -252,13 +266,26 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     score_data["hitMeta"]["maxCombo"] = detailed_recent.max_combo
 
                     scores.append(score_data)
+
+                    if len(scores) % 10 == 0:
+                        await message.edit(
+                            content=f"Fetching recent scores from CHUNITHM-NET... {len(scores)}/{len(recents)}",
+                            allowed_mentions=discord.AllowedMentions.none(),
+                        )
+
             elif sync == "pb":
                 for difficulty in Difficulty:
                     if difficulty == Difficulty.WORLDS_END:
                         # Kamaitachi does not accept WORLD'S END scores
                         continue
-                    await message.edit(content=f"Fetching {difficulty} scores...")
+
+                    await message.edit(
+                        content=f"Fetching {difficulty} scores...",
+                        allowed_mentions=discord.AllowedMentions.none(),
+                    )
+
                     records = await client.music_record_by_folder(difficulty=difficulty)
+
                     for score in records:
                         if (song_id := score.extras.get(KEY_SONG_ID)) is None:
                             continue
@@ -279,6 +306,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         scores.append(score_data)
 
             await message.edit(content="Uploading scores to Kamaitachi...")
+
             request_body = {
                 "meta": {
                     "game": "chunithm",
@@ -286,7 +314,13 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                     "service": "site-importer",
                 },
                 "scores": scores,
+                "classes": {},
             }
+
+            if profile.medal is not None:
+                request_body["classes"]["dan"] = to_tachi_class(profile.medal)
+            if profile.emblem is not None:
+                request_body["classes"]["emblem"] = to_tachi_class(profile.emblem)
 
             async with aiohttp.ClientSession(
                 json_serialize=json_dumps
