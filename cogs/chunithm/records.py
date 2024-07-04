@@ -524,7 +524,7 @@ class RecordsCog(commands.Cog, name="Records"):
         `c>top 14+`: View your best scores for level 14+
         `c>top -d mas`: View your best scores for MASTER difficulty
         `c>top -g original -d ultima`: View your best scores for ULTIMA difficulty in the ORIGINAL folder
-        `c>top @player -r sss`: View @player's best scores for SSS rank.
+        `c>top @player -r sss -d mas`: View @player's best scores for SSS rank on MASTER difficulty.
         """
 
         def genre(arg: str) -> Genres:
