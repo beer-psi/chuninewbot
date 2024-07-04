@@ -120,6 +120,7 @@ class Chart(Base):
     flick: Mapped[Optional[int]] = mapped_column(nullable=True)
 
     charter: Mapped[Optional[str]] = mapped_column(nullable=True)
+    version: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     song: Mapped["Song"] = relationship(back_populates="charts")
     sdvxin_chart_view: Mapped[Optional["SdvxinChartView"]] = relationship(

@@ -379,12 +379,27 @@ class SearchCog(commands.Cog, name="Search"):
             song_embeds: list[Embed] = []
 
             for song in result.songs:
+                stmt = (
+                    select(Chart)
+                    .where(Chart.song_id == song.id)
+                    .order_by(Chart.id)
+                    .options(joinedload(Chart.sdvxin_chart_view))
+                )
+                charts = (await session.execute(stmt)).scalars().all()
+
+                song_description = ""
+
+                if not song.available:
+                    if song.removed:
+                        song_description += "**This song is removed.**\n\n"
+                    else:
+                        song_description += "**This song is not available in CHUNITHM International.**\n\n"
+
                 displayed_version = song.version
+                displayed_bpm = "Unknown"
 
                 if song.release is not None:
                     displayed_version += f" ({song.release})"
-
-                displayed_bpm = "Unknown"
 
                 if song.bpm is not None:
                     displayed_bpm = str(song.bpm)
@@ -398,32 +413,27 @@ class SearchCog(commands.Cog, name="Search"):
                             f"{displayed_bpm} ({song.min_bpm}~{song.max_bpm})"
                         )
 
+                song_description += (
+                    f"**Artist**: {emd(song.artist)}\n"
+                    f"**Category**: {song.genre}\n"
+                    f"**Version**: {displayed_version}\n"
+                )
+
+                for chart in charts:
+                    if chart.version is not None:
+                        difficulty = Difficulty.from_short_form(chart.difficulty)
+
+                        song_description += (
+                            f"**Version ({difficulty})**: {chart.version}"
+                        )
+
+                song_description += f"**BPM**: {displayed_bpm}\n"
+
                 embed = discord.Embed(
                     title=song.title,
-                    description=(
-                        f"**Artist**: {emd(song.artist)}\n"
-                        f"**Category**: {song.genre}\n"
-                        f"**Version**: {displayed_version}\n"
-                        f"**BPM**: {displayed_bpm}\n"
-                    ),
+                    description=song_description,
                     color=discord.Color.yellow(),
                 ).set_thumbnail(url=get_jacket_url(song))
-
-                if not song.available:
-                    if song.removed:
-                        embed.description = (
-                            f"**This song is removed.**\n\n{embed.description}"
-                        )
-                    else:
-                        embed.description = f"**This song is not available in CHUNITHM International.**\n\n{embed.description}"
-
-                stmt = (
-                    select(Chart)
-                    .where(Chart.song_id == song.id)
-                    .order_by(Chart.id)
-                    .options(joinedload(Chart.sdvxin_chart_view))
-                )
-                charts = (await session.execute(stmt)).scalars().all()
 
                 chart_level_desc = []
 
