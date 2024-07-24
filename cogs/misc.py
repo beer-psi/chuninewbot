@@ -73,7 +73,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         reply = (
             "https://tenor.com/view/metal-gear-rising-metal-gear-rising-revengeance-senator-armstrong-revengeance-i-made-it-the-fuck-up-gif-25029602"
             if random() < 0.1
-            else "<https://github.com/beerpiss/chuninewbot>"
+            else "<https://github.com/beer-psi/chuninewbot>"
         )
 
         await ctx.reply(reply, mention_author=False)
@@ -106,8 +106,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         embed.add_field(
             name="About the bot",
             value=(
-                "This is [chuninewbot](https://github.com/beerpiss/chuninewbot), a Discord bot created by "
-                "[beerpsi](https://github.com/beerpiss) and [contributors](https://github.com/beerpiss/chuninewbot/graphs/contributors) "
+                "This is [chuninewbot](https://github.com/beer-psi/chuninewbot), a Discord bot created by "
+                "[beerpsi](https://github.com/beer-psi) and [contributors](https://github.com/beer-psi/chuninewbot/graphs/contributors) "
                 "for CHUNITHM International version."
             ),
             inline=False,

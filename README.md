@@ -1,6 +1,6 @@
 ## chuninewbot
 
-[![Deploy](https://github.com/beerpiss/chuninewbot/actions/workflows/deploy.yaml/badge.svg)](https://github.com/beerpiss/chuninewbot/actions/workflows/deploy.yaml)
+[![Deploy](https://github.com/beer-psi/chuninewbot/actions/workflows/deploy.yaml/badge.svg)](https://github.com/beer-psi/chuninewbot/actions/workflows/deploy.yaml)
 [![State-of-the-art Shitcode](https://img.shields.io/static/v1?label=State-of-the-art&message=Shitcode&color=7B5804)](https://github.com/trekhleb/state-of-the-art-shitcode)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -35,7 +35,7 @@ though uptime is sometimes flaky.
 4. Run `python dbutils.py update chunirec` to populate the song database. For
    this to work, `credentials.chunirec_token` **must** be set in `bot.ini`. A
    pre-populated database is also provided
-   [here](https://nightly.link/beerpiss/chuninewbot/workflows/test_creating_db.yaml/trunk/database.zip),
+   [here](https://nightly.link/beer-psi/chuninewbot/workflows/test_creating_db.yaml/trunk/database.zip),
    for your convenience.
 5. `python bot.py`
 
@@ -52,11 +52,11 @@ make:
   from [lomotos10](https://github.com/lomotos10)
 - [Tukkun](https://github.com/tukkun1995) for breaking my bot in unthinkable
   ways (aside from being
-  [a contributor](https://github.com/beerpiss/chuninewbot/pulls?q=is%3Apr+author%3Atukkun1995+)),
+  [a contributor](https://github.com/beer-psi/chuninewbot/pulls?q=is%3Apr+author%3Atukkun1995+)),
   as well as taking the time to add all the song aliases.
 
 Thanks to all the
-[contributors](https://github.com/beerpiss/chuninewbot/graphs/contributors) who
+[contributors](https://github.com/beer-psi/chuninewbot/graphs/contributors) who
 took part.
 
 <details>

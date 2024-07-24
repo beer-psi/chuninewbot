@@ -29,8 +29,9 @@ class HelpCommand(commands.HelpCommand):
             .set_author(
                 name=f"Command list for {bot.user.display_name}:",
                 icon_url=bot.user.avatar.url if bot.user.avatar else None,
-            ).set_footer(  # type: ignore[reportGeneralTypeIssues]
-                text=f"Use {prefix}help <command> for more info on a command.\nSource code: https://github.com/beerpiss/chuninewbot"
+            )
+            .set_footer(  # type: ignore[reportGeneralTypeIssues]
+                text=f"Use {prefix}help <command> for more info on a command.\nSource code: https://github.com/beer-psi/chuninewbot"
             )
         )
         description = ""
