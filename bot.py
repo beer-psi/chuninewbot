@@ -70,7 +70,7 @@ class ChuniBot(commands.Bot):
             conn.create_function(
                 "fuzz_qratio",
                 2,
-                functools.partial(fuzz.QRatio, processor=str.lower),
+                functools.partial(fuzz.QRatio, processor=str.lower),  # type: ignore[reportCallIssue]
             )
 
         sqlalchemy.event.listen(self.engine.sync_engine, "connect", setup_database)

@@ -25,6 +25,14 @@ COOKIE_CHARACTERS = string.ascii_lowercase + string.digits
 router = web.RouteTableDef()
 
 
+@router.get("/")
+async def index(request: web.Request) -> web.Response:
+    return web.Response(
+        body="https://github.com/beer-psi/chuninewbot",
+        content_type="text/plain",
+    )
+
+
 @router.get("/kamaitachi/oauth")
 async def kamaitachi_oauth(request: web.Request) -> web.Response:
     if (

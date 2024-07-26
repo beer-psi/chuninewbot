@@ -1,7 +1,7 @@
 import contextlib
 import itertools
 from argparse import ArgumentError
-from typing import TYPE_CHECKING, Literal, Literal, Optional, cast
+from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import discord
 from discord import app_commands
@@ -474,8 +474,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 records.sort(
                     reverse=True,
                     key=lambda x: (
-                        x.extras.get(KEY_OVERPOWER_BASE)
-                        / x.extras.get(KEY_OVERPOWER_MAX),
+                        x.extras[KEY_OVERPOWER_BASE] / x.extras[KEY_OVERPOWER_MAX],
                         x.extras.get(KEY_OVERPOWER_BASE),
                         x.extras.get(KEY_PLAY_RATING),
                         x.score,
@@ -675,8 +674,7 @@ class RecordsCog(commands.Cog, name="Records"):
                 records.sort(
                     reverse=True,
                     key=lambda x: (
-                        x.extras.get(KEY_OVERPOWER_BASE)
-                        / x.extras.get(KEY_OVERPOWER_MAX),
+                        x.extras[KEY_OVERPOWER_BASE] / x.extras[KEY_OVERPOWER_MAX],
                         x.extras.get(KEY_OVERPOWER_BASE),
                         x.extras.get(KEY_PLAY_RATING),
                         x.score,

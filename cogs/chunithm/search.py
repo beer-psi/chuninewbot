@@ -431,7 +431,6 @@ class SearchCog(commands.Cog, name="Search"):
 
                 embed = discord.Embed(
                     title=song.title,
-                    description=song_description,
                     color=discord.Color.yellow(),
                 ).set_thumbnail(url=get_jacket_url(song))
 
@@ -477,16 +476,16 @@ class SearchCog(commands.Cog, name="Search"):
                     chart_level_desc.append(desc)
 
                 if len(chart_level_desc) > 0:
-                    # embed.description is already set above
-                    embed.description += "\n**Level**:\n"  # type: ignore[reportGeneralTypeIssues]
+                    song_description += "\n**Level**:\n"
                     if detailed:
-                        embed.description += (
+                        song_description += (
                             "**CHAIN** / TAP / HOLD / SLIDE / AIR / FLICK\n\n"
                         )
-                        embed.description += "\n".join(chart_level_desc)
+                        song_description += "\n".join(chart_level_desc)
                     else:
-                        embed.description += " / ".join(chart_level_desc)
+                        song_description += " / ".join(chart_level_desc)
 
+                embed.description = song_description
                 song_embeds.append(embed)
 
             view = EmbedPaginationView(ctx, song_embeds)

@@ -89,13 +89,21 @@ class ProfileView(discord.ui.View):
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        utils: "UtilsCog" = cast("ChuniBot", interaction.client).get_cog("Utils")
+        if (friend_code := self.profile.friend_code) is None:
+            embed.description = "There is no friend code data?!"
+
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        utils: "UtilsCog" = cast(
+            "UtilsCog", cast("ChuniBot", interaction.client).get_cog("Utils")
+        )
 
         try:
             ctx = utils.chuninet(interaction.user.id)
             client = await ctx.__aenter__()
 
-            await client.send_friend_request(self.profile.friend_code)
+            await client.send_friend_request(friend_code)
             await ctx.__aexit__(None, None, None)
 
             embed.title = "Success"
