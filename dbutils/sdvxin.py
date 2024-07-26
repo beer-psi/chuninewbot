@@ -110,6 +110,8 @@ TITLE_MAPPING = {
     "《散華》～ EMBARK": "《散華》 ～ EMBARK",
     "《慈雨》～ La Symphonie de Salacia: Agony Movement": "《慈雨》 ～ La Symphonie de Salacia: Agony Movement",
     "《創造》～ Cries, beyond The End": "《創造》 ～ Cries, beyond The End",
+    "美少女無罪パイレーツ": "美少女無罪♡パイレーツ",
+    "AMARA (大未来電脳)": "ÅMARA (大未来電脳)",
 }
 
 
