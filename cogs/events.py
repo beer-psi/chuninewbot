@@ -27,6 +27,10 @@ class EventsCog(commands.Cog, name="Events"):
         self.bot = bot
 
     @commands.Cog.listener()
+    async def on_command(self, ctx: Context):
+        pass
+
+    @commands.Cog.listener()
     async def on_command_error(
         self,
         ctx: Context,
@@ -70,6 +74,8 @@ class EventsCog(commands.Cog, name="Events"):
                 f"Unexpected quote mark, {exc.quote!r}, in non-quoted string. If this was intentional, "
                 "escape the quote with a backslash (\\\\)."
             )
+        if isinstance(exc, commands.errors.InvalidEndOfQuotedStringError):
+            embed.description = str(exc)
         if isinstance(
             exc, (commands.errors.NotOwner, commands.errors.MissingPermissions)
         ):

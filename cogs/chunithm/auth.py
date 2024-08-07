@@ -128,7 +128,7 @@ class AuthCog(commands.Cog, name="Auth"):
                         -1 if ctx.guild is None else ctx.guild.id,
                     )
                     await ctx.message.delete()
-                except discord.errors.Forbidden:
+                except (discord.errors.Forbidden, discord.errors.NotFound):
                     logger.warning(
                         "Could not delete message %d (guild %d) with token sent in public channel",
                         ctx.message.id,
