@@ -48,6 +48,7 @@ class ChuniNet:
             },
             timeout=httpx.Timeout(timeout=60.0),
             follow_redirects=True,
+            transport=httpx.AsyncHTTPTransport(retries=5),
         )
 
     async def __aenter__(self):
