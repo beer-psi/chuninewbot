@@ -2,8 +2,8 @@ import asyncio
 import sys
 from typing import TYPE_CHECKING, Literal, Optional
 
-import aiohttp
 import discord
+import httpx
 from discord.ext import commands
 from discord.ext.commands import Context
 from sqlalchemy import select
@@ -50,7 +50,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
 
         self.kt_client_id = kt_client_id
         self.kt_client_secret = kt_client_secret
-        self.user_agent = f"ChuniBot (https://github.com/Rapptz/discord.py {discord.__version__}) Python/{sys.version_info[0]}.{sys.version_info[1]} aiohttp/{aiohttp.__version__}"
+        self.user_agent = f"ChuniPenguin (https://github.com/Rapptz/discord.py {discord.__version__}) Python/{sys.version_info[0]}.{sys.version_info[1]} httpx/{httpx.__version__}"
 
     @commands.hybrid_group("kamaitachi", aliases=["kt"], invoke_without_command=True)
     async def kamaitachi(self, ctx: Context):
@@ -64,13 +64,12 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         )
 
     async def _verify_and_login(self, token: str) -> Optional[str]:
-        async with aiohttp.ClientSession() as session, session.get(
-            "https://kamai.tachi.ac/api/v1/status",
-            headers={
-                "Authorization": f"Bearer {token}",
-            },
-        ) as resp:
-            data = await resp.json(loads=json_loads)
+        async with httpx.AsyncClient() as client:
+            client.headers["User-Agent"] = self.user_agent
+            client.headers["Authorization"] = f"Bearer {token}"
+
+            resp = await client.get("https://kamai.tachi.ac/api/v1/status")
+            data = json_loads(resp.content)
 
         if data["success"] is False:
             return data["description"]
@@ -219,11 +218,16 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
         message = await ctx.reply(
             "Fetching scores from CHUNITHM-NET...", mention_author=False
         )
-        async with self.utils.chuninet(ctx) as client:
-            profile = await client.player_data()
+        async with self.utils.chuninet(
+            ctx
+        ) as chuni_client, httpx.AsyncClient() as tachi_client:
+            tachi_client.headers["User-Agent"] = self.user_agent
+            tachi_client.headers["Authorization"] = f"Bearer {cookie.kamaitachi_token}"
+
+            profile = await chuni_client.player_data()
 
             if sync == "recent":
-                recents = await client.recent_record()
+                recents = await chuni_client.recent_record()
 
                 for recent in recents:
                     if recent.difficulty == Difficulty.WORLDS_END:
@@ -240,7 +244,7 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         "hitMeta": {},
                     }
 
-                    detailed_recent = await client.detailed_recent_record(recent)
+                    detailed_recent = await chuni_client.detailed_recent_record(recent)
 
                     if (song_id := detailed_recent.extras.get(KEY_SONG_ID)) is None:
                         continue
@@ -284,7 +288,9 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
                         allowed_mentions=discord.AllowedMentions.none(),
                     )
 
-                    records = await client.music_record_by_folder(difficulty=difficulty)
+                    records = await chuni_client.music_record_by_folder(
+                        difficulty=difficulty
+                    )
 
                     for score in records:
                         if (song_id := score.extras.get(KEY_SONG_ID)) is None:
@@ -322,33 +328,26 @@ class KamaitachiCog(commands.Cog, name="Kamaitachi", command_attrs={"hidden": Tr
             if profile.emblem is not None:
                 request_body["classes"]["emblem"] = to_tachi_class(profile.emblem)
 
-            async with aiohttp.ClientSession(
-                json_serialize=json_dumps
-            ) as session, session.post(
+            resp = await tachi_client.post(
                 "https://kamai.tachi.ac/ir/direct-manual/import",
-                json=request_body,
+                content=json_dumps(request_body),
                 headers={
-                    "Authorization": f"Bearer {cookie.kamaitachi_token}",
                     "Content-Type": "application/json",
                     "X-User-Intent": "true",
                 },
-            ) as resp:
-                data = await resp.json(loads=json_loads)
+            )
+            data = json_loads(resp.content)
 
-                if not data["success"]:
-                    return await message.edit(
-                        content=f"Failed to upload scores to Kamaitachi: {data['description']}"
-                    )
-                poll_url = data["body"]["url"]
+            if not data["success"]:
+                return await message.edit(
+                    content=f"Failed to upload scores to Kamaitachi: {data['description']}"
+                )
+
+            poll_url = data["body"]["url"]
 
             while True:
-                async with aiohttp.ClientSession() as session, session.get(
-                    poll_url,
-                    headers={
-                        "Authorization": f"Bearer {cookie.kamaitachi_token}",
-                    },
-                ) as resp:
-                    data = await resp.json(loads=json_loads)
+                resp = await tachi_client.get(poll_url)
+                data = json_loads(resp.content)
 
                 if not data["success"]:
                     return await message.edit(
