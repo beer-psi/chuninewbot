@@ -29,6 +29,7 @@ VERSIONS = [
     "SUN",
     "SUN PLUS",
     "LUMINOUS",
+    "LUMINOUS PLUS",
 ]
 
 
@@ -96,13 +97,17 @@ async def merge_options(
         if we_tag_name != "Invalid":
             genre = "WORLD'S END"
 
+        release_date = gettext(root, "./releaseDate")
+
         inserted_song = {
             "id": int(song_id),
             "title": gettext(root, "./name/str"),
             "chunithm_catcode": int(catcode),
             "genre": genre,
             "artist": gettext(root, "./artistName/str"),
-            "release": None,
+            "release": f"{release_date[:4]}-{release_date[4:6]}-{release_date[6:]}"
+            if release_date
+            else None,
             "version": VERSIONS[int(release_tag_id)],
             "bpm": None,
             "min_bpm": None,
@@ -212,8 +217,7 @@ async def merge_options(
                 "chunithm_catcode": insert_stmt.excluded.chunithm_catcode,
                 "genre": insert_stmt.excluded.genre,
                 "artist": insert_stmt.excluded.artist,
-                # ignore release, since it will always be None
-                # unless I can find a way to grab the release date, maybe from event files
+                "release": func.coalesce(insert_stmt.excluded.release, Song.release),
                 "version": insert_stmt.excluded.version,
                 "bpm": func.coalesce(insert_stmt.excluded.bpm, Song.bpm),
                 "min_bpm": func.coalesce(insert_stmt.excluded.min_bpm, Song.min_bpm),
