@@ -23,23 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - name: Install Poetry
-        run: pipx install poetry
-
-      - name: Setup Python
-        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
+      - name: Install rye
+        uses: eifinger/setup-rye@cba39b644640fb95c375ce5bfe2fdf33c0b815fc # v4
         with:
-          python-version: "3.11"
-          cache: poetry
+          version: "0.41.0"
+          enable-cache: true
+          cache-prefix: "rye-cache"
 
       - name: Install dependencies
-        run: poetry install
+        run: rye sync --all-features
       
       - name: Run type checking
-        run: poetry run basedpyright
+        run: rye run basedpyright
 
       - name: Run tests
-        run: poetry run pytest -v --html=report.html --self-contained-html
+        run: rye run pytest -v --html=report.html --self-contained-html
       
       - name: Upload test report
         if: always()

@@ -10,8 +10,9 @@ on:
       - "utils/config.py"  # Contains default value for DB path
       - "database/**"
       - "dbutils/**"
-      - "poetry.lock"
       - "pyproject.toml"
+      - "requirements.lock"
+      - "requirements-dev.lock"
 
 
 jobs:
@@ -21,17 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - name: Install Poetry
-        run: pipx install poetry
-
-      - name: Setup Python
-        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
+      - name: Install rye
+        uses: eifinger/setup-rye@cba39b644640fb95c375ce5bfe2fdf33c0b815fc # v4
         with:
-          python-version: "3.11"
-          cache: poetry
+          version: "0.41.0"
+          enable-cache: true
+          cache-prefix: "rye-cache"
 
       - name: Install dependencies
-        run: poetry install --without dev --all-extras
+        run: rye sync --all-features --no-dev
 
       - name: Configuration
         run: |
@@ -39,16 +38,16 @@ jobs:
            sed -i 's/# chunirec_token = <token>/chunirec_token = ${{ secrets.CHUNIREC_TOKEN }}/' bot.ini
 
       - name: Create database from schema
-        run: poetry run python -m dbutils create
+        run: rye run python -m dbutils create
 
       - name: Update database with information from Chunirec + Zetaraku + Official website
-        run: poetry run python -m dbutils update chunirec
+        run: rye run python -m dbutils update chunirec
 
       - name: Update sdvx.in chart views
-        run: poetry run python -m dbutils update sdvxin
+        run: rye run python -m dbutils update sdvxin
 
       - name: Update database aliases
-        run: poetry run python -m dbutils update alias
+        run: rye run python -m dbutils update alias
 
       - name: Upload created database
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
