@@ -29,6 +29,10 @@ def split_scores_into_credits(
             current_credit = []
         current_credit.append(score)
         last_track = score.track
+
+    if len(current_credit) > 0:
+        credits.append(current_credit)
+
     return credits
 
 
