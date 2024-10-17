@@ -17,7 +17,7 @@ async def update_aliases(
             "https://github.com/lomotos10/GCM-bot/raw/main/data/aliases/en/chuni.tsv"
         )
         tachi_resp = await client.get(
-            "https://github.com/TNG-dev/Tachi/raw/main/database-seeds/collections/songs-chunithm.json"
+            "https://github.com/zkrising/Tachi/raw/main/seeds/collections/songs-chunithm.json"
         )
         aliases = [x.split("\t") for x in (await resp.text()).splitlines()]
 
