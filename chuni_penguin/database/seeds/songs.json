@@ -196252,7 +196252,9 @@
         "removed": false,
         "is_hidden_on_chuninet": false,
         "duration": 99890,
-        "aliases": [],
+        "aliases": [
+            "Kuukirikigaku Shoujo to Shounen no Uta"
+        ],
         "charts": [
             {
                 "difficulty": "BAS",
@@ -196349,7 +196351,9 @@
         "removed": false,
         "is_hidden_on_chuninet": false,
         "duration": 125189,
-        "aliases": [],
+        "aliases": [
+            "Kokoro ni Hibiku Koi Hotaru"
+        ],
         "charts": [
             {
                 "difficulty": "BAS",
@@ -197374,7 +197378,10 @@
         "removed": false,
         "is_hidden_on_chuninet": false,
         "duration": 125142,
-        "aliases": [],
+        "aliases": [
+            "sakuranbo kisu bakuhatsu da mo~n~",
+            "sakuranbo kiss"
+        ],
         "charts": [
             {
                 "difficulty": "BAS",
